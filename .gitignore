@@ -1,4 +1,5 @@
 .agent-workflow/state/
+.agent-workflow/config.json
 node_modules/
 .DS_Store
 *.log
