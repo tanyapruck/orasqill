@@ -6,7 +6,7 @@ All helpers use built-in Node.js modules and Git. They operate on the **current 
 - `plan-ledger.mjs step <task-id> --step S1 --evidence "..."` — complete the **next** step only.
 - `plan-ledger.mjs finding <task-id> --description "..." --impact "..." --reason "..." --necessary yes|no` — record out-of-plan issue first; essential => approval-required.
 - `plan-ledger.mjs amend <task-id> --finding F1 --step "..." [--before S2] --approvalref "..."` — add steps after **actual user approval independently verified by the agent**. `--approvalref` alone grants no rights.
-- `plan-ledger.mjs check <task-id> --status pass|fail|blocked --accept A1 [--accept A2] --result "..."` — record latest acceptance-linked validation status (A1, A2... correspond to `start --accept` order); FAIL/BLOCKED/missing acceptance prevents finish.
+- `plan-ledger.mjs check <task-id> --status pass|fail|blocked --accept A1 [--accept A2] --result "..."` — record latest acceptance-linked validation status (A1, A2... correspond to `start --accept` order); FAIL/BLOCKED/missing acceptance prevents finish. Old string checks remain unverified history; fresh structured PASS per acceptance is required for legacy recovery.
 - `plan-ledger.mjs review <task-id> --reviewer "..." --independent yes --result pass|fail --evidence "..."` — record reported independent review; required for HIGH_RISK finish. Identity/evidence still require human verification.
 - `plan-ledger.mjs report <task-id>` — create a Final Acceptance draft.
 - `plan-ledger.mjs finish <task-id>` — shared completion gates, finalize plan and report, then close handoff.
