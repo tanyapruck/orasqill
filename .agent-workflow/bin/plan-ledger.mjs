@@ -13,7 +13,7 @@ function render(plan) {
     `## Goal\n\n${clean(plan.goal)}\n\n## Ordered steps\n\n${bullets(plan.steps,s=>`- [${s.status==='done'?'x':' '}] ${s.id}: ${clean(s.text)}${s.evidence?` (evidence: ${clean(s.evidence)})`:''}`)}\n\n`+
     `## Acceptance\n\n${bullets(plan.acceptance,(item,i)=>`- A${i+1}: ${clean(item)}`)}\n\n## Findings outside plan\n\n`+
     bullets(plan.findings,x=>`- ${x.id} [${x.status}]: ${clean(x.description)}; impact ${clean(x.impact)}; reason ${clean(x.reason)}; reported approval ${clean(x.approvalRef??'none')} (verify against user message)${x.amendment?`; inserted ${x.amendment.addedStepIds.join(', ')} before ${x.amendment.beforeStepId??'end'}`:''}`)+'\n\n'+
-    `## Validation (reported, acceptance-linked)\n\n${bullets(plan.checks,x=>`- ${clean(x.acceptanceIds?.join(', '))} [${clean(x.status)}]: ${clean(x.result)}`)}\n\n`+
+    `## Validation (reported, acceptance-linked)\n\n${bullets(plan.checks,x=>typeof x==='string' ? `- [legacy; unverified]: ${clean(x)}` : `- ${clean(x.acceptanceIds?.join(', '))} [${clean(x.status)}]: ${clean(x.result)}`)}\n\n`+
     `## Independent review (reported, verify separately)\n\n${plan.review?`- ${clean(plan.review.reviewer)} [${clean(plan.review.result)}]; independent claimed: ${plan.review.independent}; evidence: ${clean(plan.review.evidence)}`:'- None'}\n\n`+
     `## Git identity\n\n- Branch: ${clean(plan.startBranch)}\n- Start HEAD: ${clean(plan.startHead)}\n`;
 }
