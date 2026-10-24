@@ -81,3 +81,30 @@ test('task-planner CLI rejects ledger steps as input and validates a distinct ta
   writeFileSync(tasksPath,JSON.stringify(mismatched));
   assert.match(run([tasksPath,'--locked-plan',lockedPath]).stderr,/OUT_OF_PLAN/);
 });
+
+
+test('risk typos and malformed metadata fail closed before scheduling',()=>{
+  for(const flags of [['security_sensitve'],'security_sensitive',[123]]) {
+    assert.throws(()=>validatePlan({tasks:[task('a','a.js',{flags})]}),/risk flag/i);
+  }
+  for(const extras of [{objective:''},{id:123},{resources:{read:'src',write:['a.js']}},{resources:{read:[],write:'a.js'}}]){
+    assert.throws(()=>validatePlan({tasks:[task('a','a.js',extras)]}),/objective|ID|resource arrays/);
+  }
+});
+test('scheduler binding cannot skip an earlier pending locked step',()=>{
+  const locked={schemaVersion:1,steps:[{id:'S1',text:'Change',status:'pending'},{id:'S2',text:'Test',status:'pending'}]};
+  const second=task('test','test.js',{planStepId:'S2',objective:'Test'});
+  assert.throws(()=>validateSchedulerBinding({tasks:[second]},locked),/OUT_OF_ORDER/);
+  const first=task('change','change.js',{planStepId:'S1',objective:'Change'});
+  assert.throws(()=>validateSchedulerBinding({tasks:[first,second]},locked),/OUT_OF_ORDER/);
+  second.dependsOn=['change'];
+  assert.doesNotThrow(()=>validateSchedulerBinding({tasks:[first,second]},locked));
+  locked.steps[0].status='done';
+  assert.doesNotThrow(()=>validateSchedulerBinding({tasks:[second]},locked));
+});
+test('planner rejects invalid worker caps rather than treating them as runtime capability',()=>{
+  for(const n of [0,-1,1.5,Infinity,'2']) {
+    assert.throws(()=>makeSchedule({tasks:[task('a')]},{maxWorkers:n}),/worker limit/);
+    assert.throws(()=>makeSchedule({tasks:[task('a')]},{runtime:{maxWorkers:n}}),/worker limit/);
+  }
+});
