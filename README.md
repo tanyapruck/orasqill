@@ -40,6 +40,7 @@ cp -R /path/to/orasqill/.agents/skills/agent-workflow-orchestrator .agents/skill
 cp -R /path/to/orasqill/.agent-workflow/bin .agent-workflow/
 cp /path/to/orasqill/.agent-workflow/external-skills.lock.json .agent-workflow/
 cp /path/to/orasqill/.agent-workflow/config.example.json .agent-workflow/
+cp -R /path/to/orasqill/.agent-workflow/profiles .agent-workflow/
 ```
 
 ### Windows PowerShell
@@ -51,6 +52,7 @@ Copy-Item -Recurse (Join-Path $src '.agents\skills\agent-workflow-orchestrator')
 Copy-Item -Recurse (Join-Path $src '.agent-workflow\bin') '.agent-workflow\'
 Copy-Item (Join-Path $src '.agent-workflow\external-skills.lock.json') '.agent-workflow\'
 Copy-Item (Join-Path $src '.agent-workflow\config.example.json') '.agent-workflow\'
+Copy-Item -Recurse (Join-Path $src '.agent-workflow\profiles') '.agent-workflow\'
 ```
 
 **Connect your agent.** Add a short pointer to your existing `AGENTS.md` (or create it if absent):
@@ -66,6 +68,7 @@ For Claude Code, optionally copy [its discovery adapter](.claude/skills/agent-wo
 
 ```gitignore
 .agent-workflow/state/
+.agent-workflow/config.json
 ```
 
 State can contain goals, paths, findings and user-reported approval notes. Never put secrets in it. Gitignored state does not follow a Git push to another computer.
@@ -84,6 +87,44 @@ git check-ignore .agent-workflow/state/install-check/plan.json
 ```
 
 If these fail, fix the repository setup, copied registry, or ignore rule first. The registry check **does not** establish that an external Skill was loaded into an agent. For optional delegation config, copy the installed `.agent-workflow/config.example.json` to `.agent-workflow/config.json` and confirm real agent capabilities and authority; an example config does not enable workers.
+
+### Choose the model and effort profile
+
+Two included **suggested** profiles are available after installation. This only fills out candidate names and recommended effort; it does not configure credentials or launch agents.
+
+| Stage | OpenAI orchestrates (`openai-orchestrator.json`) | Claude orchestrates (`claude-orchestrator.json`) |
+|---|---|---|
+| Orchestrator / plan | GPT-6.1 Sol — high | Claude Opus 5.5 — high |
+| Triage / reconnaissance | GPT-6 Luna — low | Claude Haiku 5.5 — low |
+| Implementation | GPT-6.1 Sol — medium | GPT-6.1 Sol — medium (Codex) |
+| Complex implementation | GPT-6 Astra — high | Claude Sonnet 5.5 — high |
+| Independent review | Claude Opus 5.5 — high | GPT-6.1 Sol — xhigh |
+| HIGH_RISK review | Claude Opus 5.5 — xhigh | GPT-6.1 Sol — Ultra (requested review mode; API effort max) |
+| Final report | GPT-6 Luna — low | Claude Haiku 5.5 — low |
+
+Select **one** in the destination repo, **only if there is no existing local config you need to preserve**:
+
+```sh
+# macOS/Linux/Git Bash (choose ONE)
+cp .agent-workflow/profiles/claude-orchestrator.json .agent-workflow/config.json
+# OR
+cp .agent-workflow/profiles/openai-orchestrator.json .agent-workflow/config.json
+```
+
+```powershell
+# Windows PowerShell (choose ONE)
+Copy-Item '.agent-workflow/profiles/claude-orchestrator.json' '.agent-workflow/config.json'
+# OR
+Copy-Item '.agent-workflow/profiles/openai-orchestrator.json' '.agent-workflow/config.json'
+```
+
+All sample profiles keep `setup.status = "unconfirmed"`, empty runtime/worker registrations, `automatic_switching = false`, and a single sequential worker. The `stage_preferences` entries are recommendations, not executable dispatch rules; a stage with only `role` inherits that role's preferred candidate. Each actual runtime, model/effort control, access and required external Skill **must be verified in its executing environment** and approved before marking setup confirmed. Cross-provider handoff remains manual and independent review is a separate eligible agent/session, not just another model label.
+
+For the Claude-led profile, `critical_review` requests **Ultra** via `requested_mode: "ultra"` and separately specifies **`effort: "max"`** as a valid API reasoning level for GPT-6.1 Sol. Ultra is **not** an OpenAI API `reasoning.effort` value: in supported Codex clients it is a distinct subagent-based mode. This is an explicit **request for runtime selection**, not an active Ultra session; it must be verified and selected by an authorized user. If Ultra is not supported by the actual client, report `SETUP_REQUIRED` and ask for an alternative rather than silently treating Max as Ultra. In particular, the preset still permits **only one sequential worker**, and never dispatches a subagent merely because `requested_mode` is present. Independent review still requires a truly separate agent/session from the work being reviewed.
+
+Provider model identifiers and effort options should be checked against [Anthropic's models](https://platform.claude.com/docs/en/models/overview), [Anthropic effort levels](https://platform.claude.com/docs/en/build-with-claude/effort) and [OpenAI's models](https://developers.openai.com/api/docs/models). These API IDs may not be directly selectable in every Codex/Claude Code interface. Details: [routing and setup](.agents/skills/agent-workflow-orchestrator/references/setup-routing.md).
+
+Treat `.agent-workflow/config.json` as local configuration. Keep passwords/API keys out of it, and add it to your **destination repository's** `.gitignore` alongside task state.
 
 ## Quick start: a complete documentation-only task
 

@@ -47,7 +47,7 @@ The user or authorized parent chooses the receiving agent; the original writer s
 | Coding Skill readiness, third-party installation or upgrade | `references/DEPENDENCIES.md` |
 | Editing SKILL.md, AGENTS.md, CLAUDE.md or agent instructions | `references/DEPENDENCIES.md` |
 | Consequential unresolved decisions before Plan lock | `references/planning-interview.md` |
-| Missing runtime/model mapping, capacity or role readiness | `references/setup-routing.md` |
+| Choosing Claude/OpenAI orchestrator profile or checking runtime, capacity or role readiness | `references/setup-routing.md` |
 | Worker packets, adaptive parallelism and resource ownership | `references/delegation.md` |
 | HIGH_RISK validation or independent review | `references/review-validation.md` |
 | Resuming work or user-directed provider handoff | `references/manual-handoff.md` |

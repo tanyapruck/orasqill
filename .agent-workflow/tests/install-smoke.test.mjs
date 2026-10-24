@@ -24,6 +24,8 @@ function destination(t) {
     path.join(dir, '.agent-workflow/external-skills.lock.json'));
   cpSync(path.join(source, '.agent-workflow/config.example.json'),
     path.join(dir, '.agent-workflow/config.example.json'));
+  cpSync(path.join(source, '.agent-workflow/profiles'),
+    path.join(dir, '.agent-workflow/profiles'), {recursive:true});
   return dir;
 }
 
@@ -32,6 +34,7 @@ test('documented install includes original Skill, helpers, registry and destinat
   assert.match(readme, /cp -R .*\.agent-workflow\/bin/);
   assert.match(readme, /cp .*\.agent-workflow\/external-skills\.lock\.json/);
   assert.match(readme, /cp .*\.agent-workflow\/config\.example\.json/);
+  assert.match(readme, /cp -R .*\.agent-workflow\/profiles/);
   assert.match(readme, /\.agent-workflow\/state\//);
   assert.match(readme, /git check-ignore \.agent-workflow\/state\/install-check\/plan\.json/);
   assert.match(readme, /merge.*\.gitignore|add.*\.gitignore/i);
@@ -50,6 +53,12 @@ test('fresh destination can list source-pinned third-party skills without applic
   assert.ok(existsSync(path.join(dest, '.agent-workflow/bin/plan-ledger.mjs')));
   const candidateConfig=JSON.parse(readFileSync(path.join(dest, '.agent-workflow/config.example.json'),'utf8'));
   assert.equal(candidateConfig.setup.status,'unconfirmed');
+  for(const name of ['openai-orchestrator','claude-orchestrator']){
+    const profile=JSON.parse(readFileSync(path.join(dest,'.agent-workflow/profiles',name+'.json'),'utf8'));
+    assert.equal(profile.setup.status,'unconfirmed');
+    assert.equal(profile.setup.profile,name);
+    assert.equal(profile.routing.orchestrator.automatic_switching,false);
+  }
   // F1 regression: leaving out the registry makes installed provenance commands fail.
   rmSync(path.join(dest, '.agent-workflow/external-skills.lock.json'));
   const missing = spawnSync(process.execPath, ['.agent-workflow/bin/external-skills.mjs', 'list'], {
