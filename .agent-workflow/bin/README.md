@@ -19,7 +19,8 @@ Tests: `node --test .agent-workflow/tests/*.test.mjs`.
 ## Third-party skill provenance (read-only)
 
 - `node .agent-workflow/bin/external-skills.mjs list` — list the original authors, exact source paths and activation for each external Skill from `../external-skills.lock.json`.
-- `node .agent-workflow/bin/external-skills.mjs verify-file <id> <path-to-installed-SKILL.md>` — compare the installed file's Git blob fingerprint to the last-reviewed upstream blob; **not** proof an Agent loaded it.
-- `node .agent-workflow/bin/external-skills.mjs check-updates [--source matt|ponytail|karpathy]` — read-only GitHub commit/tree lookup, with per-Skill `unchanged`, `changed` or `missing_upstream`; API errors return `unknown`. No downloading, installing, vendoring, source edits or automatic lockfile bump.
+- `node .agent-workflow/bin/external-skills.mjs verify-file <id> <path-to-installed-SKILL.md>` — compare the installed Skill file's Git blob fingerprint to the reviewed upstream blob.
+- `node .agent-workflow/bin/external-skills.mjs verify-reference <id> <upstream-path> <local-reference.md>` — independently verify tracked sibling references (for example, `writing-for-agents/SKILL-MECHANICS.md`); neither fingerprint proves an Agent loaded the material.
+- `node .agent-workflow/bin/external-skills.mjs check-updates [--source matt|ponytail|karpathy]` — read-only GitHub commit/tree lookup, with per-Skill and tracked reference-file `unchanged`, `changed` or `missing_upstream`; API errors return `unknown`. No downloading, installing, vendoring, source edits or automatic lockfile bump.
 
 External skills are third-party-owned; use `.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md` and `.agent-workflow/external-skills.lock.json` rather than inlining their instructions into the canonical Orchestrator.
