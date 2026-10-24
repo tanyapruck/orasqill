@@ -60,7 +60,10 @@ for(const name of profiles){
     assert.equal(p.stage_preferences.implement.role,'implementer');
     assert.equal(p.stage_preferences.review.role,'reviewer');
     assert.equal(p.stage_preferences.critical_review.role,'reviewer');
-    assert.equal(resolvedStage(p,'critical_review').effort,'xhigh');
+    const critical=resolvedStage(p,'critical_review');
+    assert.equal(critical.effort,name==='claude-orchestrator'?'max':'xhigh');
+    if(name==='claude-orchestrator')assert.equal(critical.requested_mode,'ultra');
+    else assert.equal(critical.requested_mode,undefined);
     assert.notDeepEqual(resolvedStage(p,'implement'),resolvedStage(p,'review'));
     assert.notDeepEqual(resolvedStage(p,'complex_implement'),resolvedStage(p,'critical_review'));
   });
@@ -70,8 +73,13 @@ test('Claude-led profile uses Claude for planning, Codex for code and independen
   const p=load('claude-orchestrator');
   assert.deepEqual(p.routing.orchestrator.preferred[0],{runtime:'claude-code',model:'claude-opus-5-5',effort:'high'});
   assert.deepEqual(p.routing.implementer.preferred[0],{runtime:'codex',model:'gpt-6.1-sol',effort:'medium'});
-  assert.deepEqual(p.routing.reviewer.preferred[0],{runtime:'codex',model:'gpt-6-astra',effort:'high'});
+  assert.deepEqual(p.routing.reviewer.preferred[0],{runtime:'codex',model:'gpt-6.1-sol',effort:'xhigh'});
+  assert.deepEqual(p.stage_preferences.critical_review,{role:'reviewer',runtime:'codex',model:'gpt-6.1-sol',effort:'max',requested_mode:'ultra'});
   assert.equal(p.stage_preferences.complex_implement.model,'claude-sonnet-5-5');
+  assert.equal(p.routing.orchestrator.automatic_switching,false);
+  assert.equal(p.delegation.max_parallel_workers,1);
+  assert.deepEqual(p.runtimes,{});
+  assert.deepEqual(p.workers,{});
 });
 
 test('OpenAI-led profile uses Codex for planning and Claude for independent review',()=>{
