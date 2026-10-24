@@ -31,8 +31,8 @@
       "preferred": [
         {
           "runtime": "codex",
-          "model": "gpt-6-astra",
-          "effort": "high"
+          "model": "gpt-6.1-sol",
+          "effort": "xhigh"
         }
       ],
       "fallback": [],
@@ -64,8 +64,9 @@
     "critical_review": {
       "role": "reviewer",
       "runtime": "codex",
-      "model": "gpt-6-astra",
-      "effort": "xhigh"
+      "model": "gpt-6.1-sol",
+      "effort": "max",
+      "requested_mode": "ultra"
     },
     "final_report": {
       "role": "reporter",
