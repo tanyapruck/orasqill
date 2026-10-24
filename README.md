@@ -138,9 +138,10 @@ Ponytail's session-wide coding mode is **opt-in only**, not automatically combin
 node .agent-workflow/bin/external-skills.mjs list
 node .agent-workflow/bin/external-skills.mjs check-updates --source matt
 node .agent-workflow/bin/external-skills.mjs verify-file karpathy-guidelines /path/to/original/SKILL.md
+node .agent-workflow/bin/external-skills.mjs verify-reference writing-for-agents skills/productivity/writing-for-agents/SKILL-MECHANICS.md /path/to/original/SKILL-MECHANICS.md
 ```
 
-The commands above are read-only: no installs, copying, upgrades or agent launches. The lockfile records upstream repository commits and per-Skill blob SHAs **for traceability**, not proof of what a particular agent actually loaded. See [dependency activation and verification](.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md).
+The commands above are read-only: no installs, copying, upgrades or agent launches. The lockfile records upstream repository commits, per-Skill blob SHAs and separately pinned reference-file SHAs **for traceability**, not proof of what a particular agent actually loaded. When authoring agent Skills with Matt's original `writing-for-agents`, load its sibling `SKILL-MECHANICS.md` as well. See [dependency activation and verification](.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md).
 
 ## Troubleshooting
 
