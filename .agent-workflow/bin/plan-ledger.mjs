@@ -39,10 +39,19 @@ function summary(repo) {
   const git=gitFacts(repo);
   return `- Branch: ${git.branch}\n- HEAD: ${git.head}\n- Status (filenames only):\n${bullets(git.status.slice(0,80))}\n`;
 }
-function report(repo,id,plan,complete=false) {
+function report(repo,id,plan,task,complete=false) {
   const dir=taskDir(repo,id);
-  const blocked=plan.findings.some(x=>x.status==='approval-required');
-  const state=complete?'PLAN COMPLETE (reported; verify independently)':blocked?'BLOCKED_AWAITING_APPROVAL':'INCOMPLETE_OR_AWAITING_VALIDATION';
+  let state='INCOMPLETE';
+  if (complete) state='PLAN COMPLETE (reported; verify independently)';
+  else if (plan.findings.some(x=>x.status==='approval-required')) state='BLOCKED_AWAITING_APPROVAL';
+  else {
+    try { assertPlanCompletion(plan,{risk:task.risk,owner:task.owner}); state='PLAN_COMPLETE_REQUIRES_VERIFICATION'; }
+    catch (err) {
+      const reason=String(err.message);
+      if (reason.startsWith('INDEPENDENT_REVIEW_REQUIRED')) state='BLOCKED_INDEPENDENT_REVIEW';
+      else if (reason.startsWith('VALIDATION')) state='BLOCKED_VALIDATION';
+    }
+  }
   const file=path.join(dir,'final-report.md');
   atomic(file,`# Final Acceptance Report: ${id}\n\n**${state}**\n\n${render(plan)}\n\n## Live Git status at report time\n\n${summary(repo)}\n## Required user-facing conclusion\n\nReport original goal, completed step IDs, actual test commands/outcomes, deferred findings, approval-pending findings, original and current SHA, PR/merge/deploy state where verified, and blockers. This file cannot grant approval or prove tests passed.\n`);
   return file;
@@ -119,13 +128,13 @@ export function runPlan(argv,repo=DEFAULT_REPO) {
     // Attestation only: user/organization must independently verify reviewer eligibility and evidence.
   } else if(command==='report') {
     if(Object.keys(opts).length)throw Error('report takes no options');
-    return report(repo,id,plan);
+    return report(repo,id,plan,task);
   } else if(command==='finish') {
     if(Object.keys(opts).length)throw Error('finish takes no options');
     assertPlanCompletion(plan,{risk:task.risk,owner:task.owner}); // Shared with manual finish; do not drift.
     plan.status='finished';
     const location=persist(repo,id,plan); // Persist finalized plan FIRST.
-    report(repo,id,plan,true); // Write actual report before checkpoint close.
+    report(repo,id,plan,task,true); // Write actual report before checkpoint close.
     handoff(['finish',id],repo);
     return location;
   } else throw Error('Usage: plan-ledger start|step|finding|amend|check|review|report|finish <task-id>');

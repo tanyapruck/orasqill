@@ -159,6 +159,7 @@ test('failed or blocked checks cannot close a fully completed plan', t=>{
   const f=setup(t);f.start();f.steps();
   for (const status of ['fail','blocked']) {
     f.call('check','t1','--status',status,'--accept','A1','--result',`npm test: ${status}`);
+    assert.match(readFileSync(f.call('report','t1'),'utf8'),/BLOCKED_VALIDATION/);
     assert.throws(()=>f.call('finish','t1'),/VALIDATION_REQUIRED.*A1/);
     assert.equal(f.state().status,'active');
   }
