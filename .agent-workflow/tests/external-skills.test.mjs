@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync,mkdtempSync,writeFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
+import {spawnSync} from 'node:child_process';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {loadLock, validateLock, gitBlobSha, verifyLocalSkill, verifyLocalReference, checkUpstream} from '../bin/external-skills.mjs';
@@ -53,7 +54,7 @@ test('missing source, duplicate IDs, wrong blobs and broken dependencies are rej
   l=clone();l.skills[1].id=l.skills[0].id;assert.throws(()=>validateLock(l),/Duplicate/);
   l=clone();l.skills[0].upstreamBlobSha='not-a-sha';assert.throws(()=>validateLock(l),/Invalid external skill/);
   l=clone();l.skills[1].dependsOn=['missing'];assert.throws(()=>validateLock(l),/Missing\/cyclic/);
-  l=clone();byId('writing-for-agents');
+  l=clone();
   let refs=l.skills.find(x=>x.id==='writing-for-agents').referenceFiles;
   refs[0].upstreamBlobSha='not-sha';assert.throws(()=>validateLock(l),/Invalid external reference/);
   l=clone();refs=l.skills.find(x=>x.id==='writing-for-agents').referenceFiles;
@@ -92,6 +93,24 @@ test('supplementary source verification matches bytes and rejects changes and un
   writeFileSync(file,localText+'changed');
   assert.equal(verifyLocalReference(clone,'writing-for-agents',ref.upstreamPath,file).matchesPinnedBlob,false);
   assert.throws(()=>verifyLocalReference(clone,'writing-for-agents','other.md',file),/Unknown external reference/);
+});
+
+test('verify-reference CLI exits nonzero for changed bytes and unknown paths',t=>{
+  const dir=mkdtempSync(path.join(tmpdir(),'orasqill-cli-ref-'));
+  t.after(()=>rmSync(dir,{recursive:true,force:true}));
+  const ref=byId('writing-for-agents').referenceFiles[0];
+  const local=path.join(dir,'SKILL-MECHANICS.md');
+  writeFileSync(local,'not the pinned upstream content\\n');
+  const cli=fileURLToPath(new URL('../bin/external-skills.mjs',import.meta.url));
+  const exec=args=>spawnSync(process.execPath,[cli,...args],{encoding:'utf8'});
+  const changed=exec(['verify-reference','writing-for-agents',ref.upstreamPath,local]);
+  assert.equal(changed.status,2,changed.stderr);
+  const report=JSON.parse(changed.stdout);
+  assert.equal(report.matchesPinnedBlob,false);
+  assert.equal(report.referencePath,ref.upstreamPath);
+  const unknown=exec(['verify-reference','writing-for-agents','unknown.md',local]);
+  assert.equal(unknown.status,1);
+  assert.match(unknown.stderr,/Unknown external reference/);
 });
 
 test('remote checker distinguishes repository changes from modifications to tracked skills',async()=>{
