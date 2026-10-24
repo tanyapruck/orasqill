@@ -121,7 +121,7 @@ Authentication, payments, security, migrations, destructive or production change
 ## Agent handoff and optional scheduling
 
 - **Continue an unfinished task:** the previous writer stops; the authorized receiver runs `node .agent-workflow/bin/manual-handoff.mjs resume` on the **same named branch and working tree**, reads the generated `handoff.md` plus locked `plan.md`, and resumes only the next authorized step. Different machines require an explicit, sanitized transfer of local state.
-- **Advisory Task Planner:** read [the separate scheduler schema](.agent-workflow/examples/task-plan.example.json). Run `node .agent-workflow/bin/task-planner.mjs <scheduler-tasks.json> [--locked-plan <plan-ledger-plan.json>]`. A scheduler graph has a `tasks` array with resource and dependency information; it is **not** the ledger's `plan.json`, which has `steps`. With `--locked-plan`, tasks must map to pending, approved steps. The output suggests a sequence; it does not create workers or enforce locks.
+- **Advisory Task Planner:** read [the separate scheduler schema](.agent-workflow/examples/task-plan.example.json). Run `node .agent-workflow/bin/task-planner.mjs <scheduler-tasks.json> [--locked-plan <plan-ledger-plan.json>]`. A scheduler graph has a `tasks` array with resource and dependency information; it is **not** the ledger's `plan.json`, which has `steps`. With `--locked-plan`, tasks must map to pending, approved steps **in their locked order**: later pending steps cannot bypass earlier ones, and the task graph must express that dependency. Unknown risk flags and malformed worker limits fail closed. The output suggests a sequence; it does not create workers or enforce locks.
 
 ## External Skills and update tracking
 
