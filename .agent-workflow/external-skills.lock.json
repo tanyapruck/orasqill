@@ -123,7 +123,13 @@
       "upstreamBlobSha": "a37608daf6e835e767deecfb498facecaaba82ba",
       "activation": "optional",
       "when": "editing agent documentation and skill entrypoints",
-      "dependsOn": []
+      "dependsOn": [],
+      "referenceFiles": [
+        {
+          "upstreamPath": "skills/productivity/writing-for-agents/SKILL-MECHANICS.md",
+          "upstreamBlobSha": "9cdbdb22aadc438755392216e75ad9a14cc9832e"
+        }
+      ]
     },
     {
       "id": "triage",
