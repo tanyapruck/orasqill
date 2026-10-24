@@ -110,7 +110,7 @@ node .agent-workflow/bin/plan-ledger.mjs report docs-demo
 node .agent-workflow/bin/plan-ledger.mjs finish docs-demo
 ```
 
-The CLI requires the **latest check for every acceptance ID** to be `pass`. `fail` or `blocked` results, missing checks, pending essential Findings or incomplete planned steps prevent a successful finish. These results are *recorded claims*, not independently verified test executions.
+The CLI requires the **latest check for every acceptance ID** to be `pass`. `fail` or `blocked` results, missing checks, pending essential Findings or incomplete planned steps prevent a successful finish. These results are *recorded claims*, not independently verified test executions. **Legacy checkpoints:** old free-text validation is retained as unverified history and never qualifies as PASS; add fresh structured PASS results for every acceptance ID to finish the original locked task. A legacy HIGH_RISK handoff without a plan stays blocked and requires a separately authorized new locked task, preserving the old checkpoint.
 
 ### New requirement during execution?
 
@@ -118,7 +118,7 @@ Use `plan-ledger.mjs finding <task-id> --description "..." --impact "..." --reas
 
 ### High-risk change?
 
-Authentication, payments, security, migrations, destructive or production changes require separate protected-action permission and a genuinely **independent eligible reviewer**. After an actual review, its result can be recorded with `plan-ledger.mjs review --reviewer "<actual-reviewer>" --independent yes --result pass --evidence "<verifiable-reference>"`. A typed reviewer name does *not* prove independence. Missing or failed review blocks `HIGH_RISK` completion. See [review gates](.agents/skills/agent-workflow-orchestrator/references/review-validation.md).
+Authentication, payments, security, migrations, destructive or production changes require separate protected-action permission and a genuinely **independent eligible reviewer**. After an actual review, its result can be recorded with `plan-ledger.mjs review <task-id> --reviewer "<actual-reviewer>" --independent yes --result pass --evidence "<verifiable-reference>"`. A typed reviewer name does *not* prove independence. Missing or failed review blocks `HIGH_RISK` completion. See [review gates](.agents/skills/agent-workflow-orchestrator/references/review-validation.md).
 
 ## Agent handoff and optional scheduling
 
@@ -154,6 +154,7 @@ The commands above are read-only: no installs, copying, upgrades or agent launch
 | `PLAN_REQUIRED`, `OUT_OF_PLAN_OR_ORDER` | Start a checkpoint and follow the next unfinished approved step. |
 | `APPROVAL_REQUIRED` | Essential out-of-plan work needs the user's decision; do not infer approval from a note. |
 | `VALIDATION_REQUIRED` / `BLOCKED_VALIDATION` | Record a real `pass` for each acceptance ID, and resolve any later `fail` or `blocked` check. |
+| `VALIDATION_MIGRATION_REQUIRED` | Keep old text as unverified history; rerun and record structured acceptance-linked PASS checks for every A1..An. Malformed structured records require investigation. |
 | `INDEPENDENT_REVIEW_REQUIRED` | Obtain a real separate eligible reviewer and verify the attestation. |
 | `SCHEDULER_SCHEMA_REQUIRED` | Pass a scheduler **task graph**, not the ledger's `steps` file. |
 | `NO_HANDOFF` / `AMBIGUOUS_HANDOFF` | Check branch, local ignored task state and the number of unfinished tasks. |
