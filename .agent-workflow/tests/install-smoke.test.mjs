@@ -92,3 +92,34 @@ test('fresh destination preflight prevents an unborn HEAD and then starts a real
   assert.equal(plan.startBranch, branch);
   assert.equal(spawnSync('git', ['check-ignore', '.agent-workflow/state/install-demo/plan.json'], { cwd: dest }).status, 0);
 });
+
+
+test('fresh consumer can follow the documented end-to-end plan, acceptance and finish flow', t => {
+  const dest = destination(t);
+  writeFileSync(path.join(dest, '.gitignore'), '.agent-workflow/state/\n');
+  writeFileSync(path.join(dest, 'README.md'), 'Before\n');
+  const git = (...args) => execFileSync('git', args, { cwd: dest, encoding: 'utf8' });
+  assert.notEqual(spawnSync('git', ['rev-parse', '--verify', 'HEAD'], { cwd: dest }).status, 0);
+  git('add', '.');
+  git('-c', 'user.email=fixture@example.invalid', '-c', 'user.name=Fixture', 'commit', '-qm', 'Initial commit');
+  assert.ok(git('rev-parse', '--verify', 'HEAD').trim());
+  assert.ok(git('branch', '--show-current').trim());
+  const cli = (...args) => execFileSync(process.execPath,
+    ['.agent-workflow/bin/plan-ledger.mjs', ...args], { cwd: dest, encoding: 'utf8' });
+  cli('start', 'docs-demo', '--goal', 'Improve an agreed README sentence',
+    '--step', 'Make the agreed README edit', '--step', 'Inspect the diff',
+    '--accept', 'The agreed README sentence is correct');
+  writeFileSync(path.join(dest, 'README.md'), 'After\n');
+  cli('step', 'docs-demo', '--step', 'S1', '--evidence', 'Inspected the modified README');
+  git('diff', '--check');
+  cli('step', 'docs-demo', '--step', 'S2', '--evidence', 'git diff --check and diff inspection completed');
+  cli('check', 'docs-demo', '--status', 'pass', '--accept', 'A1',
+    '--result', 'Checked the requested README sentence and diff');
+  cli('report', 'docs-demo');
+  cli('finish', 'docs-demo');
+  const stateDir = path.join(dest, '.agent-workflow/state/docs-demo');
+  const task = JSON.parse(readFileSync(path.join(stateDir, 'task.json'), 'utf8'));
+  assert.equal(task.status, 'finished');
+  assert.match(readFileSync(path.join(stateDir, 'final-report.md'), 'utf8'), /PLAN COMPLETE/);
+  assert.doesNotMatch(git('status', '--short'), /\.agent-workflow\/state\//);
+});

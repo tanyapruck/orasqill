@@ -101,7 +101,7 @@ test('root and install docs expose prerequisite rules without granting authority
   assert.match(entry,/grill-with-docs/);
   assert.match(setup,/per executing worker/);
   assert.match(setup,/not proof of Skill loadability/);
-  assert.match(guide,/External skill prerequisites/);
+  assert.match(guide,/External Skills and update tracking/);
   assert.match(guide,/not vendored or copied/);
 });
 
@@ -132,11 +132,12 @@ test('core is progressively disclosed but never hides plan, approval or high-ris
 });
 
 test('README uses one authoritative provenance pointer and describes complete install smoke',()=>{
-  assert.ok(guide.length<6000,'installer README should be concise');
+  // The README is human-facing distribution documentation, not always-loaded model context.
+  for(const section of ['## Install in another Git repository','## Quick start','## Tests, limitations and sharing']) assert.ok(guide.includes(section));
   assert.equal((guide.match(/not vendored or copied/gi)||[]).length,1);
   assert.match(guide,/external-skills\.lock\.json registry is required/);
   assert.match(guide,/git check-ignore \.agent-workflow\/state\/install-check\/plan\.json/);
-  assert.match(guide,/Installation smoke checks/);
+  assert.match(guide,/Verify the installation/);
   const entry=read('AGENTS.md');
   assert.match(entry,/\.agents\/skills\/agent-workflow-orchestrator\/SKILL\.md/);
   assert.match(entry,/\.agent-workflow\/external-skills\.lock\.json/);
