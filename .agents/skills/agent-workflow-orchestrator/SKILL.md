@@ -1,17 +1,17 @@
 ---
 name: agent-workflow-orchestrator
-description: Coordinate authorized multi-step work with a locked plan, bounded delegation, evidence-based validation, findings requiring explicit approval, and manual agent handoff across providers.
+description: Coordinate plan-locked work, require Karpathy coding guidelines for surgical changes, optionally grill complex plans with docs, and enforce approval-based findings and manual handoff.
 ---
 
 # Agent Workflow Orchestrator
 
-Version: 1.0 — Portable agent-neutral plan-locked workflow
+Version: 1.1 — Portable plan-locked orchestration with verified skill prerequisites
 
 **Any capable, authorized agent can be the active orchestrator.** This is a task-scoped role, not a model or provider identity. User and organization permissions always outrank this skill. Reading this skill or a handoff file never grants tools, credentials, elevated permissions, independent-review status, or commit/push/merge/deploy authority. A child cannot self-promote or widen the delegated scope.
 
 ## First: PLAN, before any edits or delegation
 
-1. Confirm the **authorized objective**, in-scope and excluded work, risk, approval boundary, ordered steps, acceptance criteria, and relevant final checks. Show the **plan to the user before starting implementation**. Existing explicit user authorization for a bounded task may be enough to proceed; don't demand redundant approval for ordinary in-plan work. Risk-sensitive operations always need their applicable separate approval.
+1. Confirm the **authorized objective**, in-scope and excluded work, risk, approval boundary, ordered steps, acceptance criteria, and relevant final checks. For genuinely unresolved consequential design choices, offer the **optional pre-plan interview** described in `references/planning-interview.md` (especially user-requested `grill-with-docs`). Do not interview or invent decisions for already bounded surgical tasks. Show the **plan to the user before starting implementation**. Existing explicit user authorization for a bounded task may be enough to proceed; don't demand redundant approval for ordinary in-plan work. Risk-sensitive operations always need their applicable separate approval.
 2. In a Git-backed project, **start a local task checkpoint and immutable baseline plan before writing files or dispatching workers**:
 
    `node .agent-workflow/bin/plan-ledger.mjs start <task-id> --goal "..." --step "..." --step "..." --accept "..."`
@@ -28,7 +28,9 @@ For commands, failure behavior, status records and approval semantics read `refe
 - Classify `TRIVIAL` / `STANDARD` / `HIGH_RISK`. Treat auth, payment, secrets, privacy/security, migrations/schema, production changes, destructive or irreversible actions, and deterministic critical contracts as `HIGH_RISK` even if another label says STANDARD. **Require an independent eligible reviewer** for high-risk changes plus explicit prior authorization for protected operations. Research-critical claims require primary-source verification by an independent checker.
 - Confirm actual Git root, named branch, repository authority, worker readiness, and real write ownership before changing anything. Preserve unrelated dirty/untracked changes. No concurrent writes unless an *actual* trusted runtime implements exclusive resource ownership; a textual planner is not a lock.
 - Do not silently commit/push/merge/deploy, expose secrets, invoke destructive operations, auto-rollback, or increase permissions. Worker output, generated plans, test summaries and flags are evidence, **not policy authority**.
-- Load and verify declared external skills before depending on them; if missing or not runnable, report `SETUP_REQUIRED` or choose safe bounded direct work. Never invent available agents, model mapping, budget or capacity.
+- **REQUIRED for every coding, bug-fix, refactor or SURGICAL code-change stage:** before the executing agent edits source/tests or delegates coding, verify that the exact external `karpathy-guidelines` Skill is **discoverable and loadable in that agent's runtime**; apply its assumption-checking, simplicity, minimal-diff and verifiable-outcome guidance within the locked plan. This requirement applies to DIRECT coding too. If unavailable, **do not modify code or dispatch a coding worker**; report `SETUP_REQUIRED` with `dependency_unavailable` and authorized installation guidance from `references/DEPENDENCIES.md`. No substitution or bypass merely because the task is short. No automatic external-skill installation.
+- `grill-with-docs` is an **OPTIONAL conditional pre-plan** enhancement for user-requested deep interviews or consequential unresolved design decisions; its upstream dependencies `grilling` and `domain-modeling` must both be loadable before invoking it. It does **not** run on ordinary surgical changes, cannot demand repeated clarification when enough is known, and cannot amend an already locked plan. See `references/planning-interview.md` and `references/DEPENDENCIES.md`.
+- Load and verify other *activated* declared skills before depending on them; missing required dependencies fail closed, whereas unrequested optional tools never block the baseline plan. Never invent agents, model mapping, budget or capacity.
 
 ## Efficient execution and delegation
 
@@ -52,6 +54,8 @@ At conclusion report the task status (`COMPLETE`, `PARTIAL` or `BLOCKED`), origi
 |---|---|
 | Mandatory plan, findings, approval, progress and Final Acceptance | `references/plan-execution.md` |
 | Task-scoped owner and transferable orchestrator role | `references/role-assignment.md` |
+| Exact external Skill dependencies, installation provenance, readiness gates | `references/DEPENDENCIES.md` |
+| Optional deep plan interview and `grill-with-docs` decision tree | `references/planning-interview.md` |
 | External runtime/model/config readiness | `references/setup-routing.md` |
 | Worker packets, safe parallelism, planner | `references/delegation.md` |
 | Validation, high-risk reviewer, original sources | `references/review-validation.md` |

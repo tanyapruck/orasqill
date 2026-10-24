@@ -17,6 +17,14 @@ Copy the following, preserving paths relative to the repository root:
 
 The `.agent-workflow/state/` directory is ignored, **must not be committed** and stays local to the working tree. The root Skill can be read directly even in an agent that does not auto-discover skills. Do not blindly overwrite an existing destination `AGENTS.md` or `CLAUDE.md`; merge pointers deliberately.
 
+## External skill prerequisites
+
+- **Required for coding, including surgical bug fixes/refactors:** install and verify the exact [`karpathy-guidelines`](https://github.com/multica-ai/andrej-karpathy-skills/blob/main/skills/karpathy-guidelines/SKILL.md) Skill in the **agent that actually writes code**. Until discoverable and loadable, coding stops with `SETUP_REQUIRED: dependency_unavailable`; the Orchestrator may still inspect, plan and report. Installation is never automatic.
+- **Optional for complex planning:** Matt Pocock's [`grill-with-docs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md) can help resolve important design decisions **before** locking a Plan. It requires `grilling` and `domain-modeling`. Don't run it for routine surgical changes, or append ADRs and glossary files without authorization.
+- Other optional Matt skills (`to-spec`, `to-tickets`, `tdd`, `diagnosing-bugs`, `code-review`) have targeted use cases, not mandatory process steps.
+
+Install instructions, provenance and worker gates: `.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md`; decision guidance: `.agents/skills/agent-workflow-orchestrator/references/planning-interview.md`. External skills are linked, **not vendored or copied**.
+
 ## Example user invocation
 
 > Use `agent-workflow-orchestrator` for this task. Show the plan first. Execute only its authorized steps. Record new discoveries as findings, ask my approval before necessary scope changes, and report actual validation results when done.
