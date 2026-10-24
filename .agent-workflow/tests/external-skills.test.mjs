@@ -1,9 +1,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync,existsSync} from 'node:fs';
+import {readFileSync,existsSync,mkdtempSync,writeFileSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {loadLock, validateLock, gitBlobSha, verifyLocalSkill, checkUpstream} from '../bin/external-skills.mjs';
+import {loadLock, validateLock, gitBlobSha, verifyLocalSkill, verifyLocalReference, checkUpstream} from '../bin/external-skills.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const lock = loadLock();
@@ -38,12 +39,28 @@ test('grill-with-docs explicitly tracks its two same-source dependencies',()=>{
   assert.equal(byId('grill-with-docs').activation,'conditional');
 });
 
+test('Matt writing-for-agents pins its original Skill and sibling mechanics source',()=>{
+  assert.equal(byId('writing-for-agents').upstreamBlobSha,'a37608daf6e835e767deecfb498facecaaba82ba');
+  assert.deepEqual(byId('writing-for-agents').referenceFiles,[{
+    upstreamPath:'skills/productivity/writing-for-agents/SKILL-MECHANICS.md',
+    upstreamBlobSha:'9cdbdb22aadc438755392216e75ad9a14cc9832e'
+  }]);
+});
+
 test('missing source, duplicate IDs, wrong blobs and broken dependencies are rejected',()=>{
   const clone=()=>JSON.parse(JSON.stringify(lock));
   let l=clone();l.skills[0].source='intruder';assert.throws(()=>validateLock(l),/Invalid external skill/);
   l=clone();l.skills[1].id=l.skills[0].id;assert.throws(()=>validateLock(l),/Duplicate/);
   l=clone();l.skills[0].upstreamBlobSha='not-a-sha';assert.throws(()=>validateLock(l),/Invalid external skill/);
   l=clone();l.skills[1].dependsOn=['missing'];assert.throws(()=>validateLock(l),/Missing\/cyclic/);
+  l=clone();byId('writing-for-agents');
+  let refs=l.skills.find(x=>x.id==='writing-for-agents').referenceFiles;
+  refs[0].upstreamBlobSha='not-sha';assert.throws(()=>validateLock(l),/Invalid external reference/);
+  l=clone();refs=l.skills.find(x=>x.id==='writing-for-agents').referenceFiles;
+  refs[0].upstreamPath='skills/productivity/another/SKILL-MECHANICS.md';
+  assert.throws(()=>validateLock(l),/Invalid external reference/);
+  l=clone();refs=l.skills.find(x=>x.id==='writing-for-agents').referenceFiles;
+  refs.push({...refs[0]});assert.throws(()=>validateLock(l),/Invalid external reference/);
 });
 
 test('Git blob fingerprint detects exact original bytes and local modifications',()=>{
@@ -62,9 +79,27 @@ test('verify-file operates read-only on explicitly selected file; does not claim
   assert.throws(()=>verifyLocalSkill(lock,'does-not-exist',local),/Unknown external skill/);
 });
 
+test('supplementary source verification matches bytes and rejects changes and unknown references',t=>{
+  const dir=mkdtempSync(path.join(tmpdir(),'orasqill-provenance-'));
+  t.after(()=>rmSync(dir,{recursive:true,force:true}));
+  const file=path.join(dir,'SKILL-MECHANICS.md'),localText='original reference bytes\\n';
+  writeFileSync(file,localText);
+  const clone=JSON.parse(JSON.stringify(lock));
+  const ref=clone.skills.find(x=>x.id==='writing-for-agents').referenceFiles[0];
+  ref.upstreamBlobSha=gitBlobSha(localText);
+  const valid=verifyLocalReference(clone,'writing-for-agents',ref.upstreamPath,file);
+  assert.equal(valid.matchesPinnedBlob,true);
+  writeFileSync(file,localText+'changed');
+  assert.equal(verifyLocalReference(clone,'writing-for-agents',ref.upstreamPath,file).matchesPinnedBlob,false);
+  assert.throws(()=>verifyLocalReference(clone,'writing-for-agents','other.md',file),/Unknown external reference/);
+});
+
 test('remote checker distinguishes repository changes from modifications to tracked skills',async()=>{
   const upstream={matt:lock.sources.matt};
-  const tree=lock.skills.filter(s=>s.source==='matt').map(x=>({type:'blob',path:x.upstreamPath,sha:x.upstreamBlobSha}));
+  const tree=lock.skills.filter(s=>s.source==='matt').flatMap(x=>[
+    {type:'blob',path:x.upstreamPath,sha:x.upstreamBlobSha},
+    ...(x.referenceFiles??[]).map(r=>({type:'blob',path:r.upstreamPath,sha:r.upstreamBlobSha}))
+  ]);
   const fetchImpl=async(url)=>({ok:true,json:async()=>url.includes('/commits/')?{sha:'f'.repeat(40)}:{tree,truncated:false}});
   const [result]=await checkUpstream({...lock,sources:upstream,skills:lock.skills.filter(s=>s.source==='matt')},{fetchImpl});
   assert.equal(result.repositoryChanged,true);
@@ -73,6 +108,18 @@ test('remote checker distinguishes repository changes from modifications to trac
   const modified=async url=>({ok:true,json:async()=>url.includes('/commits/')?{sha:'f'.repeat(40)}:{tree:changed,truncated:false}});
   const [r2]=await checkUpstream({...lock,sources:upstream,skills:lock.skills.filter(s=>s.source==='matt')},{fetchImpl:modified});
   assert.equal(r2.skills.find(x=>x.id==='code-review').status,'changed');
+  const mechanics='skills/productivity/writing-for-agents/SKILL-MECHANICS.md';
+  const changedReference=tree.map(x=>x.path===mechanics?{...x,sha:'d'.repeat(40)}:x);
+  const fetchRef=async url=>({ok:true,json:async()=>url.includes('/commits/')?{sha:'f'.repeat(40)}:{tree:changedReference,truncated:false}});
+  const [r3]=await checkUpstream({...lock,sources:upstream,skills:lock.skills.filter(s=>s.source==='matt')},{fetchImpl:fetchRef});
+  const writing=r3.skills.find(x=>x.id==='writing-for-agents');
+  assert.equal(writing.primaryStatus,'unchanged');
+  assert.equal(writing.status,'changed');
+  assert.equal(writing.references[0].status,'changed');
+  const withoutReference=tree.filter(x=>x.path!==mechanics);
+  const fetchMissing=async url=>({ok:true,json:async()=>url.includes('/commits/')?{sha:'f'.repeat(40)}:{tree:withoutReference,truncated:false}});
+  const [r4]=await checkUpstream({...lock,sources:upstream,skills:lock.skills.filter(s=>s.source==='matt')},{fetchImpl:fetchMissing});
+  assert.equal(r4.skills.find(x=>x.id==='writing-for-agents').status,'missing_upstream');
 });
 
 test('remote checks fail to UNKNOWN rather than claiming an unverified upgrade',async()=>{
