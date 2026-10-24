@@ -190,6 +190,49 @@ test('legacy free text validation evidence fails closed until replaced by struct
   assert.equal(f.state().status,'active');
 });
 
+test('legacy string checks remain historical while fresh current PASS unlocks finish',t=>{
+  const f=setup(t);f.start();f.steps();
+  const historical='npm test: 59 passed (old format; unverified)';
+  writeFileSync(f.file('plan.json'),JSON.stringify({...f.plan(),checks:[historical]}));
+  assert.throws(()=>f.call('finish','t1'),/VALIDATION_MIGRATION_REQUIRED/);
+  const blocked=readFileSync(f.call('report','t1'),'utf8');
+  assert.match(blocked,/BLOCKED_VALIDATION/);
+  assert.match(blocked,/legacy; unverified/);
+  f.call('check','t1','--status','pass','--accept','A1','--result','Fresh run: acceptance A1 passed');
+  assert.doesNotThrow(()=>f.call('finish','t1'));
+  assert.equal(f.state().status,'finished');
+  assert.equal(f.plan().checks[0],historical);
+  assert.equal(f.plan().checks[1].status,'pass');
+  assert.match(readFileSync(f.file('final-report.md'),'utf8'),/legacy; unverified/);
+  assert.doesNotThrow(()=>handoff(['finish','t1'],f.repo));
+});
+
+test('legacy checks cannot mask incomplete, blocked or superseded acceptance evidence',t=>{
+  const f=setup(t);
+  f.call('start','t1','--goal','Migrate validated checkpoint','--step','Implement','--step','Test','--accept','Behavior','--accept','Regression');
+  f.steps();
+  writeFileSync(f.file('plan.json'),JSON.stringify({...f.plan(),checks:['Legacy reported PASS']}));
+  f.call('check','t1','--status','pass','--accept','A1','--result','Fresh behavior check passed');
+  assert.throws(()=>f.call('finish','t1'),/VALIDATION_REQUIRED.*A2/);
+  f.call('check','t1','--status','blocked','--accept','A2','--result','Unable to test regression');
+  assert.throws(()=>f.call('finish','t1'),/VALIDATION_REQUIRED.*A2/);
+  f.call('check','t1','--status','pass','--accept','A2','--result','Fresh regression check passed');
+  f.call('check','t1','--status','fail','--accept','A1','--result','Behavior regressed');
+  assert.throws(()=>f.call('finish','t1'),/VALIDATION_REQUIRED.*A1/);
+  f.call('check','t1','--status','pass','--accept','A1','--result','Fixed and retested');
+  f.call('finish','t1');
+  assert.equal(f.state().status,'finished');
+  assert.equal(f.plan().checks[0],'Legacy reported PASS');
+});
+
+test('malformed structured checks remain blocked even alongside fresh PASS',t=>{
+  const f=setup(t);f.start();f.steps();
+  writeFileSync(f.file('plan.json'),JSON.stringify({...f.plan(),checks:[{result:'old malformed object'}]}));
+  f.call('check','t1','--status','pass','--accept','A1','--result','Actual current validation passed');
+  assert.throws(()=>f.call('finish','t1'),/VALIDATION_MIGRATION_REQUIRED/);
+  assert.equal(f.state().status,'active');
+});
+
 // F8: both finish entrypoints require an independent reviewer attestation for HIGH_RISK.
 test('high risk finish requires independent positive review evidence',t=>{
   const f=setup(t);
