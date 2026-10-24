@@ -39,6 +39,7 @@ mkdir -p .agents/skills .agent-workflow
 cp -R /path/to/orasqill/.agents/skills/agent-workflow-orchestrator .agents/skills/
 cp -R /path/to/orasqill/.agent-workflow/bin .agent-workflow/
 cp /path/to/orasqill/.agent-workflow/external-skills.lock.json .agent-workflow/
+cp /path/to/orasqill/.agent-workflow/config.example.json .agent-workflow/
 ```
 
 ### Windows PowerShell
@@ -49,6 +50,7 @@ New-Item -ItemType Directory -Force '.agents\skills', '.agent-workflow' | Out-Nu
 Copy-Item -Recurse (Join-Path $src '.agents\skills\agent-workflow-orchestrator') '.agents\skills\'
 Copy-Item -Recurse (Join-Path $src '.agent-workflow\bin') '.agent-workflow\'
 Copy-Item (Join-Path $src '.agent-workflow\external-skills.lock.json') '.agent-workflow\'
+Copy-Item (Join-Path $src '.agent-workflow\config.example.json') '.agent-workflow\'
 ```
 
 **Connect your agent.** Add a short pointer to your existing `AGENTS.md` (or create it if absent):
@@ -81,7 +83,7 @@ git check-ignore .agent-workflow/state/install-check/plan.json
 # must exit 0: the future local plan file is ignored
 ```
 
-If these fail, fix the repository setup, copied registry, or ignore rule first. The registry check **does not** establish that an external Skill was loaded into an agent. For optional delegation config, copy `.agent-workflow/config.example.json` and confirm real agent capabilities and authority; an example config does not enable workers.
+If these fail, fix the repository setup, copied registry, or ignore rule first. The registry check **does not** establish that an external Skill was loaded into an agent. For optional delegation config, copy the installed `.agent-workflow/config.example.json` to `.agent-workflow/config.json` and confirm real agent capabilities and authority; an example config does not enable workers.
 
 ## Quick start: a complete documentation-only task
 
