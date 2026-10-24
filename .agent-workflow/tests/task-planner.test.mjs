@@ -100,6 +100,7 @@ test('scheduler binding cannot skip an earlier pending locked step',()=>{
   second.dependsOn=['change'];
   assert.doesNotThrow(()=>validateSchedulerBinding({tasks:[first,second]},locked));
   locked.steps[0].status='done';
+  second.dependsOn=[];
   assert.doesNotThrow(()=>validateSchedulerBinding({tasks:[second]},locked));
 });
 test('planner rejects invalid worker caps rather than treating them as runtime capability',()=>{
