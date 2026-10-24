@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "setup": {
+    "status": "unconfirmed",
+    "authority": "user",
+    "profile": "claude-orchestrator"
+  },
+  "routing": {
+    "orchestrator": {
+      "preferred": [
+        {
+          "runtime": "claude-code",
+          "model": "claude-opus-5-5",
+          "effort": "high"
+        }
+      ],
+      "fallback": [],
+      "automatic_switching": false
+    },
+    "implementer": {
+      "preferred": [
+        {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "effort": "medium"
+        }
+      ],
+      "fallback": []
+    },
+    "reviewer": {
+      "preferred": [
+        {
+          "runtime": "codex",
+          "model": "gpt-6-astra",
+          "effort": "high"
+        }
+      ],
+      "fallback": [],
+      "require_independent_author": true
+    }
+  },
+  "stage_preferences": {
+    "triage": {
+      "role": "research",
+      "runtime": "claude-code",
+      "model": "claude-haiku-5-5",
+      "effort": "low"
+    },
+    "plan": {
+      "role": "orchestrator"
+    },
+    "implement": {
+      "role": "implementer"
+    },
+    "complex_implement": {
+      "role": "implementer",
+      "runtime": "claude-code",
+      "model": "claude-sonnet-5-5",
+      "effort": "high"
+    },
+    "review": {
+      "role": "reviewer"
+    },
+    "critical_review": {
+      "role": "reviewer",
+      "runtime": "codex",
+      "model": "gpt-6-astra",
+      "effort": "xhigh"
+    },
+    "final_report": {
+      "role": "reporter",
+      "runtime": "claude-code",
+      "model": "claude-haiku-5-5",
+      "effort": "low"
+    }
+  },
+  "workers": {},
+  "runtimes": {},
+  "delegation": {
+    "max_depth": 1,
+    "max_parallel_workers": 1
+  },
+  "task_execution": {
+    "mode": "sequential_children",
+    "max_active_child_tasks": 1
+  }
+}
