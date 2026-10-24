@@ -142,3 +142,30 @@ test('README uses one authoritative provenance pointer and describes complete in
   assert.match(entry,/\.agents\/skills\/agent-workflow-orchestrator\/SKILL\.md/);
   assert.match(entry,/\.agent-workflow\/external-skills\.lock\.json/);
 });
+
+
+test('Claude discovery description leads with the actual orchestration invocation branches',()=>{
+  const adapter=read('.claude/skills/agent-workflow-orchestrator/SKILL.md');
+  const fm=adapter.match(/^---\n([\s\S]*?)\n---/);
+  assert.ok(fm,'Claude adapter needs skill frontmatter');
+  for(const trigger of ['multi-step','delegated','plan-locked','handoffs','scope approval']){
+    assert.match(fm[1],new RegExp(trigger));
+  }
+  assert.match(adapter,/\.agents\/skills\/agent-workflow-orchestrator\/SKILL\.md/);
+});
+
+test('agent document editing has an explicit upstream writing guidance route',()=>{
+  const deps=read('.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md');
+  assert.match(skill,/Editing SKILL\.md, AGENTS\.md, CLAUDE\.md or agent instructions/);
+  assert.match(deps,/OPTIONAL agent-document edits/);
+  assert.match(deps,/SKILL-MECHANICS\.md/);
+  assert.match(deps,/verify-reference writing-for-agents/);
+  assert.match(read('.agent-workflow/external-skills.lock.json'),/SKILL-MECHANICS\.md/);
+});
+
+test('core lifecycle commands include mandatory task IDs',()=>{
+  for(const cmd of ['check','review','report','finish']){
+    assert.match(skill,new RegExp('plan-ledger\\.mjs '+cmd+' <task-id>'));
+  }
+  assert.match(read('.agent-workflow/bin/README.md'),/verify-reference <id>/);
+});
