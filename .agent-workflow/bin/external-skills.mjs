@@ -33,6 +33,17 @@ export function validateLock(lock) {
     }
   }
   for (const skill of lock.skills) {
+    const paths = new Set([skill.upstreamPath]);
+    if (!Array.isArray(skill.referenceFiles ?? [])) throw Error(`Invalid external reference list: ${skill.id}`);
+    for (const reference of skill.referenceFiles ?? []) {
+      const root = skill.upstreamPath.slice(0, skill.upstreamPath.lastIndexOf('/') + 1);
+      if (typeof reference?.upstreamPath !== 'string' || !reference.upstreamPath.startsWith(root) ||
+          !/^[\w./-]+\.md$/.test(reference.upstreamPath) || reference.upstreamPath.split('/').includes('..') ||
+          paths.has(reference.upstreamPath) || !SHA.test(reference.upstreamBlobSha)) {
+        throw Error(`Invalid external reference: ${skill.id}`);
+      }
+      paths.add(reference.upstreamPath);
+    }
     for (const dependency of skill.dependsOn) {
       if (!ids.has(dependency) || dependency === skill.id) throw Error(`Missing/cyclic self dependency for ${skill.id}: ${dependency}`);
       if (lock.skills.find(x => x.id === dependency).source !== skill.source) throw Error(`Cross-source dependency needs explicit authorization: ${dependency}`);
@@ -48,6 +59,16 @@ export function loadLock(file = DEFAULT_LOCK_PATH) {
 export function gitBlobSha(bytes) {
   const buf = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
   return createHash('sha1').update(`blob ${buf.length}\0`).update(buf).digest('hex');
+}
+
+export function verifyLocalReference(lock, id, referencePath, localPath) {
+  const skill = lock.skills.find(x => x.id === id);
+  if (!skill) throw Error(`Unknown external skill: ${id}`);
+  const reference = (skill.referenceFiles ?? []).find(x => x.upstreamPath === referencePath);
+  if (!reference) throw Error(`Unknown external reference: ${id} / ${referencePath}`);
+  const actual = gitBlobSha(readFileSync(localPath));
+  return { id, referencePath, matchesPinnedBlob: actual === reference.upstreamBlobSha,
+    expected: reference.upstreamBlobSha, actual, source: lock.sources[skill.source].repository };
 }
 
 export function verifyLocalSkill(lock, id, localPath) {
@@ -79,12 +100,23 @@ export async function checkUpstream(lock, { sourceFilter = null, fetchImpl = fet
       ]);
       if (tree.truncated || !Array.isArray(tree.tree) || !SHA.test(commit.sha)) throw Error('Incomplete upstream tree/commit response');
       const hashes = new Map(tree.tree.filter(e => e.type === 'blob').map(e => [e.path, e.sha]));
-      const skills = lock.skills.filter(s => s.source === id).map(skill => ({
-        id: skill.id,
-        status: !hashes.has(skill.upstreamPath) ? 'missing_upstream' : hashes.get(skill.upstreamPath) === skill.upstreamBlobSha ? 'unchanged' : 'changed',
-        pinnedBlob: skill.upstreamBlobSha,
-        upstreamBlob: hashes.get(skill.upstreamPath) ?? null,
-      }));
+      const skills = lock.skills.filter(s => s.source === id).map(skill => {
+        const primaryStatus = !hashes.has(skill.upstreamPath) ? 'missing_upstream' :
+          hashes.get(skill.upstreamPath) === skill.upstreamBlobSha ? 'unchanged' : 'changed';
+        const references = (skill.referenceFiles ?? []).map(reference => ({
+          path: reference.upstreamPath,
+          status: !hashes.has(reference.upstreamPath) ? 'missing_upstream' :
+            hashes.get(reference.upstreamPath) === reference.upstreamBlobSha ? 'unchanged' : 'changed',
+          pinnedBlob: reference.upstreamBlobSha,
+          upstreamBlob: hashes.get(reference.upstreamPath) ?? null,
+        }));
+        const status = primaryStatus !== 'unchanged' ? primaryStatus :
+          references.some(r => r.status === 'missing_upstream') ? 'missing_upstream' :
+          references.some(r => r.status === 'changed') ? 'changed' : 'unchanged';
+        return { id: skill.id, status, primaryStatus,
+          pinnedBlob: skill.upstreamBlobSha, upstreamBlob: hashes.get(skill.upstreamPath) ?? null,
+          references };
+      });
       reports.push({ source: id, repository: source.repository, pinnedCommit: source.upstreamCommit,
         upstreamCommit: commit.sha, repositoryChanged: commit.sha !== source.upstreamCommit, skills });
     } catch (err) {
@@ -106,12 +138,17 @@ export async function main(argv = process.argv.slice(2), { fetchImpl = fetch, ou
     output(JSON.stringify(report, null, 2));
     return report.matchesPinnedBlob ? 0 : 2;
   }
+  if (command === 'verify-reference' && args.length === 3) {
+    const report = verifyLocalReference(lock, args[0], args[1], args[2]);
+    output(JSON.stringify(report, null, 2));
+    return report.matchesPinnedBlob ? 0 : 2;
+  }
   if (command === 'check-updates' && (args.length === 0 || args.length === 2 && args[0] === '--source')) {
     const reports = await checkUpstream(lock, { sourceFilter: args[1] || null, fetchImpl });
     output(JSON.stringify(reports, null, 2));
     return reports.some(r => r.status === 'unknown') ? 2 : 0;
   }
-  throw Error('Usage: external-skills.mjs list | verify-file <skill-id> <installed-SKILL.md> | check-updates [--source karpathy|matt|ponytail]');
+  throw Error('Usage: external-skills.mjs list | verify-file <skill-id> <installed-SKILL.md> | verify-reference <skill-id> <upstream-path> <installed-reference.md> | check-updates [--source karpathy|matt|ponytail]');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
