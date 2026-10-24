@@ -1,6 +1,11 @@
 import {test} from 'node:test';
+import {mkdtempSync,writeFileSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {spawnSync} from 'node:child_process';
 import assert from 'node:assert/strict';
-import {resource,conflicts,validatePlan,makeSchedule} from '../bin/task-planner.mjs';
+import {resource,conflicts,validatePlan,validateSchedulerBinding,makeSchedule} from '../bin/task-planner.mjs';
 const task=(id,p=`${id}.ts`,extras={})=>({id,risk:'STANDARD',objective:id,dependsOn:[],resources:{read:[],write:[p]},...extras});
 const trusted={allowParallel:true,maxWorkers:5,runtime:{maxWorkers:5,supportsConcurrentWorkers:true,enforcesOwnership:true,enforcesIsolation:true}};
 test('resource sanitization rejects absolute paths, traversal and globs',()=>{
@@ -39,4 +44,40 @@ test('high-risk flags elevate STANDARD task risk and require independent review 
 test('dependency cycles and duplicate task identifiers reject',()=>{
   assert.throws(()=>validatePlan({tasks:[task('a'),task('a')]}),/duplicate/);
   assert.throws(()=>validatePlan({tasks:[task('a','a',{dependsOn:['b']}),task('b','b',{dependsOn:['a']})]}),/cycle/);
+});
+
+test('scheduler graph and locked ledger are different schemas',()=>{
+  const locked={schemaVersion:1,steps:[{id:'S1',text:'Implement approved scope',status:'pending'},{id:'S2',text:'Run tests',status:'pending'}]};
+  assert.throws(()=>validatePlan(locked),/SCHEDULER_SCHEMA_REQUIRED/);
+  const graph={tasks:[
+    task('change','src/example.js',{planStepId:'S1',objective:'Implement approved scope'}),
+    task('test','tests/example.test.js',{planStepId:'S2',objective:'Run tests',dependsOn:['change']})
+  ]};
+  assert.doesNotThrow(()=>validateSchedulerBinding(graph,locked));
+  assert.deepEqual(makeSchedule(graph).waves,[['change'],['test']]);
+  assert.throws(()=>validateSchedulerBinding({tasks:[task('bad','bad.js',{planStepId:'S3',objective:'Add unrelated feature'})]},locked),/OUT_OF_PLAN/);
+  assert.throws(()=>validateSchedulerBinding({tasks:[task('bad','bad.js',{planStepId:'S1',objective:'Wrong objective'})]},locked),/OUT_OF_PLAN/);
+  assert.throws(()=>validateSchedulerBinding({tasks:[task('a','a.js',{planStepId:'S1',objective:'Implement approved scope'}),task('b','b.js',{planStepId:'S1',objective:'Implement approved scope'})]},locked),/OUT_OF_PLAN/);
+  locked.steps[0].status='done';
+  assert.throws(()=>validateSchedulerBinding(graph,locked),/OUT_OF_PLAN/);
+});
+
+
+test('task-planner CLI rejects ledger steps as input and validates a distinct task graph against them',t=>{
+  const dir=mkdtempSync(path.join(tmpdir(),'orasqill-scheduler-'));
+  t.after(()=>rmSync(dir,{recursive:true,force:true}));
+  const locked={schemaVersion:1,steps:[{id:'S1',text:'Implement approved scope',status:'pending'}]};
+  const graph={tasks:[task('change','src/a.js',{planStepId:'S1',objective:'Implement approved scope'})]};
+  const lockedPath=path.join(dir,'plan.json'),tasksPath=path.join(dir,'scheduler-tasks.json');
+  writeFileSync(lockedPath,JSON.stringify(locked));
+  writeFileSync(tasksPath,JSON.stringify(graph));
+  const script=fileURLToPath(new URL('../bin/task-planner.mjs',import.meta.url));
+  const run=args=>spawnSync(process.execPath,[script,...args],{encoding:'utf8'});
+  assert.match(run([lockedPath]).stderr,/SCHEDULER_SCHEMA_REQUIRED/);
+  const good=run([tasksPath,'--locked-plan',lockedPath]);
+  assert.equal(good.status,0,good.stderr);
+  assert.deepEqual(JSON.parse(good.stdout).waves,[['change']]);
+  const mismatched={tasks:[task('add-feature','src/new.js',{planStepId:'S100',objective:'New work'})]};
+  writeFileSync(tasksPath,JSON.stringify(mismatched));
+  assert.match(run([tasksPath,'--locked-plan',lockedPath]).stderr,/OUT_OF_PLAN/);
 });

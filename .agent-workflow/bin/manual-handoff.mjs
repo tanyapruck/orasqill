@@ -8,11 +8,33 @@ const START = ['--goal','--accept','--allowed','--forbidden','--risk','--next','
 const FIELDS = {'--done':'done','--next':'next','--check':'checks','--blocker':'blockers','--note':'notes'};
 
 /** The one authoritative set of checklist completion checks, shared by both finish commands. */
-export function assertPlanCompletion(plan,{requireFinalized=false}={}) {
+export function assertPlanCompletion(plan,{requireFinalized=false,risk='STANDARD',owner=null}={}) {
   if (!Array.isArray(plan.steps) || !plan.steps.length || !plan.steps.every(x=>x && typeof x.id==='string' && typeof x.status==='string')) throw Error('PLAN_INCOMPLETE: invalid plan steps');
   if (!plan.steps.every(x=>x.status==='done')) throw Error('PLAN_INCOMPLETE: planned steps remain');
   if (!Array.isArray(plan.findings) || plan.findings.some(x=>x?.status==='approval-required')) throw Error('APPROVAL_REQUIRED: necessary out-of-plan finding is pending');
-  if (!Array.isArray(plan.checks) || !plan.checks.length) throw Error('VALIDATION_REQUIRED: final check evidence is missing');
+  if (!Array.isArray(plan.acceptance) || !plan.acceptance.length || !Array.isArray(plan.checks)) throw Error('VALIDATION_REQUIRED: acceptance and validation evidence required');
+  const latest = new Map();
+  for (const check of plan.checks) {
+    if (!check || typeof check !== 'object' || !['pass','fail','blocked'].includes(check.status) ||
+        typeof check.result !== 'string' || !check.result.trim() || !Array.isArray(check.acceptanceIds) || !check.acceptanceIds.length) {
+      throw Error('VALIDATION_MIGRATION_REQUIRED: record structured checks with --status and --accept');
+    }
+    for (const id of check.acceptanceIds) {
+      if (!/^A[1-9]\d*$/.test(id) || Number(id.slice(1)) > plan.acceptance.length) throw Error('VALIDATION_REQUIRED: unknown acceptance ID');
+      latest.set(id,check.status);
+    }
+  }
+  for (let index=1;index<=plan.acceptance.length;index++) {
+    const id=`A${index}`, status=latest.get(id);
+    if (status !== 'pass') throw Error(`VALIDATION_REQUIRED: ${id} latest validation is ${status??'missing'}, not pass`);
+  }
+  if (risk==='HIGH_RISK') {
+    const review=plan.review;
+    if (!review || review.independent !== true || review.result !== 'pass' || !review.reviewer || !review.evidence ||
+        (owner && !owner.startsWith('Unspecified agent') && owner.trim().toLowerCase()===review.reviewer.trim().toLowerCase())) {
+      throw Error('INDEPENDENT_REVIEW_REQUIRED: high-risk final review attestation is missing, failed or not independent');
+    }
+  }
   if (requireFinalized && plan.status!=='finished') throw Error('PLAN_NOT_FINALIZED: use plan-ledger finish first');
 }
 function readPlan(repo, id, state) {
@@ -35,10 +57,13 @@ function render(repo,id,state,facts) {
 }
 function finishGuard(repo,id,state) {
   const plan=readPlan(repo,id,state);
-  if (!plan) return; // legacy unplanned task
+  if (!plan) {
+    if (state.risk==='HIGH_RISK') throw Error('PLAN_REQUIRED: high-risk legacy tasks need a locked plan and review attestation');
+    return; // legacy unplanned ordinary task
+  }
   const facts=gitFacts(repo);
   if (facts.branch!==plan.startBranch) throw Error('BRANCH_MISMATCH: locked plan belongs to a different branch');
-  assertPlanCompletion(plan,{requireFinalized:true});
+  assertPlanCompletion(plan,{requireFinalized:true,risk:state.risk,owner:state.owner});
   const report=path.join(taskDir(repo,id),'final-report.md');
   if (!assertSafeFile(report)) throw Error('FINAL_REPORT_REQUIRED: plan must have final acceptance report before manual finish');
 }

@@ -5,15 +5,17 @@ import { fileURLToPath } from 'node:url';
 import { DEFAULT_REPO, options, one, gitFacts, taskDir, readJSON, assertSafeFile, atomic, saveJSON, clean, bullets } from './common.mjs';
 import { run as handoff, assertPlanCompletion } from './manual-handoff.mjs';
 const START=['--goal','--step','--accept','--allowed','--forbidden','--owner','--risk'];
-const ALL=[...START,'--evidence','--description','--impact','--reason','--necessary','--finding','--approvalref','--before','--result'];
+const ALL=[...START,'--evidence','--description','--impact','--reason','--necessary','--finding','--approvalref','--before','--result','--status','--reviewer','--independent'];
 
 function render(plan) {
   const status=plan.status==='finished'?'COMPLETE':plan.findings.some(x=>x.status==='approval-required')?'BLOCKED_AWAITING_APPROVAL':plan.steps.every(x=>x.status==='done')?'READY_FOR_FINAL_CHECKS':'IN_PROGRESS';
   return `# Locked execution plan: ${clean(plan.taskId)} — ${status}\n\nThis is user/agent reported evidence, **not authorization**. Never implement out-of-plan work.\n\n`+
     `## Goal\n\n${clean(plan.goal)}\n\n## Ordered steps\n\n${bullets(plan.steps,s=>`- [${s.status==='done'?'x':' '}] ${s.id}: ${clean(s.text)}${s.evidence?` (evidence: ${clean(s.evidence)})`:''}`)}\n\n`+
-    `## Acceptance\n\n${bullets(plan.acceptance)}\n\n## Findings outside plan\n\n`+
+    `## Acceptance\n\n${bullets(plan.acceptance,(item,i)=>`- A${i+1}: ${clean(item)}`)}\n\n## Findings outside plan\n\n`+
     bullets(plan.findings,x=>`- ${x.id} [${x.status}]: ${clean(x.description)}; impact ${clean(x.impact)}; reason ${clean(x.reason)}; reported approval ${clean(x.approvalRef??'none')} (verify against user message)${x.amendment?`; inserted ${x.amendment.addedStepIds.join(', ')} before ${x.amendment.beforeStepId??'end'}`:''}`)+'\n\n'+
-    `## Validation (reported)\n\n${bullets(plan.checks)}\n\n## Git identity\n\n- Branch: ${clean(plan.startBranch)}\n- Start HEAD: ${clean(plan.startHead)}\n`;
+    `## Validation (reported, acceptance-linked)\n\n${bullets(plan.checks,x=>`- ${clean(x.acceptanceIds?.join(', '))} [${clean(x.status)}]: ${clean(x.result)}`)}\n\n`+
+    `## Independent review (reported, verify separately)\n\n${plan.review?`- ${clean(plan.review.reviewer)} [${clean(plan.review.result)}]; independent claimed: ${plan.review.independent}; evidence: ${clean(plan.review.evidence)}`:'- None'}\n\n`+
+    `## Git identity\n\n- Branch: ${clean(plan.startBranch)}\n- Start HEAD: ${clean(plan.startHead)}\n`;
 }
 function load(repo,id) {
   const dir=taskDir(repo,id);
@@ -24,7 +26,7 @@ function load(repo,id) {
   if(plan.schemaVersion!==1||plan.taskId!==id||path.resolve(plan.repo)!==path.resolve(repo)||!Array.isArray(plan.steps)||!Array.isArray(plan.findings)||task.taskId!==id||task.startBranch!==plan.startBranch||task.status==='finished')throw Error('invalid or closed plan checkpoint');
   const facts=gitFacts(repo);
   if(!facts.branch||facts.branch!==plan.startBranch)throw Error('BRANCH_MISMATCH: use the original named branch');
-  return {plan,dir};
+  return {plan,task,dir};
 }
 function persist(repo,id,plan) {
   const dir=taskDir(repo,id);
@@ -40,7 +42,7 @@ function summary(repo) {
 function report(repo,id,plan,complete=false) {
   const dir=taskDir(repo,id);
   const blocked=plan.findings.some(x=>x.status==='approval-required');
-  const state=complete?'PLAN COMPLETE (reported; verify independently)':blocked?'BLOCKED_AWAITING_APPROVAL':plan.steps.every(x=>x.status==='done')&&plan.checks.length?'PLAN_COMPLETE_REQUIRES_REVIEW':'INCOMPLETE';
+  const state=complete?'PLAN COMPLETE (reported; verify independently)':blocked?'BLOCKED_AWAITING_APPROVAL':'INCOMPLETE_OR_AWAITING_VALIDATION';
   const file=path.join(dir,'final-report.md');
   atomic(file,`# Final Acceptance Report: ${id}\n\n**${state}**\n\n${render(plan)}\n\n## Live Git status at report time\n\n${summary(repo)}\n## Required user-facing conclusion\n\nReport original goal, completed step IDs, actual test commands/outcomes, deferred findings, approval-pending findings, original and current SHA, PR/merge/deploy state where verified, and blockers. This file cannot grant approval or prove tests passed.\n`);
   return file;
@@ -70,10 +72,10 @@ export function runPlan(argv,repo=DEFAULT_REPO) {
     }
     handoffArgs.push('--next',`S1: ${steps[0]}`);
     handoff(handoffArgs,repo); // Create checkpoint BEFORE implementation/delegation.
-    const plan={schemaVersion:1,taskId:id,repo:path.resolve(repo),startBranch:facts.branch,startHead:facts.head,status:'active',goal,acceptance:opts['--accept'],steps:steps.map((text,i)=>({id:`S${i+1}`,text,status:'pending',evidence:null})),findings:[],checks:[],createdAt:new Date().toISOString()};
+    const plan={schemaVersion:1,taskId:id,repo:path.resolve(repo),startBranch:facts.branch,startHead:facts.head,status:'active',goal,acceptance:opts['--accept'],steps:steps.map((text,i)=>({id:`S${i+1}`,text,status:'pending',evidence:null})),findings:[],checks:[],review:null,createdAt:new Date().toISOString()};
     return persist(repo,id,plan);
   }
-  const {plan}=load(repo,id);
+  const {plan,task}=load(repo,id);
   if(command==='step') {
     if(Object.keys(opts).some(k=>!['--step','--evidence'].includes(k)))throw Error('unsupported step option');
     const s=nextStep(plan,one(opts,'--step'));
@@ -101,20 +103,32 @@ export function runPlan(argv,repo=DEFAULT_REPO) {
     finding.status='reported-approved';finding.approvalRef=one(opts,'--approvalref');finding.amendment={beforeStepId:before??null,addedStepIds:ids};
     // This string is an audit reference, NOT verification of user approval.
   } else if(command==='check') {
-    if(Object.keys(opts).some(k=>k!=='--result'))throw Error('unsupported check option');
-    plan.checks.push(one(opts,'--result'));
+    if(Object.keys(opts).some(k=>!['--result','--status','--accept'].includes(k)))throw Error('unsupported check option');
+    const status=one(opts,'--status'), acceptanceIds=opts['--accept'];
+    if(!['pass','fail','blocked'].includes(status))throw Error('VALIDATION_STATUS_REQUIRED: choose pass, fail or blocked');
+    if(!acceptanceIds?.length || new Set(acceptanceIds).size!==acceptanceIds.length ||
+       acceptanceIds.some(id=>!/^A[1-9]\d*$/.test(id)||Number(id.slice(1))>plan.acceptance.length)){
+      throw Error('VALIDATION_REQUIRED: use valid acceptance IDs A1..An without duplicates');
+    }
+    plan.checks.push({status,acceptanceIds,result:one(opts,'--result'),recordedAt:new Date().toISOString()});
+  } else if(command==='review') {
+    if(Object.keys(opts).some(k=>!['--reviewer','--evidence','--independent','--result'].includes(k)))throw Error('unsupported review option');
+    const independent=one(opts,'--independent'),result=one(opts,'--result');
+    if(independent!=='yes'||!['pass','fail'].includes(result))throw Error('INDEPENDENT_REVIEW_REQUIRED: --independent yes and --result pass|fail');
+    plan.review={reviewer:one(opts,'--reviewer'),evidence:one(opts,'--evidence'),result,independent:true,recordedAt:new Date().toISOString()};
+    // Attestation only: user/organization must independently verify reviewer eligibility and evidence.
   } else if(command==='report') {
     if(Object.keys(opts).length)throw Error('report takes no options');
     return report(repo,id,plan);
   } else if(command==='finish') {
     if(Object.keys(opts).length)throw Error('finish takes no options');
-    assertPlanCompletion(plan); // Shared with manual finish; do not drift.
+    assertPlanCompletion(plan,{risk:task.risk,owner:task.owner}); // Shared with manual finish; do not drift.
     plan.status='finished';
     const location=persist(repo,id,plan); // Persist finalized plan FIRST.
     report(repo,id,plan,true); // Write actual report before checkpoint close.
     handoff(['finish',id],repo);
     return location;
-  } else throw Error('Usage: plan-ledger start|step|finding|amend|check|report|finish <task-id>');
+  } else throw Error('Usage: plan-ledger start|step|finding|amend|check|review|report|finish <task-id>');
   return persist(repo,id,plan);
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){

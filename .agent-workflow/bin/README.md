@@ -6,12 +6,13 @@ All helpers use built-in Node.js modules and Git. They operate on the **current 
 - `plan-ledger.mjs step <task-id> --step S1 --evidence "..."` — complete the **next** step only.
 - `plan-ledger.mjs finding <task-id> --description "..." --impact "..." --reason "..." --necessary yes|no` — record out-of-plan issue first; essential => approval-required.
 - `plan-ledger.mjs amend <task-id> --finding F1 --step "..." [--before S2] --approvalref "..."` — add steps after **actual user approval independently verified by the agent**. `--approvalref` alone grants no rights.
-- `plan-ledger.mjs check <task-id> --result "..."` — record actual checks as untrusted evidence.
+- `plan-ledger.mjs check <task-id> --status pass|fail|blocked --accept A1 [--accept A2] --result "..."` — record latest acceptance-linked validation status (A1, A2... correspond to `start --accept` order); FAIL/BLOCKED/missing acceptance prevents finish.
+- `plan-ledger.mjs review <task-id> --reviewer "..." --independent yes --result pass|fail --evidence "..."` — record reported independent review; required for HIGH_RISK finish. Identity/evidence still require human verification.
 - `plan-ledger.mjs report <task-id>` — create a Final Acceptance draft.
 - `plan-ledger.mjs finish <task-id>` — shared completion gates, finalize plan and report, then close handoff.
 - `manual-handoff.mjs resume` — find unique unfinished task on current branch and refresh a handoff, no provider launch.
 - `manual-handoff.mjs export|finish|checkpoint|start <task-id> ...` — legacy/manual checkpoint commands; direct finish cannot bypass a locked plan.
-- `task-planner.mjs <plan.json>` — output an **advisory** proposed schedule only; does not run workers or enforce ownership.
+- `task-planner.mjs <scheduler-tasks.json> [--locked-plan <.agent-workflow/state/task-id/plan.json>]` — output an **advisory** schedule; the scheduler `tasks` graph is NOT the locked ledger’s `steps` schema. Use `--locked-plan` to reject tasks not mapped to distinct pending Plan step IDs and exact objectives. See `.agent-workflow/examples/task-plan.example.json`. Does not run workers or enforce ownership.
 
 Tests: `node --test .agent-workflow/tests/*.test.mjs`.
 

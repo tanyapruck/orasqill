@@ -22,7 +22,7 @@ export function conflicts(a,b,platform=process.platform) {
   return aw.some(x=>[...bw,...br].some(y=>overlaps(x,y,platform))) || bw.some(x=>ar.some(y=>overlaps(x,y,platform)));
 }
 export function validatePlan(plan) {
-  if(!Array.isArray(plan?.tasks)||!plan.tasks.length)throw Error('plan requires tasks');
+  if(!Array.isArray(plan?.tasks)||!plan.tasks.length)throw Error('SCHEDULER_SCHEMA_REQUIRED: expected tasks array, not plan-ledger steps; use a separate scheduler-tasks.json');
   const seen=new Set();
   for(const t of plan.tasks){
     if(!/^[\w-]+$/.test(t.id??'')||seen.has(t.id))throw Error('duplicate/invalid task ID');seen.add(t.id);
@@ -36,6 +36,22 @@ export function validatePlan(plan) {
   function walk(id){if(visiting.has(id))throw Error('dependency cycle');if(visited.has(id))return;visiting.add(id);for(const dep of lookup.get(id).dependsOn??[]){if(!lookup.has(dep))throw Error('missing dependency');walk(dep);}visiting.delete(id);visited.add(id);}
   for(const id of lookup.keys())walk(id);
   return plan;
+}
+/** Advisory binding: scheduling never amends/authorizes steps outside the locked ledger. */
+export function validateSchedulerBinding(graph, lockedPlan) {
+  validatePlan(graph);
+  if (!lockedPlan || !Array.isArray(lockedPlan.steps) || lockedPlan.schemaVersion !== 1) {
+    throw Error('LOCKED_PLAN_REQUIRED: use a plan-ledger plan.json');
+  }
+  const seen=new Set();
+  for (const task of graph.tasks) {
+    const step=lockedPlan.steps.find(x=>x.id===task.planStepId);
+    if (!step || step.status!=='pending' || seen.has(task.planStepId) || task.objective!==step.text) {
+      throw Error(`OUT_OF_PLAN: scheduler task ${task.id} must match a distinct pending locked step ID and objective`);
+    }
+    seen.add(task.planStepId);
+  }
+  return graph;
 }
 export function makeSchedule(plan,limits={},platform=process.platform) {
   validatePlan(plan);
@@ -59,4 +75,14 @@ export function makeSchedule(plan,limits={},platform=process.platform) {
   return {mode:plan.tasks.length===1?'SURGICAL':canParallel?'ADAPTIVE_PARALLEL':'SEQUENTIAL',workerCount,waves,requiresIndependentReview:highRisk,requiresPreActionAuthority:highRisk,finalValidation:'ONCE_AFTER_INTEGRATION',integrationReady:false,enforcesOwnership:false,enforcesIsolation:false};
 }
 const isCLI=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);
-if(isCLI){try{const input=process.argv[2];if(!input)throw Error('Usage: node task-planner.mjs <plan.json>');console.log(JSON.stringify(makeSchedule(JSON.parse(readFileSync(input,'utf8')),{},process.platform),null,2));}catch(e){console.error(`PLANNER BLOCKED: ${e.message}`);process.exitCode=2;}}
+if(isCLI){
+  try {
+    const [input,flag,lockedPath,...extras]=process.argv.slice(2);
+    if (!input || extras.length || (flag && (flag!=='--locked-plan' || !lockedPath))) {
+      throw Error('Usage: node task-planner.mjs <scheduler-tasks.json> [--locked-plan <locked-plan.json>]');
+    }
+    const graph=JSON.parse(readFileSync(input,'utf8'));
+    if (lockedPath) validateSchedulerBinding(graph,JSON.parse(readFileSync(lockedPath,'utf8')));
+    console.log(JSON.stringify(makeSchedule(graph,{},process.platform),null,2));
+  } catch(e) {console.error(`PLANNER BLOCKED: ${e.message}`);process.exitCode=2;}
+}

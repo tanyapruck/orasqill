@@ -52,7 +52,7 @@ test('step order and evidence are required',t=>{
 test('deferred findings are recorded without blocking planned work',t=>{
   const f=setup(t);f.start();f.call('finding','t1','--description','Optional cleanup','--impact','Low','--reason','Unrelated','--necessary','no');
   assert.equal(f.plan().findings[0].status,'deferred');
-  f.steps();f.call('check','t1','--result','node --test: passed');f.call('finish','t1');
+  f.steps();f.call('check','t1','--status','pass','--accept','A1','--result','node --test: passed');f.call('finish','t1');
   assert.match(readFileSync(f.file('final-report.md'),'utf8'),/Optional cleanup/);
   assert.equal(f.state().status,'finished');
 });
@@ -75,7 +75,7 @@ test('approved prerequisite can be inserted before unfinished baseline step',t=>
   assert.throws(()=>f.call('step','t1','--step','S2','--evidence','too soon'),/OUT_OF_PLAN_OR_ORDER/);
   f.call('step','t1','--step','S3','--evidence','API implemented');
   f.call('step','t1','--step','S2','--evidence','smoke checked');
-  f.call('check','t1','--result','test passed');f.call('finish','t1');
+  f.call('check','t1','--status','pass','--accept','A1','--result','test passed');f.call('finish','t1');
   assert.equal(f.state().status,'finished');
   assert.match(readFileSync(f.file('final-report.md'),'utf8'),/Approved API/);
 });
@@ -91,7 +91,7 @@ test('manual finish cannot bypass incomplete plan and leaves task visible to res
 });
 
 test('manual finish rejects approval-required finding with completed steps',t=>{
-  const f=setup(t);f.start();f.steps();f.call('check','t1','--result','PASS');
+  const f=setup(t);f.start();f.steps();f.call('check','t1','--status','pass','--accept','A1','--result','PASS');
   f.call('finding','t1','--description','Additional required','--impact','Needed','--reason','scope','--necessary','yes');
   assert.throws(()=>handoff(['finish','t1'],f.repo),/APPROVAL_REQUIRED/);
   assert.equal(f.state().status,'active');
@@ -100,7 +100,7 @@ test('manual finish rejects approval-required finding with completed steps',t=>{
 test('manual finish cannot close a plan without finalization and report',t=>{
   const f=setup(t);f.start();f.steps();
   assert.throws(()=>handoff(['finish','t1'],f.repo),/VALIDATION_REQUIRED/);
-  f.call('check','t1','--result','tests: PASS');
+  f.call('check','t1','--status','pass','--accept','A1','--result','tests: PASS');
   f.call('report','t1'); // Draft only.
   assert.throws(()=>handoff(['finish','t1'],f.repo),/PLAN_NOT_FINALIZED/);
   assert.equal(f.state().status,'active');
@@ -112,7 +112,7 @@ test('manual finish cannot close a plan without finalization and report',t=>{
 });
 
 test('cannot spoof finalized plan without report',t=>{
-  const f=setup(t);f.start();f.steps();f.call('check','t1','--result','PASS');
+  const f=setup(t);f.start();f.steps();f.call('check','t1','--status','pass','--accept','A1','--result','PASS');
   writeFileSync(f.file('plan.json'),JSON.stringify({...f.plan(),status:'finished'}));
   assert.throws(()=>handoff(['finish','t1'],f.repo),/FINAL_REPORT_REQUIRED/);
   assert.equal(f.state().status,'active');
@@ -152,4 +152,64 @@ test('dangling symlinked plan is blocked',t=>{
 test('legacy handoff without plan still supports finish',t=>{
   const f=setup(t);handoff(['start','t1','--goal','legacy'],f.repo);
   handoff(['finish','t1'],f.repo);assert.equal(f.state().status,'finished');
+});
+
+// F6: completion needs structured, acceptance-linked, latest passing evidence.
+test('failed or blocked checks cannot close a fully completed plan', t=>{
+  const f=setup(t);f.start();f.steps();
+  for (const status of ['fail','blocked']) {
+    f.call('check','t1','--status',status,'--accept','A1','--result',`npm test: ${status}`);
+    assert.throws(()=>f.call('finish','t1'),/VALIDATION_REQUIRED.*A1/);
+    assert.equal(f.state().status,'active');
+  }
+  f.call('check','t1','--status','pass','--accept','A1','--result','npm test: 59/59 pass after fix');
+  assert.doesNotThrow(()=>f.call('finish','t1'));
+});
+
+test('each acceptance must have a latest passing check and no failures can be hidden',t=>{
+  const f=setup(t);
+  f.call('start','t1','--goal','Check multi-acceptance gates','--step','Implement','--step','Test','--accept','Behavior','--accept','Regression');
+  f.steps();
+  assert.throws(()=>f.call('check','t1','--result','PASS'),/missing --status/);
+  assert.throws(()=>f.call('check','t1','--status','pass','--accept','A3','--result','wrong id'),/VALIDATION_REQUIRED/);
+  f.call('check','t1','--status','pass','--accept','A1','--result','behavior passes');
+  assert.throws(()=>f.call('finish','t1'),/VALIDATION_REQUIRED.*A2/);
+  f.call('check','t1','--status','pass','--accept','A2','--result','regression passes');
+  f.call('check','t1','--status','fail','--accept','A1','--result','behavior regressed');
+  assert.throws(()=>handoff(['finish','t1'],f.repo),/VALIDATION_REQUIRED.*A1/);
+  assert.throws(()=>f.call('finish','t1'),/VALIDATION_REQUIRED.*A1/);
+  f.call('check','t1','--status','pass','--accept','A1','--result','retest after correction passes');
+  f.call('finish','t1');assert.equal(f.state().status,'finished');
+});
+
+test('legacy free text validation evidence fails closed until replaced by structured checks', t=>{
+  const f=setup(t);f.start();f.steps();
+  writeFileSync(f.file('plan.json'),JSON.stringify({...f.plan(),checks:['old unstructured validation']}));
+  assert.throws(()=>f.call('finish','t1'),/VALIDATION_MIGRATION_REQUIRED/);
+  assert.equal(f.state().status,'active');
+});
+
+// F8: both finish entrypoints require an independent reviewer attestation for HIGH_RISK.
+test('high risk finish requires independent positive review evidence',t=>{
+  const f=setup(t);
+  f.call('start','t1','--goal','Security critical change','--risk','HIGH_RISK','--owner','Implementer','--step','Implement','--step','Validate','--accept','Security check');
+  f.steps();f.call('check','t1','--status','pass','--accept','A1','--result','actual security test observed pass');
+  assert.throws(()=>f.call('finish','t1'),/INDEPENDENT_REVIEW_REQUIRED/);
+  assert.throws(()=>handoff(['finish','t1'],f.repo),/INDEPENDENT_REVIEW_REQUIRED/);
+  assert.throws(()=>f.call('review','t1','--reviewer','Reviewer','--evidence','PR comment','--independent','no','--result','pass'),/INDEPENDENT_REVIEW_REQUIRED/);
+  f.call('review','t1','--reviewer','Implementer','--evidence','self-review','--independent','yes','--result','pass');
+  assert.throws(()=>f.call('finish','t1'),/INDEPENDENT_REVIEW_REQUIRED/);
+  f.call('review','t1','--reviewer','Reviewer','--evidence','PR #123 review signed by eligible reviewer','--independent','yes','--result','fail');
+  assert.throws(()=>f.call('finish','t1'),/INDEPENDENT_REVIEW_REQUIRED/);
+  f.call('review','t1','--reviewer','Reviewer','--evidence','PR #123 approved by eligible independent reviewer','--independent','yes','--result','pass');
+  f.call('finish','t1');
+  assert.equal(f.state().status,'finished');
+  assert.match(readFileSync(f.file('final-report.md'),'utf8'),/PR #123 approved/);
+});
+
+test('HIGH_RISK legacy handoff cannot bypass missing plan or reviewer evidence',t=>{
+  const f=setup(t);
+  handoff(['start','t1','--goal','Legacy risky migration','--risk','HIGH_RISK'],f.repo);
+  assert.throws(()=>handoff(['finish','t1'],f.repo),/PLAN_REQUIRED/);
+  assert.equal(f.state().status,'active');
 });

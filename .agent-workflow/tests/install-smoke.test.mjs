@@ -65,3 +65,30 @@ test('fresh destination must explicitly ignore local task state to prevent accid
   assert.equal(ignored.status, 0);
   assert.equal(ignored.stdout.trim(), candidate);
 });
+
+test('fresh destination preflight prevents an unborn HEAD and then starts a real locked plan', t => {
+  const dest = destination(t);
+  writeFileSync(path.join(dest, '.gitignore'), '.agent-workflow/state/\n');
+  const run = args => spawnSync(process.execPath, ['.agent-workflow/bin/plan-ledger.mjs', ...args], {
+    cwd: dest, encoding: 'utf8'
+  });
+  const argv = ['start', 'install-demo', '--goal', 'Verify installed plan startup',
+    '--step', 'Check installed tools', '--accept', 'Installed CLI works'];
+  assert.notEqual(spawnSync('git', ['rev-parse', '--verify', 'HEAD'], { cwd: dest }).status, 0);
+  const premature = run(argv);
+  assert.notEqual(premature.status, 0);
+  assert.ok(!existsSync(path.join(dest, '.agent-workflow/state/install-demo/plan.json')));
+  writeFileSync(path.join(dest, 'base.txt'), 'project baseline\n');
+  execFileSync('git', ['add', '.gitignore', 'base.txt'], { cwd: dest });
+  execFileSync('git', ['-c', 'user.email=smoke@example.invalid', '-c', 'user.name=Smoke',
+    'commit', '-qm', 'initial baseline'], { cwd: dest });
+  const branch = execFileSync('git', ['branch', '--show-current'], { cwd: dest, encoding: 'utf8' }).trim();
+  assert.ok(branch, 'named branch must exist');
+  const started = run(argv);
+  assert.equal(started.status, 0, started.stderr);
+  const plan = JSON.parse(readFileSync(path.join(dest, '.agent-workflow/state/install-demo/plan.json'), 'utf8'));
+  assert.equal(plan.steps[0].id, 'S1');
+  assert.equal(plan.acceptance[0], 'Installed CLI works');
+  assert.equal(plan.startBranch, branch);
+  assert.equal(spawnSync('git', ['check-ignore', '.agent-workflow/state/install-demo/plan.json'], { cwd: dest }).status, 0);
+});

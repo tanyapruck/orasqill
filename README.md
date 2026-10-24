@@ -1,6 +1,6 @@
 # Agent Workflow Orchestrator (Orasqill)
 
-Portable, provider-neutral coordination with a **locked plan**, task-start checkpoint, scoped delegation, out-of-plan Findings requiring approval, manual handoff and verifiable Final Acceptance. This repository distributes the orchestration Skill and local Node.js helpers, **not** agent runtimes or vendor Skill implementations.
+Portable, provider-neutral plan-locked orchestration with scoped delegation, Findings/approval, handoff and Final Acceptance. Includes local Node.js helpers but no agent runtimes or vendor Skill implementations.
 
 ## Install into an existing Git repository
 
@@ -16,7 +16,7 @@ cp /path/to/orasqill/.agent-workflow/external-skills.lock.json .agent-workflow/
 
 On Windows PowerShell, use equivalent `New-Item` / `Copy-Item` commands. The **external-skills.lock.json registry is required** for `external-skills.mjs list`, source verification and update checks; copying only the Skill and binaries is an incomplete installation. The registry records reviewed upstream versions, **not installed provider Skills**.
 
-Merge the short root `AGENTS.md` instructions into the destination's existing guidance instead of overwriting it. For Claude Code, copy `.claude/skills/agent-workflow-orchestrator/SKILL.md` and add `@AGENTS.md` in `CLAUDE.md` if appropriate for that project. For optional routed delegation, copy `.agent-workflow/config.example.json` as `config.json` and arrange **explicit confirmation** of real providers, permissions and capacity. Its empty mapping alone cannot authorize worker execution.
+Merge the short root `AGENTS.md` instructions into the destination's existing guidance instead of overwriting it. For Claude Code, copy `.claude/skills/agent-workflow-orchestrator/SKILL.md` and add `@AGENTS.md` in `CLAUDE.md` if appropriate for that project. For optional routed delegation, copy `.agent-workflow/config.example.json` as `config.json` and arrange **explicit confirmation** of real providers, permissions and capacity. If using the advisory Task Planner, also copy `.agent-workflow/examples/task-plan.example.json` as a scheduler-schema reference (not as an authorized locked Plan). Its empty mapping alone cannot authorize worker execution.
 
 **Protect checkpoints in the destination repo:** add the following exact line to its `.gitignore` (merge it; do not replace other rules):
 
@@ -26,9 +26,16 @@ Merge the short root `AGENTS.md` instructions into the destination's existing gu
 
 State files can contain local task context, Findings and paths. Keep secrets out of them. They are not committed and **do not transfer automatically** between machines.
 
-### Installation smoke checks
+### Installation smoke checks and Git preflight
 
-Run from the *destination* Git repository after copying files and updating `.gitignore`:
+Run from the destination Git repository after copying files and updating `.gitignore`. Before starting a locked plan, **an initial Git commit and named branch** (not detached HEAD) are required:
+
+```sh
+git rev-parse --verify HEAD
+git branch --show-current
+```
+
+A new `git init` checkout has no HEAD commit. Create one using your normal authorized Git process before `plan-ledger.mjs start`; the helper never commits automatically. Verify installation:
 
 ```sh
 node .agent-workflow/bin/external-skills.mjs list
@@ -37,7 +44,7 @@ git check-ignore .agent-workflow/state/install-check/plan.json
 # Must exit 0 and print the ignored state path, even if the file does not exist.
 ```
 
-If either command fails, correct the missing registry/ignore rule **before** creating an orchestrated checkpoint. These are installation checks, not proof that a third-party Skill is loadable in a given agent. This repository also runs a temporary-destination install smoke test as part of `npm test`.
+If a preflight or install command fails, fix the missing HEAD/branch, registry or ignore rule **before** creating an orchestrated checkpoint. These checks do not prove external Skills are loadable. The `npm test` suite also tests plan startup in a newly initialized test repository after a baseline commit.
 
 ## Use
 
@@ -47,7 +54,7 @@ Assign an authorized agent to orchestrate a task and ask it to **show a bounded 
 node .agent-workflow/bin/plan-ledger.mjs start task-1 --goal "Bounded change" --step "Implement approved scope" --step "Run relevant checks" --accept "Requested behavior verified"
 ```
 
-For further progress, findings and acceptance commands read `.agents/skills/agent-workflow-orchestrator/references/plan-execution.md` or `.agent-workflow/bin/README.md`. Checkpoints are evidence, not technical enforcement against an unrestricted agent's file edits; actual permissions and diff review remain essential.
+For structured pass/fail checks, acceptance IDs (A1, A2, …), and high-risk reviewer evidence, read `.agents/skills/agent-workflow-orchestrator/references/plan-execution.md` or `.agent-workflow/bin/README.md`. Checkpoints are evidence, not technical enforcement against an unrestricted agent's file edits; actual permissions and diff review remain essential.
 
 ## External skill prerequisites and provenance
 
