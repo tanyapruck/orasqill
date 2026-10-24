@@ -14,3 +14,11 @@ All helpers use built-in Node.js modules and Git. They operate on the **current 
 - `task-planner.mjs <plan.json>` — output an **advisory** proposed schedule only; does not run workers or enforce ownership.
 
 Tests: `node --test .agent-workflow/tests/*.test.mjs`.
+
+## Third-party skill provenance (read-only)
+
+- `node .agent-workflow/bin/external-skills.mjs list` — list the original authors, exact source paths and activation for each external Skill from `../external-skills.lock.json`.
+- `node .agent-workflow/bin/external-skills.mjs verify-file <id> <path-to-installed-SKILL.md>` — compare the installed file's Git blob fingerprint to the last-reviewed upstream blob; **not** proof an Agent loaded it.
+- `node .agent-workflow/bin/external-skills.mjs check-updates [--source matt|ponytail|karpathy]` — read-only GitHub commit/tree lookup, with per-Skill `unchanged`, `changed` or `missing_upstream`; API errors return `unknown`. No downloading, installing, vendoring, source edits or automatic lockfile bump.
+
+External skills are third-party-owned; use `.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md` and `.agent-workflow/external-skills.lock.json` rather than inlining their instructions into the canonical Orchestrator.

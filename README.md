@@ -23,7 +23,24 @@ The `.agent-workflow/state/` directory is ignored, **must not be committed** and
 - **Optional for complex planning:** Matt Pocock's [`grill-with-docs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md) can help resolve important design decisions **before** locking a Plan. It requires `grilling` and `domain-modeling`. Don't run it for routine surgical changes, or append ADRs and glossary files without authorization.
 - Other optional Matt skills (`to-spec`, `to-tickets`, `tdd`, `diagnosing-bugs`, `code-review`) have targeted use cases, not mandatory process steps.
 
-Install instructions, provenance and worker gates: `.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md`; decision guidance: `.agents/skills/agent-workflow-orchestrator/references/planning-interview.md`. External skills are linked, **not vendored or copied**.
+Install instructions, provenance and worker gates: `.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md`; optional stage selection: `.agents/skills/agent-workflow-orchestrator/references/planning-interview.md`.
+
+### Independently versioned external skills (no blending)
+
+**The canonical Orasqill Skill never contains the actual instructions of external Skills.** Original author, repository, source file, last-reviewed upstream Commit SHA, and per-Skill Git blob SHA are all kept in `.agent-workflow/external-skills.lock.json`. These are traceability fingerprints, **not proof of installed/runtime-loaded versions**. The upstream instructions live solely in their own installations and are invoked by exact Skill ID after authorization.
+
+```sh
+node .agent-workflow/bin/external-skills.mjs list
+node .agent-workflow/bin/external-skills.mjs check-updates
+node .agent-workflow/bin/external-skills.mjs check-updates --source matt
+node .agent-workflow/bin/external-skills.mjs verify-file karpathy-guidelines /path/to/installed/SKILL.md
+```
+
+These commands **never install, run, copy or upgrade an external Skill**. The read-only online check distinguishes upstream repository activity from a change to the exact tracked `SKILL.md`. A new version requires a separate reviewed update to the Registry and tests. See the dependency reference for `unknown` network results and permission rules.
+
+Recommended additions (Optional): Matt's `writing-for-agents` for agent-document authoring, `triage` for issue readiness, `retro` for post-task improvement proposals, `codebase-design` for interface decisions, and `wayfinder` for large pre-plan design exploration; Ponytail's `ponytail-review` for targeted review, `ponytail-audit` for codebase audit and `ponytail-debt` for deferred shortcut inventory. **Do not enable the Ponytail main plugin always-on by default**: its hooks/context overlap with required Karpathy guidance. External reviews cannot self-authorize fixes and do not substitute for an independent high-risk reviewer.
+
+External skills are linked and versioned separately, **not blended, vendored or copied**. They are **not vendored or copied** into Orasqill at any point.
 
 ## Example user invocation
 

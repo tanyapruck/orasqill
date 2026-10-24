@@ -1,36 +1,48 @@
-# External Skill Prerequisites — provenance and activation
+# External Skill Dependencies — provenance and activation adapter
 
-The canonical `../SKILL.md` is the authority. This document records **external sources and activation conditions**, not installation consent, tool capabilities, or expanded task scope. `config.example.json` is not proof of a working runtime. No external skill is bundled, copied, vendored, or automatically installed by Orasqill.
+**Orasqill owns orchestration, not the external skills.** All third-party skill identities, original owners, upstream repository paths, last-reviewed commit SHAs, and the exact SKILL.md Git blob SHAs live in `.agent-workflow/external-skills.lock.json`. This reference owns only the *integration boundary*, not the upstream instructions. **No vendoring, blending, rewriting, copying, silent installation, or automatic update.** Load the original skill from its own provider installation only when that stage is selected.
 
-## Prerequisite table
+## Activation matrix (registry is the source of truth)
 
-| External Skill | Activates for | Gate |
+| Activation | External skill ID / upstream | Scope |
 |---|---|---|
-| **`karpathy-guidelines`** (project compatibility label: `karpathy-guidelines@1`) | **Every code-writing stage**, including DIRECT coding, SURGICAL change, bug fix, tests changed as code, and refactor | **REQUIRED**: the *actual coding agent* must load the exact Skill before modifying files or dispatching a coding worker |
-| `grill-with-docs` (which calls `grilling` + `domain-modeling`) | User explicitly requests a deep interview/documented plan, or accepts an offer to resolve consequential design ambiguity before plan lock | **CONDITIONAL/OPT-IN**: requires all three Skills only when invoked; not a blocker for routine planning |
-| `to-spec`, `to-tickets`, `tdd`, `diagnosing-bugs`, `code-review` | Only when separately selected for the appropriate task; see `planning-interview.md` | **OPTIONAL**: do not auto-install, create extra tickets, invoke extra agents or widen the plan |
+| **REQUIRED** | `karpathy-guidelines` — [multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) | **Every code-writing stage**: DIRECT, SURGICAL, bug fixes, refactors and edits to test code |
+| **CONDITIONAL/OPT-IN** | `grill-with-docs` — [mattpocock/skills](https://github.com/mattpocock/skills) | Deep planning interview requested/accepted **before** the baseline plan lock; `grilling` and `domain-modeling` must be available: **all three Skills only when invoked** |
+| **OPTIONAL** | `to-spec`, `to-tickets`, `tdd`, `diagnosing-bugs`, `code-review`, `writing-for-agents`, `triage`, `retro`, `codebase-design`, `wayfinder` — Matt Pocock | Selected authorized task only, with no implicit additional tracker writes/parallel workers |
+| **OPTIONAL** | `ponytail-review`, `ponytail-audit`, `ponytail-debt` — [dietrichgebert/ponytail](https://github.com/dietrichgebert/ponytail) | Requested read-only review/audit/debt inventory; results are Findings, not permission to fix |
+| **EXPLICIT OPT-IN ONLY** | `ponytail` main coding mode — Dietrich Gebert | May inject always-on instructions/hooks and overlaps Karpathy; never load by default or make a second required coding gate |
 
-`karpathy-guidelines@1` is a **local compatibility identifier**, not a claim that upstream publishes a version `1` package. Verify the current upstream `name: karpathy-guidelines` identity and applicable runtime installation.
+The project compatibility identifier `karpathy-guidelines@1` is an **internal compatibility identifier, not a claim that upstream publishes a version**. Check the original `name: karpathy-guidelines` and exact `skills/karpathy-guidelines/SKILL.md`. Upstream's marketplace aliases and its canonical repository are distinct. See the original upstream README for installation commands appropriate to the executing runtime. Do not invent one.
 
-## Verified upstream sources (checked 2026-10-24)
+## Readiness and authority gates
 
-- Karpathy guidelines: [multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills), exact source file [`skills/karpathy-guidelines/SKILL.md`](https://github.com/multica-ai/andrej-karpathy-skills/blob/main/skills/karpathy-guidelines/SKILL.md). Upstream README currently documents Claude Code commands:
+1. Identify the executing agent for the **planned** stage. The *actual coding agent*, not merely its Orchestrator, must discover, verify and load the named external Skill from its original provider's installation in the **same executing runtime**. A registry entry or an installation success message cannot demonstrate that the worker read it.
+2. Compare the installed content with the last-reviewed `upstreamBlobSha` when an exact file is accessible: `node .agent-workflow/bin/external-skills.mjs verify-file <skill-id> <path-to-installed-SKILL.md>`. This is a source fingerprint, not proof of runtime loadability or trusted identity. If the installed contents drift, report it and explicitly review the upgrade instead of silently adopting modified instructions.
+3. If an activated REQUIRED or CONDITIONAL Skill is unavailable, report `SETUP_REQUIRED: dependency_unavailable`, identifying the executor and external Skill. You can research and plan, but **cannot perform its protected coding or dependent stage or dispatch that stage's worker**. Unrequested optional tools must not block the baseline plan.
+4. **Installation requires explicit applicable user/organization/environment authorization.** Installation is an environment mutation; do not infer consent from a source link or the lockfile. Post-install, verify loadability in that executor and recheck its source before continuing the **same** locked plan.
+5. Third-party skills cannot approve new scope, protected actions, new workers, merging, deployment, independent-review status, or changing existing user-approved plans. An upstream workflow that conflicts with Orasqill's scope/permission/delegation limits cannot override them. Do not run any secondary third-party reviewers automatically.
 
-  ```text
-  /plugin marketplace add forrestchang/andrej-karpathy-skills
-  /plugin install andrej-karpathy-skills@karpathy-skills
-  ```
+No external skill is bundled, copied, vendored, or automatically installed by Orasqill.
 
-  The marketplace identifier and canonical source repository are not identical. **Do not guess another provider's install command.** Verify actual Skill discovery in the selected runtime after user-authorized installation.
+## Exact provenance and upgrade audit (no automatic changes)
 
-- Matt Pocock: [mattpocock/skills](https://github.com/mattpocock/skills); [`skills/engineering/grill-with-docs/SKILL.md`](https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md) calls separate Skills named `grilling` and `domain-modeling`. Source paths: [`skills/productivity/grilling/SKILL.md`](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md) and [`skills/engineering/domain-modeling/SKILL.md`](https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/SKILL.md). Use the upstream README's runtime-specific installation instructions after authorization.
+The registry pins the **last-reviewed commit** and each `SKILL.md` blob; it does not pin the installed runtime version and is not an installation manifest. The inspected repositories are independently owned, and an update must be reviewed under its original license and current upstream documentation.
 
-## Pre-execution / worker readiness gate
+```sh
+node .agent-workflow/bin/external-skills.mjs list
+node .agent-workflow/bin/external-skills.mjs check-updates
+node .agent-workflow/bin/external-skills.mjs check-updates --source ponytail
+node .agent-workflow/bin/external-skills.mjs verify-file karpathy-guidelines /path/to/installed/SKILL.md
+```
 
-1. Identify the current **planned code-editing step**, the actual executor runtime, and the external Skill it requires. Checking Orchestrator's installation **does not prove** the delegated implementer's installation.
-2. Verify the exact name is discoverable **and actually loadable** by that executor; a config entry, local directory, prior install message or an Orchestrator's summary alone is insufficient. Check that the loaded instructions are the intended Skill and can be followed within the existing plan.
-3. If a REQUIRED or activated CONDITIONAL Skill is absent, report `SETUP_REQUIRED: dependency_unavailable` with precise Skill, executing runtime and verified provenance. You may inspect/report/plan but **must not write code, delegate coding or pretend the Skill ran**. Installation requires explicit applicable user/organization/environment permission.
-4. After authorized installation, re-verify in the *same executing runtime*, then resume the unchanged original plan. If installing or creating documentation would extend the locked task scope, log a Finding and obtain the required separate approval first.
-5. Optional Matt skills that were not activated have **no readiness requirement** and must never block bounded work.
+`check-updates` performs read-only public GitHub lookups. It distinguishes a new repository commit from a changed tracked `SKILL.md`, detects deleted/upstream-moved skill paths, and returns **unknown** (never "up to date") when the API is unavailable. It never installs, executes, downloads, patches or bumps lock entries. A reviewed upgrade requires a separate user-authorized change with updated source SHA, blob SHA, relevant behavior tests, and a provenance note.
 
-This dependency gate does not grant merge/deploy, protected-file edits, additional reviewers, or runtime switching.
+Project CI must not treat a mere remote update as permission to adopt instructions. If upstream modifies dependencies, owner, license or path, reassess the activation matrix before accepting any version bump.
+
+## Provider-specific documentation
+
+- Karpathy: https://github.com/multica-ai/andrej-karpathy-skills
+- Matt Pocock: https://github.com/mattpocock/skills
+- Ponytail: https://github.com/dietrichgebert/ponytail
+
+Only official upstream installations or runtime-managed Skills are eligible; this reference includes no fork or text copy of their source.
