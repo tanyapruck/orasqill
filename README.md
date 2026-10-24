@@ -1,67 +1,76 @@
-# Agent Workflow Orchestrator
+# Agent Workflow Orchestrator (Orasqill)
 
-Portable, **provider-neutral** orchestration Skill, extracted and generalized from HoroOne's v10.17 design. This repository contains **only** the reusable Skill, opt-in discovery shims, local checkpoint/plan scripts, example routing config, tests and CI. It contains no application code, original project's model bindings, secrets or history archives.
+Portable, provider-neutral coordination with a **locked plan**, task-start checkpoint, scoped delegation, out-of-plan Findings requiring approval, manual handoff and verifiable Final Acceptance. This repository distributes the orchestration Skill and local Node.js helpers, **not** agent runtimes or vendor Skill implementations.
 
-## What it does
+## Install into an existing Git repository
 
-The active agent must **show an ordered plan before doing orchestrated work**, create a local gitignored checkpoint, execute approved steps **in order**, record out-of-plan discoveries as **Findings**, defer optional findings, request **user approval before necessary expansions**, validate the real integrated result and issue a **Final Acceptance Report**. Manual handoff lets a user select a different orchestrator without losing the original plan. No automatic provider switch or runtime/model invocation is included.
+Copy **all three required paths**, preserving their paths relative to the destination repository root (POSIX shell or Git Bash):
 
-## How to install into another Git repository
+```sh
+# Run in the destination Git repository; replace /path/to/orasqill.
+mkdir -p .agents/skills .agent-workflow
+cp -R /path/to/orasqill/.agents/skills/agent-workflow-orchestrator .agents/skills/
+cp -R /path/to/orasqill/.agent-workflow/bin .agent-workflow/
+cp /path/to/orasqill/.agent-workflow/external-skills.lock.json .agent-workflow/
+```
 
-Copy the following, preserving paths relative to the repository root:
+On Windows PowerShell, use equivalent `New-Item` / `Copy-Item` commands. The **external-skills.lock.json registry is required** for `external-skills.mjs list`, source verification and update checks; copying only the Skill and binaries is an incomplete installation. The registry records reviewed upstream versions, **not installed provider Skills**.
 
-- `.agents/skills/agent-workflow-orchestrator/` — canonical Skill and references.
-- `.agent-workflow/bin/` — Node.js (20+) no-dependency helpers.
-- `.agent-workflow/config.example.json` — optionally copy to `config.json` and confirm real runtime candidates **with the user** before allowing delegation.
-- `AGENTS.md` (or merge its small entrypoint into your existing root instructions). For Claude Code also copy `.claude/skills/agent-workflow-orchestrator/SKILL.md` and add `@AGENTS.md` in root `CLAUDE.md` if no conflicting instructions exist.
+Merge the short root `AGENTS.md` instructions into the destination's existing guidance instead of overwriting it. For Claude Code, copy `.claude/skills/agent-workflow-orchestrator/SKILL.md` and add `@AGENTS.md` in `CLAUDE.md` if appropriate for that project. For optional routed delegation, copy `.agent-workflow/config.example.json` as `config.json` and arrange **explicit confirmation** of real providers, permissions and capacity. Its empty mapping alone cannot authorize worker execution.
 
-The `.agent-workflow/state/` directory is ignored, **must not be committed** and stays local to the working tree. The root Skill can be read directly even in an agent that does not auto-discover skills. Do not blindly overwrite an existing destination `AGENTS.md` or `CLAUDE.md`; merge pointers deliberately.
+**Protect checkpoints in the destination repo:** add the following exact line to its `.gitignore` (merge it; do not replace other rules):
 
-## External skill prerequisites
+```gitignore
+.agent-workflow/state/
+```
 
-- **Required for coding, including surgical bug fixes/refactors:** install and verify the exact [`karpathy-guidelines`](https://github.com/multica-ai/andrej-karpathy-skills/blob/main/skills/karpathy-guidelines/SKILL.md) Skill in the **agent that actually writes code**. Until discoverable and loadable, coding stops with `SETUP_REQUIRED: dependency_unavailable`; the Orchestrator may still inspect, plan and report. Installation is never automatic.
-- **Optional for complex planning:** Matt Pocock's [`grill-with-docs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md) can help resolve important design decisions **before** locking a Plan. It requires `grilling` and `domain-modeling`. Don't run it for routine surgical changes, or append ADRs and glossary files without authorization.
-- Other optional Matt skills (`to-spec`, `to-tickets`, `tdd`, `diagnosing-bugs`, `code-review`) have targeted use cases, not mandatory process steps.
+State files can contain local task context, Findings and paths. Keep secrets out of them. They are not committed and **do not transfer automatically** between machines.
 
-Install instructions, provenance and worker gates: `.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md`; optional stage selection: `.agents/skills/agent-workflow-orchestrator/references/planning-interview.md`.
+### Installation smoke checks
 
-### Independently versioned external skills (no blending)
+Run from the *destination* Git repository after copying files and updating `.gitignore`:
 
-**The canonical Orasqill Skill never contains the actual instructions of external Skills.** Original author, repository, source file, last-reviewed upstream Commit SHA, and per-Skill Git blob SHA are all kept in `.agent-workflow/external-skills.lock.json`. These are traceability fingerprints, **not proof of installed/runtime-loaded versions**. The upstream instructions live solely in their own installations and are invoked by exact Skill ID after authorization.
+```sh
+node .agent-workflow/bin/external-skills.mjs list
+# Must succeed and list the pinned upstream owners and Skill IDs.
+git check-ignore .agent-workflow/state/install-check/plan.json
+# Must exit 0 and print the ignored state path, even if the file does not exist.
+```
+
+If either command fails, correct the missing registry/ignore rule **before** creating an orchestrated checkpoint. These are installation checks, not proof that a third-party Skill is loadable in a given agent. This repository also runs a temporary-destination install smoke test as part of `npm test`.
+
+## Use
+
+Assign an authorized agent to orchestrate a task and ask it to **show a bounded Plan before editing**, execute planned steps in order, record outside discoveries as Findings, obtain explicit user approval for indispensable plan amendments, and report actual checks and Git status when done.
+
+```sh
+node .agent-workflow/bin/plan-ledger.mjs start task-1 --goal "Bounded change" --step "Implement approved scope" --step "Run relevant checks" --accept "Requested behavior verified"
+```
+
+For further progress, findings and acceptance commands read `.agents/skills/agent-workflow-orchestrator/references/plan-execution.md` or `.agent-workflow/bin/README.md`. Checkpoints are evidence, not technical enforcement against an unrestricted agent's file edits; actual permissions and diff review remain essential.
+
+## External skill prerequisites and provenance
+
+The actual coding agent must have the upstream `karpathy-guidelines` Skill loadable before DIRECT/SURGICAL code edits, refactors, tests or bug fixes. `grill-with-docs` and other Matt Pocock Skills, and Ponytail audit/review tools, are optional, independently owned integrations. **Third-party instructions are not vendored or copied** into Orasqill. Installation requires applicable authorization and each selected executing agent's readiness must be verified.
+
+For original authors/paths, reviewed commit and blob fingerprints, install/readiness rules, and upgrade policy see `.agent-workflow/external-skills.lock.json` and `.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md`.
 
 ```sh
 node .agent-workflow/bin/external-skills.mjs list
 node .agent-workflow/bin/external-skills.mjs check-updates
-node .agent-workflow/bin/external-skills.mjs check-updates --source matt
 node .agent-workflow/bin/external-skills.mjs verify-file karpathy-guidelines /path/to/installed/SKILL.md
 ```
 
-These commands **never install, run, copy or upgrade an external Skill**. The read-only online check distinguishes upstream repository activity from a change to the exact tracked `SKILL.md`. A new version requires a separate reviewed update to the Registry and tests. See the dependency reference for `unknown` network results and permission rules.
+These helpers **read only**; they never install, execute or update external Skills. Optional stage selection: `references/planning-interview.md` under the canonical Skill. No third-party Skill can widen the approved Plan or grant merge/deploy permissions.
 
-Recommended additions (Optional): Matt's `writing-for-agents` for agent-document authoring, `triage` for issue readiness, `retro` for post-task improvement proposals, `codebase-design` for interface decisions, and `wayfinder` for large pre-plan design exploration; Ponytail's `ponytail-review` for targeted review, `ponytail-audit` for codebase audit and `ponytail-debt` for deferred shortcut inventory. **Do not enable the Ponytail main plugin always-on by default**: its hooks/context overlap with required Karpathy guidance. External reviews cannot self-authorize fixes and do not substitute for an independent high-risk reviewer.
-
-External skills are linked and versioned separately, **not blended, vendored or copied**. They are **not vendored or copied** into Orasqill at any point.
-
-## Example user invocation
-
-> Use `agent-workflow-orchestrator` for this task. Show the plan first. Execute only its authorized steps. Record new discoveries as findings, ask my approval before necessary scope changes, and report actual validation results when done.
-
-### Start a task in a Git repository
-
-```sh
-node .agent-workflow/bin/plan-ledger.mjs start demo-1 --goal "Apply the requested change" --step "Implement only the requested change" --step "Run focused checks" --accept "Requested behavior is verified"
-```
-
-After each step use `plan-ledger.mjs step ... --evidence ...`; for new findings use `plan-ledger.mjs finding ... --necessary yes|no`; close using `check`, `report`, `finish`. See `.agents/skills/agent-workflow-orchestrator/references/plan-execution.md` for examples and the full user approval contract. The tools **record progress**; they do not independently prove that an AI stayed in scope or that a given user really approved a change. Human authority and actual Git diff inspection remain essential.
-
-## Tests
+## Testing and supported environment
 
 ```sh
 npm test
 ```
 
-Node.js >=20, Git executable available. GitHub Actions runs Node 22 and 24 on Linux and Windows. CI/test runner uses temporary Git repositories and does **not** need provider API keys or connected agent accounts.
+Node.js 20+ and Git are required. Tests create temporary local Git repositories and run without provider API keys. GitHub Actions is configured for Linux and Windows with Node 22/24; check actual job results instead of assuming CI passed.
 
-## Licensing and provenance
+## Ownership and licensing
 
-Standalone adaptation of a user-owned internal workflow. It is intended as an independent project, not a live dependency of HoroOne. No automatic syncing with its original repository. No standalone license has been selected. This private repository should not be republished under an open-source license without the owner choosing one.
+Adapted as a standalone, private skill from an internal orchestration workflow. No Open Source license has been selected for this repository. It does not auto-sync to the originating application. Each external Skill remains owned, licensed and updated in its own upstream repository; reviewing an upstream update is separate from installing it.

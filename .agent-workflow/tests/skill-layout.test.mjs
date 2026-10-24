@@ -50,11 +50,11 @@ test('advisory planner cannot grant integration authority or launch agents',()=>
 test('all code work requires loadable Karpathy guidelines at the actual executor',()=>{
   const deps=read('.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md');
   assert.match(skill,/REQUIRED for every coding, bug-fix, refactor or SURGICAL code-change stage/);
-  assert.match(skill,/This requirement applies to DIRECT coding too/);
+  assert.match(skill,/including DIRECT coding and test-source edits/);
   assert.match(skill,/discoverable and loadable in that agent's runtime/);
   assert.match(skill,/do not modify code or dispatch a coding worker/);
   assert.match(skill,/dependency_unavailable/);
-  assert.match(deps,/Every code-writing stage/);
+  assert.match(deps,/every code-writing stage/i);
   assert.match(deps,/actual coding agent/);
   assert.match(deps,/same executing runtime/);
 });
@@ -72,7 +72,7 @@ test('dependency provenance links exact Karpathy source but never auto-installs'
 test('Matt deep interview is optional and before locked plan only',()=>{
   const reference=read('.agents/skills/agent-workflow-orchestrator/references/planning-interview.md');
   const deps=read('.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md');
-  assert.match(skill,/OPTIONAL conditional pre-plan/);
+  assert.match(skill,/Optional Matt\/Ponytail Skills are activated only/);
   assert.match(skill,/grill-with-docs/);
   assert.match(skill,/grilling.*domain-modeling/);
   assert.match(reference,/Bounded Surgical Change or clear acceptance/);
@@ -103,4 +103,41 @@ test('root and install docs expose prerequisite rules without granting authority
   assert.match(setup,/not proof of Skill loadability/);
   assert.match(guide,/External skill prerequisites/);
   assert.match(guide,/not vendored or copied/);
+});
+
+
+test('frontmatter describes orchestration triggers instead of listing vendor integrations',()=>{
+  const frontmatter=skill.match(/^---\n([\s\S]*?)\n---/);
+  assert.ok(frontmatter);
+  const pointer=frontmatter[1];
+  for(const trigger of ['multi-step','delegated','surgical changes','handoffs','scope approval']){
+    assert.match(pointer,new RegExp(trigger));
+  }
+  assert.doesNotMatch(pointer,/Karpathy|Ponytail|grill-with-docs/);
+  assert.match(pointer,/description: >/);
+});
+
+test('core is progressively disclosed but never hides plan, approval or high-risk gates',()=>{
+  assert.ok(skill.length<8500,'always-read SKILL.md should remain below 8.5KB');
+  for(const phase of ['PLAN first','CHECKPOINT before changes','EXECUTE only the next authorized step','VALIDATE the integrated result','CLOSE honestly']) {
+    assert.ok(skill.includes(phase),`missing lifecycle phase ${phase}`);
+  }
+  assert.equal((skill.match(/Complete when:/g)||[]).length,5,'each lifecycle phase needs an explicit completion bound');
+  for(const floor of ['HIGH_RISK','independent review','approval-required','explicit user approval','karpathy-guidelines','SETUP_REQUIRED','Final Acceptance']) {
+    assert.match(skill,new RegExp(floor,'i'));
+  }
+  assert.match(skill,/Read references only when their condition applies/);
+  assert.match(skill,/references\/plan-execution\.md/);
+  assert.match(skill,/references\/DEPENDENCIES\.md/);
+});
+
+test('README uses one authoritative provenance pointer and describes complete install smoke',()=>{
+  assert.ok(guide.length<6000,'installer README should be concise');
+  assert.equal((guide.match(/not vendored or copied/gi)||[]).length,1);
+  assert.match(guide,/external-skills\.lock\.json registry is required/);
+  assert.match(guide,/git check-ignore \.agent-workflow\/state\/install-check\/plan\.json/);
+  assert.match(guide,/Installation smoke checks/);
+  const entry=read('AGENTS.md');
+  assert.match(entry,/\.agents\/skills\/agent-workflow-orchestrator\/SKILL\.md/);
+  assert.match(entry,/\.agent-workflow\/external-skills\.lock\.json/);
 });

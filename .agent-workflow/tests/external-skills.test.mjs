@@ -90,7 +90,8 @@ test('registry and README document independent review and no permission expansio
   assert.match(skill,/karpathy-guidelines/);
   assert.match(skill,/DEPENDENCIES.md/);
   assert.match(deps,/external-skills.lock.json/);
-  assert.match(deps,/no vendoring/i);
+  assert.match(deps,/No external skill is bundled, copied, vendored/);
   assert.match(guide,/external-skills\.mjs check-updates/);
-  assert.match(deps,/ponytail-review/);
+  assert.ok(lock.skills.some(s=>s.id==='ponytail-review'&&s.source==='ponytail'));
+  assert.match(deps,/Ponytail review\/audit\/debt/);
 });
