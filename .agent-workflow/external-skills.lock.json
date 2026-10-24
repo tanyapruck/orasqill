@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "observedDate": "2026-10-24",
+  "policy": {
+    "vendoring": false,
+    "autoInstall": false,
+    "autoUpdate": false,
+    "allowExternalSkillToOverridePlanOrPermissions": false,
+    "lockSemantics": "Upstream source snapshot for traceability; NOT proof of installed or loaded runtime skills"
+  },
+  "sources": {
+    "karpathy": {
+      "owner": "multica-ai",
+      "repository": "multica-ai/andrej-karpathy-skills",
+      "upstreamCommit": "2c606141936f1eeef17fa3043a72095b4765b9c2",
+      "license": "MIT",
+      "ref": "main"
+    },
+    "matt": {
+      "owner": "mattpocock",
+      "repository": "mattpocock/skills",
+      "upstreamCommit": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+      "license": "MIT",
+      "ref": "main"
+    },
+    "ponytail": {
+      "owner": "DietrichGebert",
+      "repository": "dietrichgebert/ponytail",
+      "upstreamCommit": "09c434ab73ca43761c5d8b0c5d341926c2fba710",
+      "license": "MIT",
+      "ref": "main"
+    }
+  },
+  "skills": [
+    {
+      "id": "karpathy-guidelines",
+      "source": "karpathy",
+      "upstreamPath": "skills/karpathy-guidelines/SKILL.md",
+      "upstreamBlobSha": "6a62d0441753157ca6ca50479e490c2948033adb",
+      "activation": "required",
+      "when": "coding, surgical changes, bug fixes, refactors, and test-code edits",
+      "dependsOn": []
+    },
+    {
+      "id": "grill-with-docs",
+      "source": "matt",
+      "upstreamPath": "skills/engineering/grill-with-docs/SKILL.md",
+      "upstreamBlobSha": "62b9efb6f991d1b229adee7506962f13ced0c499",
+      "activation": "conditional",
+      "when": "user-invoked or accepted pre-plan design interview",
+      "dependsOn": [
+        "grilling",
+        "domain-modeling"
+      ]
+    },
+    {
+      "id": "grilling",
+      "source": "matt",
+      "upstreamPath": "skills/productivity/grilling/SKILL.md",
+      "upstreamBlobSha": "df69d9936880cd3314c28858c6c52f48db23b856",
+      "activation": "dependency",
+      "when": "dependency of grill-with-docs",
+      "dependsOn": []
+    },
+    {
+      "id": "domain-modeling",
+      "source": "matt",
+      "upstreamPath": "skills/engineering/domain-modeling/SKILL.md",
+      "upstreamBlobSha": "a4438c6879c517d1a08e2b5fbca049b632688dfe",
+      "activation": "dependency",
+      "when": "dependency of grill-with-docs",
+      "dependsOn": []
+    },
+    {
+      "id": "to-spec",
+      "source": "matt",
+      "upstreamPath": "skills/engineering/to-spec/SKILL.md",
+      "upstreamBlobSha": "3f52599ae2a4347aee5a07432c2707518e691a7f",
+      "activation": "optional",
+      "when": "authorized durable specification from settled choices",
+      "dependsOn": []
+    },
+    {
+      "id": "to-tickets",
+      "source": "matt",
+      "upstreamPath": "skills/engineering/to-tickets/SKILL.md",
+      "upstreamBlobSha": "9b77a01db9460c99c22d03c910c349f890f12c0e",
+      "activation": "optional",
+      "when": "user-authorized dependency-aware vertical task breakdown",
+      "dependsOn": []
+    },
+    {
+      "id": "tdd",
+      "source": "matt",
+      "upstreamPath": "skills/engineering/tdd/SKILL.md",
+      "upstreamBlobSha": "01eadaa34e7c9a63a67d6dc3cce1cc81b0e49985",
+      "activation": "optional",
+      "when": "planned test-first implementation; coding prerequisite still applies",
+      "dependsOn": []
+    },
+    {
+      "id": "diagnosing-bugs",
+      "source": "matt",
+      "upstreamPath": "skills/engineering/diagnosing-bugs/SKILL.md",
+      "upstreamBlobSha": "d039541ddd1c46e6ddbd662fe99d49b686fc5e12",
+      "activation": "optional",
+      "when": "approved complex bug diagnosis with reproducible signal",
+      "dependsOn": []
+    },
+    {
+      "id": "code-review",
+      "source": "matt",
+      "upstreamPath": "skills/engineering/code-review/SKILL.md",
+      "upstreamBlobSha": "373a4f26e6cfa3617778397945bb069d9cb184bc",
+      "activation": "optional",
+      "when": "approved standards-vs-spec PR review",
+      "dependsOn": []
+    },
+    {
+      "id": "writing-for-agents",
+      "source": "matt",
+      "upstreamPath": "skills/productivity/writing-for-agents/SKILL.md",
+      "upstreamBlobSha": "a37608daf6e835e767deecfb498facecaaba82ba",
+      "activation": "optional",
+      "when": "editing agent documentation and skill entrypoints",
+      "dependsOn": [],
+      "referenceFiles": [
+        {
+          "upstreamPath": "skills/productivity/writing-for-agents/SKILL-MECHANICS.md",
+          "upstreamBlobSha": "9cdbdb22aadc438755392216e75ad9a14cc9832e"
+        }
+      ]
+    },
+    {
+      "id": "triage",
+      "source": "matt",
+      "upstreamPath": "skills/engineering/triage/SKILL.md",
+      "upstreamBlobSha": "3fd5617e906cf9b71a6b17424791adb905fc248b",
+      "activation": "optional",
+      "when": "user-authorized issue/PR triage, not automatic issue edits",
+      "dependsOn": []
+    },
+    {
+      "id": "ponytail",
+      "source": "ponytail",
+      "upstreamPath": "skills/ponytail/SKILL.md",
+      "upstreamBlobSha": "d64edd32265ba21cbf5270158f04e97d96925f27",
+      "activation": "opt_in",
+      "when": "explicit user choice only; avoid always-on overlap with Karpathy",
+      "dependsOn": []
+    },
+    {
+      "id": "ponytail-review",
+      "source": "ponytail",
+      "upstreamPath": "skills/ponytail-review/SKILL.md",
+      "upstreamBlobSha": "a50e3ac6ded6fccc9edae34ce37877bbce11e3fa",
+      "activation": "optional",
+      "when": "read-only focused PR/diff review, separate review executor if required",
+      "dependsOn": []
+    },
+    {
+      "id": "ponytail-audit",
+      "source": "ponytail",
+      "upstreamPath": "skills/ponytail-audit/SKILL.md",
+      "upstreamBlobSha": "ff9a95480700600fe2664d2d0906a4d750b2da0b",
+      "activation": "optional",
+      "when": "user-approved read-only codebase audit, no automatic fixes",
+      "dependsOn": []
+    },
+    {
+      "id": "ponytail-debt",
+      "source": "ponytail",
+      "upstreamPath": "skills/ponytail-debt/SKILL.md",
+      "upstreamBlobSha": "3124f520a65d2a4fa75a2f5db6225c38ebdb8620",
+      "activation": "optional",
+      "when": "read-only deferred shortcut inventory, no automatic remediation",
+      "dependsOn": []
+    },
+    {
+      "id": "retro",
+      "source": "matt",
+      "upstreamPath": "skills/engineering/retro/SKILL.md",
+      "upstreamBlobSha": "12149acf2dd23b4514dec57b04a6293eaa1352fa",
+      "activation": "optional",
+      "when": "after user-approved task closure to suggest future environment improvements",
+      "dependsOn": [
+        "writing-for-agents"
+      ]
+    },
+    {
+      "id": "codebase-design",
+      "source": "matt",
+      "upstreamPath": "skills/engineering/codebase-design/SKILL.md",
+      "upstreamBlobSha": "3f63c8146dd2604b419c929e9876b90c30d410e9",
+      "activation": "optional",
+      "when": "authorized interface or test-seam design decision before plan lock",
+      "dependsOn": []
+    },
+    {
+      "id": "wayfinder",
+      "source": "matt",
+      "upstreamPath": "skills/engineering/wayfinder/SKILL.md",
+      "upstreamBlobSha": "e28cf3018906d6d60fc5b25390b4eeea035dd290",
+      "activation": "optional",
+      "when": "explicit multi-session ambiguous design discovery before plan lock; may create tracker records only with authorization",
+      "dependsOn": []
+    }
+  ]
+}

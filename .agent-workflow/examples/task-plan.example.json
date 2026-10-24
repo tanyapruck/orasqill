@@ -1,6 +1,6 @@
 {
   "tasks": [
-    {"id":"change","risk":"STANDARD","objective":"Implement approved small change","dependsOn":[],"resources":{"read":["README.md"],"write":["src/example.js"]}},
-    {"id":"test","risk":"STANDARD","objective":"Run scoped check","dependsOn":["change"],"resources":{"read":["src/example.js"],"write":["tests/example.test.js"]}}
+    {"id":"change","planStepId":"S1","risk":"STANDARD","objective":"Implement approved small change","dependsOn":[],"resources":{"read":["README.md"],"write":["src/example.js"]}},
+    {"id":"test","planStepId":"S2","risk":"STANDARD","objective":"Run scoped check","dependsOn":["change"],"resources":{"read":["src/example.js"],"write":["tests/example.test.js"]}}
   ]
 }

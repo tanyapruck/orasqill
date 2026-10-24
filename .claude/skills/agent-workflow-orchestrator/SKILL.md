@@ -1,6 +1,8 @@
 ---
 name: agent-workflow-orchestrator
-description: Claude Code discovery pointer to the portable, plan-locked, agent-neutral orchestration skill.
+description: >
+  Use for user-assigned multi-step or delegated work, plan-locked fixes, agent
+  handoffs, and out-of-plan findings requiring scope approval.
 ---
 
 # Claude discovery adapter
