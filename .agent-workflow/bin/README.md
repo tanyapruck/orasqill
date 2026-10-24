@@ -12,7 +12,7 @@ All helpers use built-in Node.js modules and Git. They operate on the **current 
 - `plan-ledger.mjs finish <task-id>` — shared completion gates, finalize plan and report, then close handoff.
 - `manual-handoff.mjs resume` — find unique unfinished task on current branch and refresh a handoff, no provider launch.
 - `manual-handoff.mjs export|finish|checkpoint|start <task-id> ...` — legacy/manual checkpoint commands; direct finish cannot bypass a locked plan.
-- `task-planner.mjs <scheduler-tasks.json> [--locked-plan <.agent-workflow/state/task-id/plan.json>]` — output an **advisory** schedule; the scheduler `tasks` graph is NOT the locked ledger’s `steps` schema. Use `--locked-plan` to reject tasks not mapped to distinct pending Plan step IDs and exact objectives. See `.agent-workflow/examples/task-plan.example.json`. Does not run workers or enforce ownership.
+- `task-planner.mjs <scheduler-tasks.json> [--locked-plan <.agent-workflow/state/task-id/plan.json>]` — output an **advisory** schedule; the scheduler `tasks` graph is NOT the locked ledger’s `steps` schema. Use `--locked-plan` to reject tasks not mapped to distinct pending Plan step IDs and exact objectives, to block skipped pending steps, and to require explicit dependencies matching the locked step order. Task risk flags must be recognized; unknown flags fail closed. See `.agent-workflow/examples/task-plan.example.json`. Does not run workers or enforce ownership.
 
 Tests: `node --test .agent-workflow/tests/*.test.mjs`.
 
