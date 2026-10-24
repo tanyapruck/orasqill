@@ -14,7 +14,12 @@ export function assertPlanCompletion(plan,{requireFinalized=false,risk='STANDARD
   if (!Array.isArray(plan.findings) || plan.findings.some(x=>x?.status==='approval-required')) throw Error('APPROVAL_REQUIRED: necessary out-of-plan finding is pending');
   if (!Array.isArray(plan.acceptance) || !plan.acceptance.length || !Array.isArray(plan.checks)) throw Error('VALIDATION_REQUIRED: acceptance and validation evidence required');
   const latest = new Map();
+  let hasLegacyText = false;
   for (const check of plan.checks) {
+    if (typeof check === 'string') {
+      hasLegacyText = true; // Historical audit text is retained, but never satisfies A1..An.
+      continue;
+    }
     if (!check || typeof check !== 'object' || !['pass','fail','blocked'].includes(check.status) ||
         typeof check.result !== 'string' || !check.result.trim() || !Array.isArray(check.acceptanceIds) || !check.acceptanceIds.length) {
       throw Error('VALIDATION_MIGRATION_REQUIRED: record structured checks with --status and --accept');
@@ -23,6 +28,9 @@ export function assertPlanCompletion(plan,{requireFinalized=false,risk='STANDARD
       if (!/^A[1-9]\d*$/.test(id) || Number(id.slice(1)) > plan.acceptance.length) throw Error('VALIDATION_REQUIRED: unknown acceptance ID');
       latest.set(id,check.status);
     }
+  }
+  if (hasLegacyText && !latest.size) {
+    throw Error('VALIDATION_MIGRATION_REQUIRED: record structured checks with --status and --accept');
   }
   for (let index=1;index<=plan.acceptance.length;index++) {
     const id=`A${index}`, status=latest.get(id);
