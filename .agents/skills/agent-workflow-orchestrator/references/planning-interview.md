@@ -18,7 +18,7 @@ This is a **router**, not a modified copy of anyone else's Skill. Original instr
 | `tdd` | An approved coding step benefits from test-first feedback | The **required** Karpathy coding gate still applies |
 | `diagnosing-bugs` | A complex bug merits reproduction and diagnosis | Diagnostic scope is a planned step; new fixes become findings |
 | `code-review` | An approved PR review needs two axes: standards and specification | Its parallel-subagent workflow must yield to confirmed ownership, capacity and reviewer independence |
-| `writing-for-agents` | Explicitly editing SKILL.md, AGENTS.md, CLAUDE.md and agent instructions | Read the original upstream Skill, not locally rephrased versions |
+| `writing-for-agents` | Explicitly editing SKILL.md, AGENTS.md, CLAUDE.md and agent instructions | Read the original upstream Skill and its `SKILL-MECHANICS.md` sibling when editing a Skill; confirm pinned references in `DEPENDENCIES.md` |
 | `triage` | User wants issue/PR readiness triage | Do not move labels, close issues, or write tracker artifacts without authorized scope |
 | `retro` | User requests a post-task retrospective | Suggested follow-up changes are Findings or a separate approved task, not automatic edits |
 | `codebase-design` | User approves architectural interface/test-seam planning | Original upstream discipline is used only for the authorized design phase |
