@@ -25,12 +25,14 @@ export function validatePlan(plan) {
   if(!Array.isArray(plan?.tasks)||!plan.tasks.length)throw Error('SCHEDULER_SCHEMA_REQUIRED: expected tasks array, not plan-ledger steps; use a separate scheduler-tasks.json');
   const seen=new Set();
   for(const t of plan.tasks){
-    if(!/^[\w-]+$/.test(t.id??'')||seen.has(t.id))throw Error('duplicate/invalid task ID');seen.add(t.id);
+    if(typeof t?.id!=='string'||!/^[\w-]+$/.test(t.id)||seen.has(t.id))throw Error('duplicate/invalid task ID');seen.add(t.id);
+    if(typeof t.objective!=='string'||!t.objective.trim())throw Error('task objective must be nonempty text');
     if(!RISK.has(t.risk??'STANDARD'))throw Error('invalid risk');
     if(!Array.isArray(t.dependsOn??[]))throw Error('invalid dependencies');
+    if(!Array.isArray(t.resources?.read??[])||!Array.isArray(t.resources?.write)||!t.resources.write.length)throw Error('each task needs resource arrays and scoped writable resource');
     for(const key of ['read','write'])for(const item of t.resources?.[key]??[])resource(item);
-    if(!Array.isArray(t.resources?.write)||!t.resources.write.length)throw Error('each task needs scoped writable resource');
-    for(const f of t.flags??[])if(typeof f!=='string')throw Error('invalid risk flag');
+    if(!Array.isArray(t.flags??[]))throw Error('invalid risk flags');
+    for(const f of t.flags??[])if(!FLAGS.has(f))throw Error('unknown risk flag');
   }
   const visiting=new Set(),visited=new Set(),lookup=new Map(plan.tasks.map(t=>[t.id,t]));
   function walk(id){if(visiting.has(id))throw Error('dependency cycle');if(visited.has(id))return;visiting.add(id);for(const dep of lookup.get(id).dependsOn??[]){if(!lookup.has(dep))throw Error('missing dependency');walk(dep);}visiting.delete(id);visited.add(id);}
@@ -51,12 +53,28 @@ export function validateSchedulerBinding(graph, lockedPlan) {
     }
     seen.add(task.planStepId);
   }
+  // A locked ledger completes its steps in order. A schedule may cover a
+  // contiguous prefix of remaining steps, never bypass an earlier pending step.
+  let previousPending=null;
+  for(const step of lockedPlan.steps){
+    if(step.status!=='pending')continue;
+    const current=graph.tasks.find(t=>t.planStepId===step.id);
+    if(current&&previousPending){
+      const predecessor=graph.tasks.find(t=>t.planStepId===previousPending);
+      if(!predecessor||!current.dependsOn.includes(predecessor.id)){
+        throw Error(`OUT_OF_ORDER: ${step.id} requires the preceding pending step ${previousPending}`);
+      }
+    }
+    previousPending=step.id;
+  }
   return graph;
 }
 export function makeSchedule(plan,limits={},platform=process.platform) {
   validatePlan(plan);
   const highRisk=plan.tasks.some(t=>t.risk==='HIGH_RISK'||(t.flags??[]).some(f=>FLAGS.has(f)));
-  const capped=Math.max(1,Math.min(limits.maxWorkers??1,limits.runtime?.maxWorkers??1));
+  const requested=limits.maxWorkers??1,available=limits.runtime?.maxWorkers??1;
+  if(!Number.isSafeInteger(requested)||requested<1||!Number.isSafeInteger(available)||available<1)throw Error('invalid worker limit');
+  const capped=Math.min(requested,available);
   const canParallel=!!(limits.allowParallel&&limits.runtime?.supportsConcurrentWorkers&&limits.runtime?.enforcesOwnership&&limits.runtime?.enforcesIsolation&&capped>1&&!highRisk);
   const workerCount=canParallel?capped:1;
   const remaining=new Map(plan.tasks.map(t=>[t.id,t])),done=new Set(),waves=[];
