@@ -1,0 +1,9 @@
+{
+  "name": "agent-workflow-orchestrator-standalone",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Portable agent-neutral orchestration skill with plan-locked checkpoints, findings and acceptance",
+  "engines": {"node": ">=20"},
+  "scripts": {"test": "node --test .agent-workflow/tests/*.test.mjs"}
+}

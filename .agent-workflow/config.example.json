@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "setup": { "status": "unconfirmed", "authority": "user", "profile": "project-specific" },
+  "routing": {
+    "orchestrator": { "preferred": [], "fallback": [], "automatic_switching": false },
+    "implementer": { "preferred": [], "fallback": [] },
+    "reviewer": { "preferred": [], "fallback": [], "require_independent_author": true }
+  },
+  "workers": {},
+  "runtimes": {},
+  "delegation": { "max_depth": 1, "max_parallel_workers": 1 },
+  "task_execution": { "mode": "sequential_children", "max_active_child_tasks": 1 }
+}

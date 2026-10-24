@@ -1,0 +1,62 @@
+/** Pure advisory scheduler. It cannot launch workers, verify ownership, or grant permissions. */
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const RISK=new Set(['TRIVIAL','STANDARD','HIGH_RISK']);
+const FLAGS=new Set(['security_sensitive','schema_change','migration','destructive','irreversible','production_sensitive']);
+export function resource(value) {
+  if(typeof value!=='string'||!value.trim())throw Error('resource must be nonempty string');
+  const p=value.trim().replaceAll('\\','/');
+  if(p.startsWith('res:')) {if(!/^res:[\w.:-]+$/.test(p))throw Error('invalid logical resource');return p;}
+  if(p.startsWith('/')||/^[a-z]:\//i.test(p)||p.includes('*')||p.split('/').some(x=>!x||x==='.'||x==='..'))throw Error('unsafe resource path');
+  return p;
+}
+const overlaps=(a,b,platform)=>{
+  if(a.startsWith('res:')||b.startsWith('res:'))return a===b;
+  const x=platform==='win32'?a.toLowerCase():a,y=platform==='win32'?b.toLowerCase():b;
+  return x===y||x.startsWith(y+'/')||y.startsWith(x+'/');
+};
+export function conflicts(a,b,platform=process.platform) {
+  const aw=a.resources.write.map(resource),bw=b.resources.write.map(resource);
+  const ar=(a.resources.read??[]).map(resource),br=(b.resources.read??[]).map(resource);
+  return aw.some(x=>[...bw,...br].some(y=>overlaps(x,y,platform))) || bw.some(x=>ar.some(y=>overlaps(x,y,platform)));
+}
+export function validatePlan(plan) {
+  if(!Array.isArray(plan?.tasks)||!plan.tasks.length)throw Error('plan requires tasks');
+  const seen=new Set();
+  for(const t of plan.tasks){
+    if(!/^[\w-]+$/.test(t.id??'')||seen.has(t.id))throw Error('duplicate/invalid task ID');seen.add(t.id);
+    if(!RISK.has(t.risk??'STANDARD'))throw Error('invalid risk');
+    if(!Array.isArray(t.dependsOn??[]))throw Error('invalid dependencies');
+    for(const key of ['read','write'])for(const item of t.resources?.[key]??[])resource(item);
+    if(!Array.isArray(t.resources?.write)||!t.resources.write.length)throw Error('each task needs scoped writable resource');
+    for(const f of t.flags??[])if(typeof f!=='string')throw Error('invalid risk flag');
+  }
+  const visiting=new Set(),visited=new Set(),lookup=new Map(plan.tasks.map(t=>[t.id,t]));
+  function walk(id){if(visiting.has(id))throw Error('dependency cycle');if(visited.has(id))return;visiting.add(id);for(const dep of lookup.get(id).dependsOn??[]){if(!lookup.has(dep))throw Error('missing dependency');walk(dep);}visiting.delete(id);visited.add(id);}
+  for(const id of lookup.keys())walk(id);
+  return plan;
+}
+export function makeSchedule(plan,limits={},platform=process.platform) {
+  validatePlan(plan);
+  const highRisk=plan.tasks.some(t=>t.risk==='HIGH_RISK'||(t.flags??[]).some(f=>FLAGS.has(f)));
+  const capped=Math.max(1,Math.min(limits.maxWorkers??1,limits.runtime?.maxWorkers??1));
+  const canParallel=!!(limits.allowParallel&&limits.runtime?.supportsConcurrentWorkers&&limits.runtime?.enforcesOwnership&&limits.runtime?.enforcesIsolation&&capped>1&&!highRisk);
+  const workerCount=canParallel?capped:1;
+  const remaining=new Map(plan.tasks.map(t=>[t.id,t])),done=new Set(),waves=[];
+  while(remaining.size){
+    const wave=[];
+    for(const [id,task] of remaining){
+      if(!(task.dependsOn??[]).every(d=>done.has(d)))continue;
+      if(wave.some(x=>conflicts(task,remaining.get(x),platform)))continue;
+      if(wave.length>=workerCount)break;
+      wave.push(id);
+    }
+    if(!wave.length)throw Error('no schedulable tasks');
+    for(const id of wave){remaining.delete(id);done.add(id);}
+    waves.push(wave);
+  }
+  return {mode:plan.tasks.length===1?'SURGICAL':canParallel?'ADAPTIVE_PARALLEL':'SEQUENTIAL',workerCount,waves,requiresIndependentReview:highRisk,requiresPreActionAuthority:highRisk,finalValidation:'ONCE_AFTER_INTEGRATION',integrationReady:false,enforcesOwnership:false,enforcesIsolation:false};
+}
+const isCLI=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);
+if(isCLI){try{const input=process.argv[2];if(!input)throw Error('Usage: node task-planner.mjs <plan.json>');console.log(JSON.stringify(makeSchedule(JSON.parse(readFileSync(input,'utf8')),{},process.platform),null,2));}catch(e){console.error(`PLANNER BLOCKED: ${e.message}`);process.exitCode=2;}}
