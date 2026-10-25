@@ -14,6 +14,9 @@ All helpers use built-in Node.js modules and Git. They operate on the **current 
 - `manual-handoff.mjs export|finish|checkpoint|start <task-id> ...` — legacy/manual checkpoint commands; direct finish cannot bypass a locked plan.
 - `task-planner.mjs <scheduler-tasks.json> [--locked-plan <.agent-workflow/state/task-id/plan.json>]` — output an **advisory** schedule; the scheduler `tasks` graph is NOT the locked ledger’s `steps` schema. Use `--locked-plan` to reject tasks not mapped to distinct pending Plan step IDs and exact objectives, to block skipped pending steps, and to require explicit dependencies matching the locked step order. Task risk flags must be recognized; unknown flags fail closed. See `.agent-workflow/examples/task-plan.example.json`. Does not run workers or enforce ownership.
 
+- `node .agent-workflow/bin/model-config.mjs preview claude-orchestrator|openai-orchestrator` — **read-only** inspect a proposed profile; no model launched or file written.
+- `node .agent-workflow/bin/model-config.mjs validate .agent-workflow/config.json` — **read-only** structural check for a user-approved local model mapping; not proof of available models, permissions or runtime setup. The separate `$configure-models` / `/configure-models` Skill conducts an opt-in interview and requires explicit approval before writing.
+
 Tests: `node --test .agent-workflow/tests/*.test.mjs`.
 
 ## Third-party skill provenance (read-only)
