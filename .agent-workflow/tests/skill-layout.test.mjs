@@ -169,3 +169,21 @@ test('core lifecycle commands include mandatory task IDs',()=>{
   }
   assert.match(read('.agent-workflow/bin/README.md'),/verify-reference <id>/);
 });
+
+test('configure-models is a real, explicit slash Skill with a portable Codex entry',()=>{
+  const core=read('.agents/skills/configure-models/SKILL.md');
+  const shim=read('.claude/skills/configure-models/SKILL.md');
+  const entry=read('AGENTS.md');
+  const setup=read('.agents/skills/agent-workflow-orchestrator/references/setup-routing.md');
+  assert.match(core,/^---\nname: configure-models/m);
+  assert.match(shim,/^---\nname: configure-models/m);
+  assert.match(shim,/disable-model-invocation: true/);
+  assert.match(shim,/user-invocable: true/);
+  assert.match(shim,/\.agents\/skills\/configure-models\/SKILL\.md/);
+  assert.match(entry,/\$configure-models/);
+  assert.match(setup,/\/configure-models/);
+  assert.match(core,/explicit approval/);
+  assert.match(core,/no models were launched/i);
+  assert.match(read('README.md'),/cp -R .*\.agents\/skills\/configure-models/);
+  assert.ok(existsSync(path.join(root,'.agent-workflow/bin/model-config.mjs')));
+});

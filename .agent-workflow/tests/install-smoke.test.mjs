@@ -15,9 +15,14 @@ function destination(t) {
   execFileSync('git', ['init', '-q', dir]);
   mkdirSync(path.join(dir, '.agents/skills'), { recursive: true });
   mkdirSync(path.join(dir, '.agent-workflow'), { recursive: true });
+  mkdirSync(path.join(dir, '.claude/skills'), { recursive: true });
   // Exact required paths named in README: canonical Skill, CLI, and the provenance registry.
   cpSync(path.join(source, '.agents/skills/agent-workflow-orchestrator'),
     path.join(dir, '.agents/skills/agent-workflow-orchestrator'), { recursive: true });
+  cpSync(path.join(source, '.agents/skills/configure-models'),
+    path.join(dir, '.agents/skills/configure-models'), {recursive:true});
+  cpSync(path.join(source, '.claude/skills/configure-models'),
+    path.join(dir, '.claude/skills/configure-models'), {recursive:true});
   cpSync(path.join(source, '.agent-workflow/bin'),
     path.join(dir, '.agent-workflow/bin'), { recursive: true });
   cpSync(path.join(source, '.agent-workflow/external-skills.lock.json'),
@@ -31,6 +36,8 @@ function destination(t) {
 
 test('documented install includes original Skill, helpers, registry and destination ignore rule', () => {
   assert.match(readme, /cp -R .*\.agents\/skills\/agent-workflow-orchestrator/);
+  assert.match(readme, /cp -R .*\.agents\/skills\/configure-models/);
+  assert.match(readme, /\.claude\/skills\/configure-models/);
   assert.match(readme, /cp -R .*\.agent-workflow\/bin/);
   assert.match(readme, /cp .*\.agent-workflow\/external-skills\.lock\.json/);
   assert.match(readme, /cp .*\.agent-workflow\/config\.example\.json/);
@@ -51,6 +58,12 @@ test('fresh destination can list source-pinned third-party skills without applic
   assert.equal(out.trimEnd().split('\n').length, 18);
   assert.ok(existsSync(path.join(dest, '.agents/skills/agent-workflow-orchestrator/SKILL.md')));
   assert.ok(existsSync(path.join(dest, '.agent-workflow/bin/plan-ledger.mjs')));
+  assert.ok(existsSync(path.join(dest, '.agents/skills/configure-models/SKILL.md')));
+  assert.ok(existsSync(path.join(dest, '.claude/skills/configure-models/SKILL.md')));
+  const presetResult=JSON.parse(execFileSync(process.execPath,['.agent-workflow/bin/model-config.mjs','preview','claude-orchestrator'],{cwd:dest,encoding:'utf8'}));
+  assert.equal(presetResult.validation.valid,true);
+  assert.equal(presetResult.config.setup.status,'unconfirmed');
+  assert.equal(existsSync(path.join(dest,'.agent-workflow/config.json')),false);
   const candidateConfig=JSON.parse(readFileSync(path.join(dest, '.agent-workflow/config.example.json'),'utf8'));
   assert.equal(candidateConfig.setup.status,'unconfirmed');
   for(const name of ['openai-orchestrator','claude-orchestrator']){

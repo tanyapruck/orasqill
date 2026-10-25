@@ -6,6 +6,8 @@
 
 **Coding gate:** the actual executing agent loads `karpathy-guidelines` before coding, SURGICAL edits, bug fixes or refactors; if unavailable report `SETUP_REQUIRED: dependency_unavailable` and pause that code-writing stage. Original source/versions and readiness: `references/DEPENDENCIES.md` under the canonical Skill, plus `.agent-workflow/external-skills.lock.json`.
 
+**User-invoked model mapping:** for `$configure-models` or a request to configure agent models/effort, read `.agents/skills/configure-models/SKILL.md`. A guided preview is not authorization to write config or launch agents; request explicit consent before changing `.agent-workflow/config.json`.
+
 **Optional deep planning:** load original upstream `grill-with-docs` only for selected pre-plan design clarification; see `references/planning-interview.md`. External Skills stay separately owned and versioned, never blended into this Skill.
 
 Preserve unrelated changes. Verify actual tools, delegated ownership and explicit authorization for protected actions, Git pushes, merges, deploys or destructive operations. Read additional references only for the active task branch.

@@ -37,6 +37,7 @@ git clone https://github.com/tanyapruckp-pan/orasqill.git /path/to/orasqill
 cd /path/to/your-project
 mkdir -p .agents/skills .agent-workflow
 cp -R /path/to/orasqill/.agents/skills/agent-workflow-orchestrator .agents/skills/
+cp -R /path/to/orasqill/.agents/skills/configure-models .agents/skills/
 cp -R /path/to/orasqill/.agent-workflow/bin .agent-workflow/
 cp /path/to/orasqill/.agent-workflow/external-skills.lock.json .agent-workflow/
 cp /path/to/orasqill/.agent-workflow/config.example.json .agent-workflow/
@@ -49,6 +50,7 @@ cp -R /path/to/orasqill/.agent-workflow/profiles .agent-workflow/
 $src = 'C:\path\to\orasqill'
 New-Item -ItemType Directory -Force '.agents\skills', '.agent-workflow' | Out-Null
 Copy-Item -Recurse (Join-Path $src '.agents\skills\agent-workflow-orchestrator') '.agents\skills\'
+Copy-Item -Recurse (Join-Path $src '.agents\skills\configure-models') '.agents\skills\'
 Copy-Item -Recurse (Join-Path $src '.agent-workflow\bin') '.agent-workflow\'
 Copy-Item (Join-Path $src '.agent-workflow\external-skills.lock.json') '.agent-workflow\'
 Copy-Item (Join-Path $src '.agent-workflow\config.example.json') '.agent-workflow\'
@@ -62,7 +64,7 @@ For multi-step, delegated or agent-handoff tasks, read
 `.agents/skills/agent-workflow-orchestrator/SKILL.md` before editing.
 ```
 
-For Claude Code, optionally copy [its discovery adapter](.claude/skills/agent-workflow-orchestrator/SKILL.md) to the equivalent destination path. If your Claude setup supports `@AGENTS.md` in `CLAUDE.md`, use it only after checking for existing instructions. For Codex or any other agent, explicitly request that it load the canonical Skill if automatic discovery is unavailable. **Installing Orasqill does not install its external prerequisite Skills.**
+For Claude Code, optionally copy [its discovery adapter](.claude/skills/agent-workflow-orchestrator/SKILL.md) to the equivalent destination path, **and copy [the model mapping Slash Skill](.claude/skills/configure-models/SKILL.md) to `.claude/skills/configure-models/SKILL.md`** if you want the `/configure-models` command. On macOS/Linux: `mkdir -p .claude/skills && cp -R /path/to/orasqill/.claude/skills/configure-models .claude/skills/`. On PowerShell: `New-Item -ItemType Directory -Force '.claude\skills' | Out-Null; Copy-Item -Recurse (Join-Path $src '.claude\skills\configure-models') '.claude\skills\'`. The canonical `.agents/skills/configure-models/` is also used by Codex as `$configure-models`. If your Claude setup supports `@AGENTS.md` in `CLAUDE.md`, use it only after checking for existing instructions. For Codex or any other agent, explicitly request that it load the canonical Skill if automatic discovery is unavailable. **Installing Orasqill does not install its external prerequisite Skills.**
 
 **Keep task checkpoints private.** Merge this line into the destination project's `.gitignore`:
 
@@ -87,6 +89,25 @@ git check-ignore .agent-workflow/state/install-check/plan.json
 ```
 
 If these fail, fix the repository setup, copied registry, or ignore rule first. The registry check **does not** establish that an external Skill was loaded into an agent. For optional delegation config, copy the installed `.agent-workflow/config.example.json` to `.agent-workflow/config.json` and confirm real agent capabilities and authority; an example config does not enable workers.
+
+### Interactive Model Mapping Skill (recommended)
+
+Instead of manually editing JSON, invoke the opt-in, user-controlled setup interview **after installing the Skill**:
+
+- **Claude Code:** `/configure-models` or `/configure-models claude-led`
+- **Codex:** `$configure-models` and optionally say `use Claude-led`, `OpenAI-led` or `custom`
+
+The Skill reads existing configuration and the two saved profiles, asks one consequential question at a time only where details are missing, then shows **Before → After** for every changed role and effort. It does **not** auto-write: invoking the command only begins the interview. It must ask for explicit confirmation before saving `.agent-workflow/config.json`. The file remains `setup.status = "unconfirmed"` until *actual* runtime/model support, user authorization and required external Skills have been checked. Review independence and HIGH_RISK gates are unchanged.
+
+Read-only preview / validation helpers:
+
+```sh
+node .agent-workflow/bin/model-config.mjs preview claude-orchestrator
+node .agent-workflow/bin/model-config.mjs preview openai-orchestrator
+node .agent-workflow/bin/model-config.mjs validate .agent-workflow/config.json
+```
+
+These commands never write config, launch models, install external Skills, or change Git state. Structural validation does **not** verify that the named models or client-specific modes are actually available.
 
 ### Choose the model and effort profile
 
