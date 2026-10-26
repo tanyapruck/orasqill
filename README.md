@@ -52,7 +52,7 @@ On a fresh workspace, it installs the packaged portable Orchestrator, `oranit` a
 - `.agent-workflow/index/codebase-map.json` — generated index of nonsecret code paths, symbols and hashes, ignored by Git.
 - `.agent-workflow/config.json` — neutral or explicitly selected model candidate mapping, always `unconfirmed` and ignored by Git.
 
-**Existing files are not overwritten.** If `AGENTS.md` already exists, add the index-first instruction there yourself (or use the canonical Orchestrator Skill); it will not be silently replaced. Choosing a model profile doesn't launch models, confirm runtime credentials or grant delegation rights. For a preview with **no writes**, run `oranit init --dry-run --workspace .`.
+**Existing Skill files, model config and agent instructions are preserved.** The command only appends missing local ignore rules to an existing `.gitignore`. If `AGENTS.md` already exists, add the index-first instruction there yourself (or use the canonical Orchestrator Skill); it will not be silently replaced. Choosing a model profile doesn't launch models, confirm runtime credentials or grant delegation rights. For a preview with **no writes**, run `oranit init --dry-run --workspace .`.
 
 ### Index-first workflow
 
