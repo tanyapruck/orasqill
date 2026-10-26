@@ -107,6 +107,7 @@ test('index detects content and file-set drift, requiring refresh for live looku
 });
 
 test('scanner ignores secret-looking files, dependencies and symbolic links',t=>{
+  if(process.platform==='win32'){t.skip('File symlinks may require Developer Mode; path guards are separately tested');return;}
   const dir=workspace(t);
   mkdirSync(path.join(dir,'node_modules/example'),{recursive:true});
   writeFileSync(path.join(dir,'node_modules/example/index.js'),'export function vendor() {}');
@@ -133,6 +134,7 @@ test('rejects path traversal, unknown modes, and attempts to write through works
   const dir=workspace(t);
   assert.throws(()=>execute(['init','--workspace',dir,'--profile','secret']),/PROFILE_REQUIRED/);
   assert.throws(()=>execute(['locate','x','--workspace',dir]),/INDEX_MISSING/);
+  if(process.platform==='win32'){t.skip('Directory symlinks may require Developer Mode');return;}
   const external=mkdtempSync(path.join(tmpdir(),'oranit-external-'));
   t.after(()=>rmSync(external,{recursive:true,force:true}));
   symlinkSync(external,path.join(dir,'.agent-workflow'));
