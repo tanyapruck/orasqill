@@ -99,8 +99,7 @@ function parse(argv){
 function rootOf(workspace){
   const absolute=path.resolve(workspace);
   if(!existsSync(absolute)||!lstatSync(absolute).isDirectory()||lstatSync(absolute).isSymbolicLink())fail('WORKSPACE_REQUIRED: existing real directory');
-  if(realpathSync(absolute)!==absolute)fail('WORKSPACE_SYMLINK: use the real workspace path');
-  return absolute;
+  return realpathSync(absolute); // macOS may resolve /var to /private/var; keep the actual canonical root.
 }
 function ensureIgnore(root,dryRun){
   const file=path.join(root,'.gitignore');
