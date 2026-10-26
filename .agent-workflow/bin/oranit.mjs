@@ -139,9 +139,10 @@ export function execute(argv){
         created.push(rel);
       }
       if(!configExists)newFile(root,path.join(root,CONFIG),JSON.stringify(template,null,2)+'\n');
-      if(!indexExists)replaceFile(root,path.join(root,INDEX),JSON.stringify(fresh,null,2)+'\n');
       if(!existsSync(path.join(root,'AGENTS.md')))newFile(root,path.join(root,'AGENTS.md'),AGENT_HINT);
       ensureIgnore(root,false);
+      // Index AFTER bootstrapping: avoid an immediately stale index on a new workspace.
+      if(!indexExists)replaceFile(root,path.join(root,INDEX),JSON.stringify(scanWorkspace(root),null,2)+'\n');
     }
     let indexStatus=indexExists?'preserved':'created';
     if(indexExists){
