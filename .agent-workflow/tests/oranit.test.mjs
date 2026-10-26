@@ -29,6 +29,8 @@ test('oranit init bootstraps fresh workspace, code index, ignored config and all
   const config=JSON.parse(readFileSync(path.join(dir,'.agent-workflow/config.json'),'utf8'));
   assert.equal(config.setup.status,'unconfirmed');
   assert.equal(config.setup.profile,'claude-orchestrator');
+  assert.deepEqual(config.routing.implementer.preferred[0],{runtime:'claude-code',model:'claude-sonnet-5-5',effort:'medium'});
+  assert.deepEqual(config.stage_preferences.complex_implement,{role:'implementer',runtime:'claude-code',model:'claude-sonnet-5-5',effort:'high'});
   assert.equal(config.routing.reviewer.preferred[0].model,'gpt-6.1-sol');
   assert.equal(config.stage_preferences.critical_review.requested_mode,'ultra');
   for(const p of ['.agents/skills/oranit/SKILL.md','.agents/skills/configure-models/SKILL.md',
