@@ -17,6 +17,10 @@ All helpers use built-in Node.js modules and Git. They operate on the **current 
 - `node .agent-workflow/bin/model-config.mjs preview claude-orchestrator|openai-orchestrator` — **read-only** inspect a proposed profile; no model launched or file written.
 - `node .agent-workflow/bin/model-config.mjs validate .agent-workflow/config.json` — **read-only** structural check for a user-approved local model mapping; not proof of available models, permissions or runtime setup. The separate `$configure-models` / `/configure-models` Skill conducts an opt-in interview and requires explicit approval before writing.
 
+- `oranit init [--workspace <dir>] [--profile blank|claude-led|openai-led] [--dry-run]` — safe workspace bootstrap: missing Skills, model routing template (unconfirmed) and generated code index. Node alternative: `node .agent-workflow/bin/oranit.mjs init`.
+- `oranit status|refresh [--workspace <dir>]` — detect code/index drift and refresh generated locator, never model config.
+- `oranit locate "<symbol-or-feature>" [--workspace <dir>]` — ranked path/line hints only, stale index blocks navigation; inspect live source.
+
 Tests: `node --test .agent-workflow/tests/*.test.mjs`.
 
 ## Third-party skill provenance (read-only)

@@ -26,6 +26,47 @@ An eligible agent can coordinate when explicitly authorized; no provider is the 
 
 Third-party Skills are **not vendored or copied** into Orasqill. Their original owners, paths and reviewed Git fingerprints are recorded in [the independent registry](.agent-workflow/external-skills.lock.json); verify installation and loadability in each agent's runtime. Optional Matt Pocock and Ponytail integrations are never automatic.
 
+## Oranit: initialize a workspace with one command
+
+**`oranit init` now sets up both the codebase locator and the model-configuration starting point.** The index helps an AI jump to likely relevant files/symbols before reading actual source; it doesn't replace source inspection or tests. The new model config is intentionally **unconfirmed**, not an active model routing session.
+
+From a local checkout of this (currently private) repository, you can install the command on your PATH using Node.js 20+:
+
+```sh
+git clone https://github.com/tanyapruckp-pan/orasqill.git /path/to/orasqill
+cd /path/to/orasqill
+npm link
+cd /path/to/your-workspace
+oranit init --workspace . --profile claude-led
+# or --profile openai-led; omit --profile for a neutral, unconfirmed config
+```
+
+If you don't want a globally linked command, you can use the same CLI **directly from its source**:
+
+```sh
+node /path/to/orasqill/.agent-workflow/bin/oranit.mjs init --workspace /path/to/your-workspace
+```
+
+On a fresh workspace, it installs the packaged portable Orchestrator, `oranit` and `configure-models` Skills (plus Claude Slash adapters), supporting CLI files, two profiles, the registry, an initial `AGENTS.md` if absent, and appropriate ignore rules. It creates:
+
+- `.agent-workflow/index/codebase-map.json` — generated index of nonsecret code paths, symbols and hashes, ignored by Git.
+- `.agent-workflow/config.json` — neutral or explicitly selected model candidate mapping, always `unconfirmed` and ignored by Git.
+
+**Existing Skill files, model config and agent instructions are preserved.** The command only appends missing local ignore rules to an existing `.gitignore`. If `AGENTS.md` already exists, add the index-first instruction there yourself (or use the canonical Orchestrator Skill); it will not be silently replaced. Choosing a model profile doesn't launch models, confirm runtime credentials or grant delegation rights. For a preview with **no writes**, run `oranit init --dry-run --workspace .`.
+
+### Index-first workflow
+
+```sh
+oranit status                               # detect code drift
+oranit locate "verifyOTP"                   # ranked file paths and symbol/line hints
+# Read the actual target files, imports, callers and tests before editing.
+oranit refresh                              # update index after changed source files
+```
+
+If an index is missing, run `oranit init`; if stale, `oranit locate` blocks until `oranit refresh`. On partial/oversized/excluded coverage or zero matches, use a scoped code search rather than claiming the index is exhaustive. Hashes detect source changes, but the index is **not a compiler/semantic dependency graph**.
+
+Use **`/oranit init`** in Claude Code or **`$oranit`** in Codex to launch the workspace initialization Skill. After bootstrap, use **`/configure-models`** or **`$configure-models`** to review and separately approve adjustments to model roles/efforts. Skill invocation and CLI initialization never count as model-runtime approval.
+
 ## Install in another Git repository
 
 Clone Orasqill somewhere you can access, then copy its reusable files into your project. **The destination is your project; do not overwrite existing agent instructions.**
@@ -38,6 +79,7 @@ cd /path/to/your-project
 mkdir -p .agents/skills .agent-workflow
 cp -R /path/to/orasqill/.agents/skills/agent-workflow-orchestrator .agents/skills/
 cp -R /path/to/orasqill/.agents/skills/configure-models .agents/skills/
+cp -R /path/to/orasqill/.agents/skills/oranit .agents/skills/
 cp -R /path/to/orasqill/.agent-workflow/bin .agent-workflow/
 cp /path/to/orasqill/.agent-workflow/external-skills.lock.json .agent-workflow/
 cp /path/to/orasqill/.agent-workflow/config.example.json .agent-workflow/
@@ -51,6 +93,7 @@ $src = 'C:\path\to\orasqill'
 New-Item -ItemType Directory -Force '.agents\skills', '.agent-workflow' | Out-Null
 Copy-Item -Recurse (Join-Path $src '.agents\skills\agent-workflow-orchestrator') '.agents\skills\'
 Copy-Item -Recurse (Join-Path $src '.agents\skills\configure-models') '.agents\skills\'
+Copy-Item -Recurse (Join-Path $src '.agents\skills\oranit') '.agents\skills\'
 Copy-Item -Recurse (Join-Path $src '.agent-workflow\bin') '.agent-workflow\'
 Copy-Item (Join-Path $src '.agent-workflow\external-skills.lock.json') '.agent-workflow\'
 Copy-Item (Join-Path $src '.agent-workflow\config.example.json') '.agent-workflow\'
@@ -64,13 +107,14 @@ For multi-step, delegated or agent-handoff tasks, read
 `.agents/skills/agent-workflow-orchestrator/SKILL.md` before editing.
 ```
 
-For Claude Code, optionally copy [its discovery adapter](.claude/skills/agent-workflow-orchestrator/SKILL.md) to the equivalent destination path, **and copy [the model mapping Slash Skill](.claude/skills/configure-models/SKILL.md) to `.claude/skills/configure-models/SKILL.md`** if you want the `/configure-models` command. On macOS/Linux: `mkdir -p .claude/skills && cp -R /path/to/orasqill/.claude/skills/configure-models .claude/skills/`. On PowerShell: `New-Item -ItemType Directory -Force '.claude\skills' | Out-Null; Copy-Item -Recurse (Join-Path $src '.claude\skills\configure-models') '.claude\skills\'`. The canonical `.agents/skills/configure-models/` is also used by Codex as `$configure-models`. If your Claude setup supports `@AGENTS.md` in `CLAUDE.md`, use it only after checking for existing instructions. For Codex or any other agent, explicitly request that it load the canonical Skill if automatic discovery is unavailable. **Installing Orasqill does not install its external prerequisite Skills.**
+For Claude Code, optionally copy [its discovery adapter](.claude/skills/agent-workflow-orchestrator/SKILL.md) to the equivalent destination path, **and copy [the model mapping Slash Skill](.claude/skills/configure-models/SKILL.md) to `.claude/skills/configure-models/SKILL.md`** if you want the `/configure-models` command. On macOS/Linux: `mkdir -p .claude/skills && cp -R /path/to/orasqill/.claude/skills/configure-models .claude/skills/`. On PowerShell: `New-Item -ItemType Directory -Force '.claude\skills' | Out-Null; Copy-Item -Recurse (Join-Path $src '.claude\skills\configure-models') '.claude\skills\'`. The canonical `.agents/skills/configure-models/` is also used by Codex as `$configure-models`. For Claude's `/oranit`, additionally copy `.claude/skills/oranit/` to the destination `.claude/skills/` (or use the automatic `oranit init` bootstrap); the portable `.agents/skills/oranit/` supports `$oranit` in Codex. If your Claude setup supports `@AGENTS.md` in `CLAUDE.md`, use it only after checking for existing instructions. For Codex or any other agent, explicitly request that it load the canonical Skill if automatic discovery is unavailable. **Installing Orasqill does not install its external prerequisite Skills.**
 
 **Keep task checkpoints private.** Merge this line into the destination project's `.gitignore`:
 
 ```gitignore
 .agent-workflow/state/
 .agent-workflow/config.json
+.agent-workflow/index/
 ```
 
 State can contain goals, paths, findings and user-reported approval notes. Never put secrets in it. Gitignored state does not follow a Git push to another computer.
@@ -117,7 +161,7 @@ Two included **suggested** profiles are available after installation. This only 
 |---|---|---|
 | Orchestrator / plan | GPT-6.1 Sol — high | Claude Opus 5.5 — high |
 | Triage / reconnaissance | GPT-6 Luna — low | Claude Haiku 5.5 — low |
-| Implementation | GPT-6.1 Sol — medium | GPT-6.1 Sol — medium (Codex) |
+| Implementation | GPT-6.1 Sol — medium | Claude Sonnet 5.5 — medium (Claude Code) |
 | Complex implementation | GPT-6 Astra — high | Claude Sonnet 5.5 — high |
 | Independent review | Claude Opus 5.5 — high | GPT-6.1 Sol — xhigh |
 | HIGH_RISK review | Claude Opus 5.5 — xhigh | GPT-6.1 Sol — Ultra (requested review mode; API effort max) |

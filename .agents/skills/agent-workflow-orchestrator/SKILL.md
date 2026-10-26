@@ -14,7 +14,7 @@ Version: 1.3 — Plan-locked, provider-neutral orchestration
 
 ## Workflow: PLAN → CHECKPOINT → EXECUTE → VALIDATE → CLOSE
 
-1. **PLAN first.** Before implementation or delegation, present the authorized goal, included and excluded scope, ordered steps, risks, acceptance conditions and final checks. Resolve material design decisions *before* locking the plan; only if needed, consult `references/planning-interview.md`. **Complete when:** the plan has clear bounded steps and sufficient user authorization; protected actions still need their separate approvals.
+1. **PLAN first.** Before broad source search, use `oranit status`/`locate`; refresh stale indexes and verify live code (`references/index-navigation.md`). Before implementation or delegation, present the authorized goal, included and excluded scope, ordered steps, risks, acceptance conditions and final checks. Resolve material design decisions *before* locking the plan; only if needed, consult `references/planning-interview.md`. **Complete when:** the plan has clear bounded steps and sufficient user authorization; protected actions still need their separate approvals.
 2. **CHECKPOINT before changes.** In a Git-backed task, verify a named branch and create the baseline and local checkpoint:
 
    `node .agent-workflow/bin/plan-ledger.mjs start <task-id> --goal "..." --step "..." --accept "..."`
@@ -44,6 +44,7 @@ The user or authorized parent chooses the receiving agent; the original writer s
 |---|---|
 | Git task steps, Finding approval or final acceptance | `references/plan-execution.md` |
 | Agent role assignment or ownership transfer | `references/role-assignment.md` |
+| Workspace init and index-first navigation | `references/index-navigation.md` |
 | Coding Skill readiness, third-party installation or upgrade | `references/DEPENDENCIES.md` |
 | Editing SKILL.md, AGENTS.md, CLAUDE.md or agent instructions | `references/DEPENDENCIES.md` |
 | Consequential unresolved decisions before Plan lock | `references/planning-interview.md` |

@@ -19,6 +19,10 @@ function destination(t) {
   // Exact required paths named in README: canonical Skill, CLI, and the provenance registry.
   cpSync(path.join(source, '.agents/skills/agent-workflow-orchestrator'),
     path.join(dir, '.agents/skills/agent-workflow-orchestrator'), { recursive: true });
+  cpSync(path.join(source, '.agents/skills/oranit'),
+    path.join(dir, '.agents/skills/oranit'), {recursive:true});
+  cpSync(path.join(source, '.claude/skills/oranit'),
+    path.join(dir, '.claude/skills/oranit'), {recursive:true});
   cpSync(path.join(source, '.agents/skills/configure-models'),
     path.join(dir, '.agents/skills/configure-models'), {recursive:true});
   cpSync(path.join(source, '.claude/skills/configure-models'),
@@ -37,6 +41,7 @@ function destination(t) {
 test('documented install includes original Skill, helpers, registry and destination ignore rule', () => {
   assert.match(readme, /cp -R .*\.agents\/skills\/agent-workflow-orchestrator/);
   assert.match(readme, /cp -R .*\.agents\/skills\/configure-models/);
+  assert.match(readme, /cp -R .*\.agents\/skills\/oranit/);
   assert.match(readme, /\.claude\/skills\/configure-models/);
   assert.match(readme, /cp -R .*\.agent-workflow\/bin/);
   assert.match(readme, /cp .*\.agent-workflow\/external-skills\.lock\.json/);
@@ -59,6 +64,9 @@ test('fresh destination can list source-pinned third-party skills without applic
   assert.ok(existsSync(path.join(dest, '.agents/skills/agent-workflow-orchestrator/SKILL.md')));
   assert.ok(existsSync(path.join(dest, '.agent-workflow/bin/plan-ledger.mjs')));
   assert.ok(existsSync(path.join(dest, '.agents/skills/configure-models/SKILL.md')));
+  assert.ok(existsSync(path.join(dest, '.agents/skills/oranit/SKILL.md')));
+  assert.ok(existsSync(path.join(dest, '.claude/skills/oranit/SKILL.md')));
+  assert.ok(existsSync(path.join(dest, '.agent-workflow/bin/oranit.mjs')));
   assert.ok(existsSync(path.join(dest, '.claude/skills/configure-models/SKILL.md')));
   const presetResult=JSON.parse(execFileSync(process.execPath,['.agent-workflow/bin/model-config.mjs','preview','claude-orchestrator'],{cwd:dest,encoding:'utf8'}));
   assert.equal(presetResult.validation.valid,true);
