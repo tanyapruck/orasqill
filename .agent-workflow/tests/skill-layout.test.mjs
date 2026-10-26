@@ -7,7 +7,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const read=name=>readFileSync(path.join(root,name),'utf8').replace(/\r\n/g,'\n');
 const skill=read('.agents/skills/agent-workflow-orchestrator/SKILL.md');
 const guide=read('README.md');
-const names=['plan-execution.md','role-assignment.md','setup-routing.md','delegation.md','review-validation.md','manual-handoff.md','token-budget.md','DEPENDENCIES.md','planning-interview.md'];
+const names=['plan-execution.md','role-assignment.md','setup-routing.md','delegation.md','review-validation.md','manual-handoff.md','token-budget.md','DEPENDENCIES.md','planning-interview.md','index-navigation.md'];
 for(const name of names) test(`optional reference is discoverable: ${name}`,()=>{
   assert.match(skill,new RegExp(`references/${name.replaceAll('.','\\.')}`));
   const file=path.join(root,'.agents/skills/agent-workflow-orchestrator/references',name);
