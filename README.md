@@ -161,7 +161,7 @@ Two included **suggested** profiles are available after installation. This only 
 |---|---|---|
 | Orchestrator / plan | GPT-6.1 Sol — high | Claude Opus 5.5 — high |
 | Triage / reconnaissance | GPT-6 Luna — low | Claude Haiku 5.5 — low |
-| Implementation | GPT-6.1 Sol — medium | GPT-6.1 Sol — medium (Codex) |
+| Implementation | GPT-6.1 Sol — medium | Claude Sonnet 5.5 — medium (Claude Code) |
 | Complex implementation | GPT-6 Astra — high | Claude Sonnet 5.5 — high |
 | Independent review | Claude Opus 5.5 — high | GPT-6.1 Sol — xhigh |
 | HIGH_RISK review | Claude Opus 5.5 — xhigh | GPT-6.1 Sol — Ultra (requested review mode; API effort max) |
