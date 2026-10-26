@@ -54,8 +54,8 @@
     },
     "complex_implement": {
       "role": "implementer",
-      "runtime": "codex",
-      "model": "gpt-6-astra",
+      "runtime": "claude-code",
+      "model": "claude-sonnet-5-5",
       "effort": "high"
     },
     "review": {
