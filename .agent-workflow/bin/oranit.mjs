@@ -34,7 +34,7 @@ function dirGuard(root,target,create=false){
     current=path.join(current,segment);
     if(!existsSync(current)){
       if(create)mkdirSync(current,{mode:0o700});
-      else fail('MISSING_DIRECTORY: '+current);
+      else continue; // Preflight permits paths that init will create later.
     }
     const info=lstatSync(current);
     if(!info.isDirectory()||info.isSymbolicLink())fail('UNSAFE_WORKSPACE_PATH: '+current);
