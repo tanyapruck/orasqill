@@ -1,9 +1,9 @@
 ---
 name: oranit
-description: >
-  Initialize an Orasqill workspace with a generated codebase index and safe,
-  unconfirmed model routing; use when the user invokes $oranit (Codex),
-  /oranit (Claude Code), or requests workspace indexing/bootstrap.
+description: Initialize the current workspace with a codebase index and model config.
+disable-model-invocation: true
+user-invocable: true
+argument-hint: "[init|status|locate|refresh] [workspace]"
 ---
 
 # Oranit — workspace bootstrap and codebase navigation
