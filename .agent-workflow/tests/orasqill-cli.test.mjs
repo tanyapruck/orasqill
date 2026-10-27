@@ -28,26 +28,30 @@ test('CLI contract exposes init-only oranit and all utilities through orasqill',
   assert.deepEqual(parseCommand(['status']).args,['status']);
   assert.deepEqual(parseCommand(['locate','keyword']).args,['locate','keyword']);
   assert.deepEqual(parseCommand(['refresh']).args,['refresh']);
-  assert.equal(parseCommand(['--configure']).command,'configure');
-  assert.deepEqual(parseCommand(['--configure','--agent','codex']).args,['--agent','codex']);
+  assert.equal(parseCommand(['configure']).command,'configure');
+  assert.deepEqual(parseCommand(['configure','--agent','codex']).args,['--agent','codex']);
+  assert.throws(()=>parseCommand(['--configure']),/UNKNOWN_COMMAND/);
   assert.throws(()=>parseCommand(['oranit','--configure']),/INIT_ONLY/);
   assert.equal(parseCommand(['deps','list']).tool,'external-skills.mjs');
   assert.equal(parseCommand(['plan','report','task']).tool,'plan-ledger.mjs');
   assert.equal(parseCommand(['models','resolve','codex']).tool,'model-config.mjs');
   assert.throws(()=>parseCommand(['oranit']),/INIT_ONLY/);
-  assert.equal(parseCommand(['init']).command,'init');
-  assert.deepEqual(parseCommand(['init','--dry-run']).args,['--dry-run']);
-  assert.throws(()=>parseCommand(['init','status']),/INIT_ONLY/);
-  assert.throws(()=>parseCommand(['init','--configure']),/INIT_ONLY/);
+  assert.throws(()=>parseCommand(['init']),/UNKNOWN_COMMAND/);
+  assert.throws(()=>parseCommand(['init','--dry-run']),/UNKNOWN_COMMAND/);
+  assert.throws(()=>parseCommand(['init','status']),/UNKNOWN_COMMAND/);
+  assert.throws(()=>parseCommand(['init','--configure']),/UNKNOWN_COMMAND/);
   assert.throws(()=>parseCommand(['unknown']),/UNKNOWN_COMMAND/);
   assert.throws(()=>parseCommand(['help','unexpected']),/UNKNOWN_OPTION/);
 });
 
 test('oranit executable refuses navigation while orasqill navigates the index',async t=>{
   const dir=workspace(t);
-  const initPreview=spawnSync(process.execPath,[orasqill,'init','--workspace',dir,'--dry-run'],{encoding:'utf8'});
-  assert.equal(initPreview.status,0,initPreview.stderr);
-  assert.equal(JSON.parse(initPreview.stdout).dryRun,true);
+  const removedInit=spawnSync(process.execPath,[orasqill,'init','--workspace',dir],{encoding:'utf8'});
+  assert.equal(removedInit.status,2);
+  assert.match(removedInit.stderr,/UNKNOWN_COMMAND/);
+  const removedConfigure=spawnSync(process.execPath,[orasqill,'--configure','--workspace',dir],{encoding:'utf8'});
+  assert.equal(removedConfigure.status,2);
+  assert.match(removedConfigure.stderr,/UNKNOWN_COMMAND/);
   const setup=spawnSync(process.execPath,[oranit,'--workspace',dir],{encoding:'utf8'});
   assert.equal(setup.status,0,setup.stderr);
   for(const subcommand of ['status','refresh','locate']){
@@ -76,6 +80,7 @@ test('configure preview, explicit confirmation and agent-isolation',async t=>{
   const shared=path.join(dir,'.agent-workflow/config.json');
   const otherBefore=readFileSync(other,'utf8'),sharedBefore=readFileSync(shared,'utf8');
   const original=readFileSync(target,'utf8');
+  assert.equal(parseCommand(['configure','--agent','codex','--workspace',dir]).command,'configure');
   const denied=await configureRouting(['--workspace',dir,'--agent','codex'],{
     ask:scripted(['orchestrator','','gpt-6.1-sol-alternative','high','done','no'])
   });
