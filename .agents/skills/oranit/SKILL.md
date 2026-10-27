@@ -8,6 +8,8 @@ argument-hint: "[--profile claude-led|openai-led|other] [--workspace <dir>] [--d
 
 # Oranit — workspace initialization only
 
+`oranit` is the short form of `orasqill init`. Everything except initialization uses `orasqill` directly (for example `orasqill --configure` and `orasqill locate "keyword"`).
+
 A **user-invoked workspace initialization Skill**, not permission to modify application code, activate model runtimes, or bypass review. For CLI usage, see `.agent-workflow/bin/oranit.mjs` and `.agent-workflow/bin/orasqill.mjs`.
 
 ## Initialization: ask only what is missing
