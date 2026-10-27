@@ -19,7 +19,7 @@ oranit
 
 | CLI command | Purpose |
 |---|---|
-| `oranit` | **Initialize** shared workspace state and separate Claude Code/Codex model candidates |
+| `oranit` (or `orasqill init`) | **Initialize only**: shared workspace state and separate Claude Code/Codex model candidates |
 | `oranit --profile claude-led` | Create Claude Code's missing candidate only; leave Codex unchanged |
 | `oranit --profile openai-led` | Create Codex's missing candidate only; leave Claude unchanged |
 | `oranit --profile other` | Create an **optional Other Model** route with no model selected |
