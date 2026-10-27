@@ -257,3 +257,58 @@ test('agent-specific file cannot impersonate other agent, and symlinked routing 
   assert.throws(()=>execute(['--workspace',other]),/UNSAFE_WORKSPACE_PATH/);
   assert.throws(()=>resolveAgentRouting('codex',other),/UNSAFE_CONFIG_PATH/);
 });
+
+test('other model is an explicit third option, not an automatic default',t=>{
+  const dir=workspace(t);
+  const first=execute(['--workspace',dir]);
+  assert.deepEqual(first.routing.map(x=>x.agent),['claude-code','codex']);
+  const otherFile=path.join(dir,'.agent-workflow/routing/other.json');
+  assert.equal(existsSync(otherFile),false);
+  const cBefore=readFileSync(path.join(dir,'.agent-workflow/routing/claude-code.json'),'utf8');
+  const oBefore=readFileSync(path.join(dir,'.agent-workflow/routing/codex.json'),'utf8');
+  const sharedBefore=readFileSync(path.join(dir,'.agent-workflow/config.json'),'utf8');
+  const selected=execute(['--workspace',dir,'--profile','other']);
+  assert.equal(selected.profile,'other');
+  assert.deepEqual(selected.routing.map(x=>x.agent),['other']);
+  assert.equal(existsSync(otherFile),true);
+  const other=JSON.parse(readFileSync(otherFile,'utf8'));
+  assert.equal(other.setup.profile,'other-orchestrator');
+  assert.equal(other.setup.status,'unconfirmed');
+  assert.deepEqual(other.routing.orchestrator.preferred,[]);
+  assert.equal(resolveAgentRouting('other',dir).source,'agent-local');
+  assert.equal(readFileSync(path.join(dir,'.agent-workflow/routing/claude-code.json'),'utf8'),cBefore);
+  assert.equal(readFileSync(path.join(dir,'.agent-workflow/routing/codex.json'),'utf8'),oBefore);
+  assert.equal(readFileSync(path.join(dir,'.agent-workflow/config.json'),'utf8'),sharedBefore);
+  assert.equal(execute(['--workspace',dir,'--profile','other']).routing[0].status,'preserved');
+});
+
+test('other profile dry run does not create files, and unrelated agent profiles are untouched',t=>{
+  const dir=workspace(t);
+  const report=execute(['--workspace',dir,'--profile','other','--dry-run']);
+  assert.deepEqual(report.routing.map(x=>x.agent),['other']);
+  assert.equal(report.routing[0].status,'would_create');
+  assert.equal(existsSync(path.join(dir,'.agent-workflow/routing/other.json')),false);
+  execute(['--workspace',dir,'--profile','claude-led']);
+  assert.equal(existsSync(path.join(dir,'.agent-workflow/routing/codex.json')),false);
+  assert.equal(existsSync(path.join(dir,'.agent-workflow/routing/other.json')),false);
+  assert.equal(resolveAgentRouting('other',dir).source,'bundled-candidate');
+  assert.throws(()=>execute(['--workspace',dir,'--profile','anything']),/PROFILE_REQUIRED/);
+});
+
+test('user configured other model is validated, preserved and never executed by Oranit',t=>{
+  const dir=workspace(t);
+  execute(['--workspace',dir,'--profile','other']);
+  const file=path.join(dir,'.agent-workflow/routing/other.json');
+  const config=JSON.parse(readFileSync(file,'utf8'));
+  config.routing.orchestrator.preferred=[{runtime:'external-runtime',provider:'example',model:'example-ai-model'}];
+  config.routing.implementer.preferred=[{runtime:'external-runtime',model:'example-ai-model'}];
+  config.userNotes='custom model is user-owned';
+  writeFileSync(file,JSON.stringify(config,null,2));
+  execute(['--workspace',dir,'--profile','other']);
+  assert.equal(JSON.parse(readFileSync(file,'utf8')).userNotes,'custom model is user-owned');
+  const resolved=resolveAgentRouting('other',dir);
+  assert.equal(resolved.config.routing.orchestrator.preferred[0].model,'example-ai-model');
+  assert.equal(resolved.executionAuthorized,false);
+  assert.equal(resolveAgentRouting('claude-code',dir).source,'bundled-candidate');
+  assert.equal(resolveAgentRouting('codex',dir).source,'bundled-candidate');
+});
