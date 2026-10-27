@@ -33,7 +33,7 @@ export function parseCommand(argv){
     return {command:'help',args:[]};
   }
   if(command==='init'){
-    if(args.some(value=>['--configure','status','refresh','locate'].includes(value)))
+    if(args.includes('--configure')||(args[0]&&!args[0].startsWith('--')))
       throw Error('INIT_ONLY: orasqill init (or oranit) only initializes workspaces');
     return {command:'init',args};
   }
