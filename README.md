@@ -44,7 +44,7 @@ You need **Git**, **Node.js 20+**, and access to this repository (currently priv
 Run once to install the CLI, then initialize any project you want to use:
 
 ```bash
-git clone https://github.com/tanyapruckp-pan/orasqill.git
+git clone https://github.com/tanyapruck/orasqill.git
 cd orasqill
 npm link
 cd /path/to/your-project
