@@ -14,7 +14,7 @@ A toolkit for developers and teams who work with AI coding agents. Orasqill help
 |---|---|
 | **One-command setup** | Prepare your coding workspace with Skills, an index and starter model options |
 | **Codebase index** | Find files and functions without repeatedly searching a whole repository |
-| **Model configuration** | Choose Claude-led, OpenAI-led or custom role assignments |
+| **Model configuration** | Claude Code and Codex keep independent role assignments in the same project |
 | **Task tracking** | Keep a plan, recorded progress and test results together |
 | **Agent handoff** | Continue unfinished work with another compatible agent |
 | **Nested task planning** | Divide large features into manageable workstreams |
@@ -26,7 +26,7 @@ A toolkit for developers and teams who work with AI coding agents. Orasqill help
 3. Follow the [workspace setup commands](#1-set-up-a-workspace). The setup command is simply **`oranit`**.
 4. Use the [agent command table](#2-commands-inside-claude-code-and-codex) to configure models or request nested delegation.
 
-On a new workspace, Orasqill prepares a code index and starting model configuration. Existing model settings and agent instructions are preserved.
+On a new workspace, Orasqill prepares one shared code index and neutral task config, alongside independent Claude Code and Codex model candidates. Existing model settings and agent instructions are preserved.
 
 **Important:** Orasqill helps coordinate AI coding work; it does not host AI models or automatically launch subagents. Execution capabilities depend on your Codex/Claude Code setup.
 
@@ -47,7 +47,8 @@ The Orasqill repository is currently private, so you must have access to clone i
 | `.agents/skills/` | Portable Orasqill Skills |
 | `.claude/skills/` | Claude Code adapters |
 | `.agent-workflow/bin/` | Local Node.js tools |
-| `.agent-workflow/profiles/` | Model routing presets |
+| `.agent-workflow/profiles/` | Read-only model routing presets |
+| `.agent-workflow/routing/` | Local, Git-ignored model choices per invoking agent |
 | `.agent-workflow/examples/` | Example task plans and delegation trees |
 | `.agent-workflow/tests/` | Tests |
 | `.agent-workflow/external-skills.lock.json` | External Skill source registry |
@@ -70,9 +71,9 @@ oranit
 
 | CLI command | Purpose |
 |---|---|
-| `oranit` | **Initialize** a workspace: install missing Orasqill Skills, create a local code index and unconfirmed model config |
-| `oranit --profile claude-led` | Initialize with the Claude-led candidate mapping |
-| `oranit --profile openai-led` | Initialize with the OpenAI-led candidate mapping |
+| `oranit` | **Initialize** shared workspace state and separate Claude Code/Codex model candidates |
+| `oranit --profile claude-led` | Create Claude Code's missing candidate only; leave Codex unchanged |
+| `oranit --profile openai-led` | Create Codex's missing candidate only; leave Claude unchanged |
 | `oranit --workspace /path/to/project` | Target a particular workspace |
 | `oranit --dry-run` | Preview changes without writing files |
 | `oranit status` | Check whether the index matches current source |
@@ -101,25 +102,27 @@ To start with a preset in Claude Code, use `/configure-models claude-led`. Agent
 node .agent-workflow/bin/model-config.mjs preview claude-orchestrator
 node .agent-workflow/bin/model-config.mjs preview openai-orchestrator
 node .agent-workflow/bin/model-config.mjs validate .agent-workflow/config.json
+node .agent-workflow/bin/model-config.mjs resolve claude-code --workspace .
+node .agent-workflow/bin/model-config.mjs resolve codex --workspace .
 ```
 
-To copy a preset into a **new** local config when there is no existing config to preserve:
+To create an **agent-specific** mapping manually (only if that agent's route does not exist):
 
 ```sh
-# macOS/Linux/Git Bash — choose ONE
-cp .agent-workflow/profiles/claude-orchestrator.json .agent-workflow/config.json
-# or
-cp .agent-workflow/profiles/openai-orchestrator.json .agent-workflow/config.json
+# macOS/Linux/Git Bash
+mkdir -p .agent-workflow/routing
+cp -n .agent-workflow/profiles/claude-orchestrator.json .agent-workflow/routing/claude-code.json
+cp -n .agent-workflow/profiles/openai-orchestrator.json .agent-workflow/routing/codex.json
 ```
 
 ```powershell
-# Windows PowerShell — choose ONE
-Copy-Item '.agent-workflow/profiles/claude-orchestrator.json' '.agent-workflow/config.json'
-# or
-Copy-Item '.agent-workflow/profiles/openai-orchestrator.json' '.agent-workflow/config.json'
+# Windows PowerShell
+New-Item -ItemType Directory -Force '.agent-workflow/routing' | Out-Null
+Copy-Item '.agent-workflow/profiles/claude-orchestrator.json' '.agent-workflow/routing/claude-code.json' -ErrorAction SilentlyContinue
+Copy-Item '.agent-workflow/profiles/openai-orchestrator.json' '.agent-workflow/routing/codex.json' -ErrorAction SilentlyContinue
 ```
 
-For an existing workspace configuration, use the interactive model configuration Skill.
+For an existing workspace, use the model configuration Skill in the **invoking agent**. Claude Code edits only `routing/claude-code.json`; Codex edits only `routing/codex.json` with user approval. The shared `.agent-workflow/config.json` is not a model selector. `resolve` shows candidates without activating or switching agents.
 
 #### 4. Plan Ledger: execute and review an approved task
 
@@ -250,12 +253,21 @@ Merge these lines into the destination project's `.gitignore` (keep any existing
 ```gitignore
 .agent-workflow/state/
 .agent-workflow/config.json
+.agent-workflow/routing/
 .agent-workflow/index/
 ```
 
 ### Model mapping
 
-You can customize the model and effort used for each kind of task. The bundled profiles are suggested starting points:
+**Two agents, one workspace:**
+
+| Shared | Claude Code | Codex |
+|---|---|---|
+| Code index, task plan, workspace limits | `.agent-workflow/routing/claude-code.json` | `.agent-workflow/routing/codex.json` |
+
+Run `model-config.mjs resolve claude-code` from Claude Code or `resolve codex` from Codex to see the corresponding candidate mapping. The other agent's configuration is never used as the default. Agent identity must come from the actual runtime, not a filename.
+
+You can customize model/effort assignments per agent. Bundled profiles are suggested starting points:
 
 | Stage | OpenAI orchestrates (`openai-orchestrator.json`) | Claude orchestrates (`claude-orchestrator.json`) |
 |---|---|---|
@@ -269,7 +281,7 @@ You can customize the model and effort used for each kind of task. The bundled p
 | HIGH_RISK review | Claude Opus 5.5 — xhigh | GPT-6.1 Sol — Ultra (requested review mode; API effort max) |
 | Final report | GPT-6 Luna — low | Claude Haiku 5.5 — low |
 
-The profiles default to `setup.status = "unconfirmed"` until you configure your runtime. Terra is a specialist for scoped implementation in OpenAI-led mode and for computer-use tasks in either mode. In the Claude-led high-risk reviewer profile, Ultra is a *requested client mode*, not an API effort level.
+The agent-local profiles default to `setup.status = "unconfirmed"` until you configure each runtime. If an existing workspace has a legacy Claude-led (or OpenAI-led) shared config, `oranit` preserves it; the corresponding agent can retain its matching mapping without changing the other agent. Terra is a specialist for scoped implementation in OpenAI-led mode and for computer-use tasks in either mode. In the Claude-led high-risk reviewer profile, Ultra is a *requested client mode*, not an API effort level.
 
 Details: [Model routing and setup](.agents/skills/agent-workflow-orchestrator/references/setup-routing.md).
 
