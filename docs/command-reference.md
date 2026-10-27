@@ -10,7 +10,7 @@ Start workspace setup with **`oranit`**; enter Skill commands inside Claude Code
 From an accessible Orasqill checkout (the repository is currently private):
 
 ```sh
-git clone https://github.com/tanyapruckp-pan/orasqill.git /path/to/orasqill
+git clone https://github.com/tanyapruck/orasqill.git /path/to/orasqill
 cd /path/to/orasqill
 npm link
 cd /path/to/your-workspace
@@ -157,7 +157,7 @@ The commands below are alternatives to `oranit` when you need manual installatio
 **macOS, Linux or Git Bash**
 
 ```sh
-git clone https://github.com/tanyapruckp-pan/orasqill.git /path/to/orasqill
+git clone https://github.com/tanyapruck/orasqill.git /path/to/orasqill
 cd /path/to/your-project
 mkdir -p .agents/skills .agent-workflow
 cp -R /path/to/orasqill/.agents/skills/agent-workflow-orchestrator .agents/skills/

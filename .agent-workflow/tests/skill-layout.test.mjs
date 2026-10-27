@@ -249,9 +249,19 @@ test('public README exposes model choices, dependency commands and the MIT licen
   assert.match(readme,/Karpathy guidelines/);
   assert.match(readme,/\[MIT License\]\(LICENSE\)/);
   assert.match(readme,/repository must also be made public/);
-  assert.match(license,/^MIT License\n+Copyright \(c\) 2026 tanyapruckp-pan/m);
+  assert.match(license,/^MIT License\n+Copyright \(c\) 2026 tanyapruck/m);
   assert.match(license,/Permission is hereby granted, free of charge/);
   assert.match(license,/The above copyright notice and this permission notice shall be included/);
   assert.equal(packageInfo.license,'MIT');
   assert.equal(packageInfo.private,true);
+});
+
+test('public clone instructions use the current GitHub owner',()=>{
+  const landing=read('README.md');
+  const reference=read('docs/command-reference.md');
+  for(const doc of [landing,reference]){
+    assert.doesNotMatch(doc,/github\.com\/tanyapruckp-pan\/orasqill/i);
+    assert.match(doc,/github\.com\/tanyapruck\/orasqill\.git/);
+  }
+  assert.equal((reference.match(/github\.com\/tanyapruck\/orasqill\.git/g)||[]).length,2);
 });
