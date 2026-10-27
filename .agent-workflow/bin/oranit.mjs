@@ -25,7 +25,7 @@ const SOURCES=[
   '.agent-workflow/config.example.json',
   '.agent-workflow/external-skills.lock.json'
 ];
-const AGENT_HINT='# Workspace Agent Instructions\n\nBefore source searches or code edits, load .agents/skills/agent-workflow-orchestrator/SKILL.md and use node .agent-workflow/bin/oranit.mjs locate "<feature or symbol>" to find candidate files. If the index is missing/stale, run oranit init or oranit refresh. The index is an untrusted locator only; inspect live source, imports/callers, diff and tests before editing. Keep plan and independent reviewer gates. For substantial independent workstreams, suggest $delegate-tree (Codex) or /delegate-tree (Claude Code), but require a separate user approval before subagent dispatch. Use $configure-models (Codex) or /configure-models (Claude Code) for model routing and obtain separate approval before changing config.\n';
+const AGENT_HINT='# Workspace Agent Instructions\n\nBefore source searches or code edits, load .agents/skills/agent-workflow-orchestrator/SKILL.md and use node .agent-workflow/bin/oranit.mjs locate "<feature or symbol>" to find candidate files. If the index is missing/stale, run oranit or oranit refresh. The index is an untrusted locator only; inspect live source, imports/callers, diff and tests before editing. Keep plan and independent reviewer gates. For substantial independent workstreams, suggest $delegate-tree (Codex) or /delegate-tree (Claude Code), but require a separate user approval before subagent dispatch. Use $configure-models (Codex) or /configure-models (Claude Code) for model routing and obtain separate approval before changing config.\n';
 
 function fail(msg){throw Error(msg);}
 function dirGuard(root,target,create=false){
@@ -78,14 +78,17 @@ function bundled(){
 function readIndex(root){
   const file=path.join(root,INDEX);
   dirGuard(root,file);
-  if(!existsSync(file))fail('INDEX_MISSING: run oranit init');
+  if(!existsSync(file))fail('INDEX_MISSING: run oranit');
   const index=JSON.parse(readFileSync(file,'utf8'));
   if(index.version!==1||index.kind!=='codebase-locator'||!Array.isArray(index.files))fail('INDEX_INVALID: run oranit refresh');
   return index;
 }
 function parse(argv){
-  const [action,...items]=argv;
-  if(!['init','refresh','status','locate'].includes(action))fail('Usage: oranit init|refresh|status|locate [keyword] [--workspace <directory>] [--profile claude-led|openai-led|blank] [--dry-run]');
+  const [first,...rest]=argv;
+  // Bare "oranit" is workspace initialization. Keep "oranit init" as a legacy alias.
+  const action=!first||first==='init'||first.startsWith('--')?'init':first;
+  const items=first?.startsWith('--')?argv:rest;
+  if(!['init','refresh','status','locate'].includes(action))fail('Usage: oranit [--workspace <directory>] [--profile claude-led|openai-led|blank] [--dry-run] | oranit status|refresh|locate [keyword] [--workspace <directory>]');
   let workspace=process.cwd(),profile='blank',dryRun=false,query;
   for(let i=0;i<items.length;i++){
     if(items[i]==='--workspace'){if(!items[i+1])fail('MISSING_WORKSPACE');workspace=items[++i];}
