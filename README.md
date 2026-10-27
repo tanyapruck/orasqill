@@ -28,7 +28,7 @@ Third-party Skills are **not vendored or copied** into Orasqill. Their original 
 
 ## Oranit: initialize a workspace with one command
 
-**`oranit init` now sets up both the codebase locator and the model-configuration starting point.** The index helps an AI jump to likely relevant files/symbols before reading actual source; it doesn't replace source inspection or tests. The new model config is intentionally **unconfirmed**, not an active model routing session.
+**`oranit` (without subcommands) now sets up both the codebase locator and the model-configuration starting point.** The index helps an AI jump to likely relevant files/symbols before reading actual source; it doesn't replace source inspection or tests. The new model config is intentionally **unconfirmed**, not an active model routing session.
 
 From a local checkout of this (currently private) repository, you can install the command on your PATH using Node.js 20+:
 
@@ -37,7 +37,7 @@ git clone https://github.com/tanyapruckp-pan/orasqill.git /path/to/orasqill
 cd /path/to/orasqill
 npm link
 cd /path/to/your-workspace
-oranit init --workspace . --profile claude-led
+oranit --workspace . --profile claude-led
 # or --profile openai-led; omit --profile for a neutral, unconfirmed config
 ```
 
@@ -52,7 +52,7 @@ On a fresh workspace, it installs the packaged portable Orchestrator, `oranit` a
 - `.agent-workflow/index/codebase-map.json` — generated index of nonsecret code paths, symbols and hashes, ignored by Git.
 - `.agent-workflow/config.json` — neutral or explicitly selected model candidate mapping, always `unconfirmed` and ignored by Git.
 
-**Existing Skill files, model config and agent instructions are preserved.** The command only appends missing local ignore rules to an existing `.gitignore`. If `AGENTS.md` already exists, add the index-first instruction there yourself (or use the canonical Orchestrator Skill); it will not be silently replaced. Choosing a model profile doesn't launch models, confirm runtime credentials or grant delegation rights. For a preview with **no writes**, run `oranit init --dry-run --workspace .`.
+**Existing Skill files, model config and agent instructions are preserved.** The command only appends missing local ignore rules to an existing `.gitignore`. If `AGENTS.md` already exists, add the index-first instruction there yourself (or use the canonical Orchestrator Skill); it will not be silently replaced. Choosing a model profile doesn't launch models, confirm runtime credentials or grant delegation rights. For a preview with **no writes**, run `oranit --dry-run --workspace .`.
 
 ### Index-first workflow
 
@@ -63,9 +63,9 @@ oranit locate "verifyOTP"                   # ranked file paths and symbol/line 
 oranit refresh                              # update index after changed source files
 ```
 
-If an index is missing, run `oranit init`; if stale, `oranit locate` blocks until `oranit refresh`. On partial/oversized/excluded coverage or zero matches, use a scoped code search rather than claiming the index is exhaustive. Hashes detect source changes, but the index is **not a compiler/semantic dependency graph**.
+If an index is missing, run `oranit`; if stale, `oranit locate` blocks until `oranit refresh`. On partial/oversized/excluded coverage or zero matches, use a scoped code search rather than claiming the index is exhaustive. Hashes detect source changes, but the index is **not a compiler/semantic dependency graph**.
 
-Use **`/oranit init`** in Claude Code or **`$oranit`** in Codex to launch the workspace initialization Skill. After bootstrap, use **`/configure-models`** or **`$configure-models`** to review and separately approve adjustments to model roles/efforts. Skill invocation and CLI initialization never count as model-runtime approval.
+Use **`/oranit`** in Claude Code or **`$oranit`** in Codex to launch the workspace initialization Skill. After bootstrap, use **`/configure-models`** or **`$configure-models`** to review and separately approve adjustments to model roles/efforts. Skill invocation and CLI initialization never count as model-runtime approval.
 
 ## Install in another Git repository
 
@@ -111,7 +111,7 @@ For multi-step, delegated or agent-handoff tasks, read
 `.agents/skills/agent-workflow-orchestrator/SKILL.md` before editing.
 ```
 
-For Claude Code, optionally copy [its discovery adapter](.claude/skills/agent-workflow-orchestrator/SKILL.md) to the equivalent destination path, **and copy [the model mapping Slash Skill](.claude/skills/configure-models/SKILL.md) to `.claude/skills/configure-models/SKILL.md`** if you want the `/configure-models` command. On macOS/Linux: `mkdir -p .claude/skills && cp -R /path/to/orasqill/.claude/skills/configure-models .claude/skills/`. On PowerShell: `New-Item -ItemType Directory -Force '.claude\skills' | Out-Null; Copy-Item -Recurse (Join-Path $src '.claude\skills\configure-models') '.claude\skills\'`. The canonical `.agents/skills/configure-models/` is also used by Codex as `$configure-models`. For Claude's `/oranit`, additionally copy `.claude/skills/oranit/` to the destination `.claude/skills/` (or use the automatic `oranit init` bootstrap); the portable `.agents/skills/oranit/` supports `$oranit` in Codex. If your Claude setup supports `@AGENTS.md` in `CLAUDE.md`, use it only after checking for existing instructions. For Codex or any other agent, explicitly request that it load the canonical Skill if automatic discovery is unavailable. **Installing Orasqill does not install its external prerequisite Skills.**
+For Claude Code, optionally copy [its discovery adapter](.claude/skills/agent-workflow-orchestrator/SKILL.md) to the equivalent destination path, **and copy [the model mapping Slash Skill](.claude/skills/configure-models/SKILL.md) to `.claude/skills/configure-models/SKILL.md`** if you want the `/configure-models` command. On macOS/Linux: `mkdir -p .claude/skills && cp -R /path/to/orasqill/.claude/skills/configure-models .claude/skills/`. On PowerShell: `New-Item -ItemType Directory -Force '.claude\skills' | Out-Null; Copy-Item -Recurse (Join-Path $src '.claude\skills\configure-models') '.claude\skills\'`. The canonical `.agents/skills/configure-models/` is also used by Codex as `$configure-models`. For Claude's `/oranit`, additionally copy `.claude/skills/oranit/` to the destination `.claude/skills/` (or use the automatic `oranit` bootstrap); the portable `.agents/skills/oranit/` supports `$oranit` in Codex. If your Claude setup supports `@AGENTS.md` in `CLAUDE.md`, use it only after checking for existing instructions. For Codex or any other agent, explicitly request that it load the canonical Skill if automatic discovery is unavailable. **Installing Orasqill does not install its external prerequisite Skills.**
 
 **Keep task checkpoints private.** Merge this line into the destination project's `.gitignore`:
 
@@ -257,7 +257,7 @@ node .agent-workflow/bin/nested-delegation.mjs packet nested-tree.json otp --loc
 
 Add `--config .agent-workflow/config.json` to compare requested and configured depth/capacity. Both commands are **read-only** and return a proposal with `readyToDispatch:false`, `agentsLaunched:0`, and reasons to stop. They never launch subagents or grant approval. The default profile remains **one sequential worker at delegation depth 1**. Depth 2 and higher global concurrency are **opt-in**: the chosen client must actually support subagents, enforce file ownership/isolation and global caps, load required coding Skills in every worker, and receive explicit user permission. Even a `confirmed` config is not proof those conditions hold in a particular session.
 
-Install the Claude command adapter into the destination workspace's `.claude/skills/delegate-tree/SKILL.md` (using the same optional copy process as `/oranit`) or run `oranit init` for a fresh installation. `AGENTS.md` in Orasqill contains the conditional recommendation trigger for agents; it does **not** silently delegate. External runtime execution, independent eligible reviewers, test evidence, approvals for protected Git/production actions and merging remain separate human/runtime checks.
+Install the Claude command adapter into the destination workspace's `.claude/skills/delegate-tree/SKILL.md` (using the same optional copy process as `/oranit`) or run `oranit` for a fresh installation. `AGENTS.md` in Orasqill contains the conditional recommendation trigger for agents; it does **not** silently delegate. External runtime execution, independent eligible reviewers, test evidence, approvals for protected Git/production actions and merging remain separate human/runtime checks.
 
 ## Agent handoff and optional scheduling
 
