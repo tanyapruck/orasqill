@@ -21,6 +21,9 @@ All helpers use built-in Node.js modules and Git. They operate on the **current 
 - `oranit status|refresh [--workspace <dir>]` — detect code/index drift and refresh generated locator, never model config.
 - `oranit locate "<symbol-or-feature>" [--workspace <dir>]` — ranked path/line hints only, stale index blocks navigation; inspect live source.
 
+- `node .agent-workflow/bin/nested-delegation.mjs plan <tree.json> --locked-plan <plan.json> [--config <config.json>]` — read-only validate Root→Child→Grandchild packets against the next locked step; no agent launch.
+- `node .agent-workflow/bin/nested-delegation.mjs packet <tree.json> <node-id> --locked-plan <plan.json> [--config <config.json>]` — read-only bounded handoff packet; capability blockers remain visible.
+
 Tests: `node --test .agent-workflow/tests/*.test.mjs`.
 
 ## Third-party skill provenance (read-only)
