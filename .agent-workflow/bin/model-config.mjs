@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const knownProfiles=new Set(['claude-orchestrator','openai-orchestrator']);
 const efforts=new Set(['low','medium','high','xhigh','max']);
-const stages=['triage','plan','implement','complex_implement','review','critical_review','final_report'];
+const stages=['triage','plan','implement','scoped_implement','complex_implement','computer_use','review','critical_review','final_report'];
 const roles=['orchestrator','implementer','reviewer'];
 
 const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
