@@ -18,7 +18,7 @@ const commands=Object.freeze({
 const usage=`Orasqill commands:
   oranit [--profile blank|claude-led|openai-led|other] [--workspace <dir>] [--dry-run]  Initialize only
   orasqill status|locate "keyword"|refresh [--workspace <dir>]
-  orasqill oranit --configure [--agent claude-code|codex|other] [--workspace <dir>]
+  orasqill --configure [--agent claude-code|codex|other] [--workspace <dir>]
   orasqill models preview|resolve|validate ...
   orasqill deps list|check-updates|verify-file|verify-reference ...
   orasqill plan|handoff|delegate|schedule <helper-arguments>
@@ -33,10 +33,8 @@ export function parseCommand(argv){
     return {command:'help',args:[]};
   }
   if(['status','locate','refresh'].includes(command))return {command:'navigation',args:[command,...args]};
-  if(command==='oranit'){
-    if(args[0]!=='--configure')throw Error('INIT_ONLY: use bare oranit to initialize; orasqill oranit --configure changes model mapping');
-    return {command:'configure',args:args.slice(1)};
-  }
+  if(command==='--configure')return {command:'configure',args};
+  if(command==='oranit')throw Error('INIT_ONLY: use the standalone oranit command for workspace initialization');
   if(Object.hasOwn(commands,command))return {command:'helper',tool:commands[command],args};
   throw Error('UNKNOWN_COMMAND: '+command+'\n'+usage);
 }
