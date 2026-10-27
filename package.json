@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "bin": {
-    "oranit": "./.agent-workflow/bin/oranit.mjs"
+    "oranit": "./.agent-workflow/bin/oranit.mjs",
+    "orasqill": "./.agent-workflow/bin/orasqill.mjs"
   },
   "type": "module",
   "description": "Portable agent-neutral orchestration skill with plan-locked checkpoints, findings and acceptance",
