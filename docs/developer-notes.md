@@ -41,5 +41,5 @@ Detailed CLI errors are documented in the [helper catalog](../.agent-workflow/bi
 
 Run the [test command](command-reference.md#6-verify-installation-external-skills-and-tests) in the Orasqill source checkout. Consumer installations do not include tests.
 
-Orasqill provides Skills and local tools, not a sandbox or hosted execution platform. The repository is private and no standalone open-source license has been selected.
+Orasqill provides Skills and local tools, not a sandbox or hosted execution platform. The repository now includes an [MIT License](../LICENSE) for Orasqill-owned code. Third-party Skills are independent projects with their own licenses and must be obtained from their authors. The GitHub repository remains private until its owner explicitly changes visibility or grants access.
 
