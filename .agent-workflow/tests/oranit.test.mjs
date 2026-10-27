@@ -45,9 +45,13 @@ test('bare oranit bootstraps fresh workspace, code index, ignored config and all
     '.agent-workflow/bin/repo-index.mjs','.agent-workflow/bin/nested-delegation.mjs',
     '.agents/skills/delegate-tree/SKILL.md','.claude/skills/delegate-tree/SKILL.md',
     '.agent-workflow/examples/nested-tree.example.json',
-    '.agent-workflow/index/codebase-map.json','AGENTS.md']){
+    '.agent-workflow/index/codebase-map.json','.agent-workflow/LICENSE.orasqill.txt','AGENTS.md']){
     assert.ok(existsSync(path.join(dir,p)),p);
   }
+  assert.equal(
+    readFileSync(path.join(dir,'.agent-workflow/LICENSE.orasqill.txt'),'utf8'),
+    readFileSync(path.join(root,'LICENSE'),'utf8')
+  );
   const ignore=readFileSync(path.join(dir,'.gitignore'),'utf8');
   assert.match(ignore,/\.agent-workflow\/index\//);
   assert.match(ignore,/\.agent-workflow\/config\.json/);
