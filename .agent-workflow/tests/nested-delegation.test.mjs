@@ -148,7 +148,7 @@ test('user-invokable and model-suggested skills contain clear approval gates',()
   assert.match(adapter,/^---\nname: delegate-tree/m);
   assert.doesNotMatch(canonical,/disable-model-invocation:\s*true/);
   assert.doesNotMatch(adapter,/disable-model-invocation:\s*true/);
-  assert.match(canonical,/ask.*user authorization/i);
+  assert.match(canonical,/ask\s+for user authorization/i);
   assert.match(canonical,/RUNTIME_VERIFICATION_REQUIRED/);
   assert.match(orchestration,/delegate-tree/);
   assert.match(readme,/\/delegate-tree/);
