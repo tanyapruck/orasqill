@@ -52,11 +52,23 @@
     "implement": {
       "role": "implementer"
     },
+    "scoped_implement": {
+      "role": "implementer",
+      "runtime": "codex",
+      "model": "gpt-6.1-terra",
+      "effort": "high"
+    },
     "complex_implement": {
       "role": "implementer",
       "runtime": "codex",
       "model": "gpt-6-astra",
       "effort": "high"
+    },
+    "computer_use": {
+      "role": "implementer",
+      "runtime": "codex",
+      "model": "gpt-6.1-terra",
+      "effort": "medium"
     },
     "review": {
       "role": "reviewer"
