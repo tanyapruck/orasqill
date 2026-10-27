@@ -35,13 +35,19 @@ test('CLI contract exposes init-only oranit and all utilities through orasqill',
   assert.equal(parseCommand(['plan','report','task']).tool,'plan-ledger.mjs');
   assert.equal(parseCommand(['models','resolve','codex']).tool,'model-config.mjs');
   assert.throws(()=>parseCommand(['oranit']),/INIT_ONLY/);
-  assert.throws(()=>parseCommand(['init']),/UNKNOWN_COMMAND/);
+  assert.equal(parseCommand(['init']).command,'init');
+  assert.deepEqual(parseCommand(['init','--dry-run']).args,['--dry-run']);
+  assert.throws(()=>parseCommand(['init','status']),/INIT_ONLY/);
+  assert.throws(()=>parseCommand(['init','--configure']),/INIT_ONLY/);
   assert.throws(()=>parseCommand(['unknown']),/UNKNOWN_COMMAND/);
   assert.throws(()=>parseCommand(['help','unexpected']),/UNKNOWN_OPTION/);
 });
 
 test('oranit executable refuses navigation while orasqill navigates the index',async t=>{
   const dir=workspace(t);
+  const initPreview=spawnSync(process.execPath,[orasqill,'init','--workspace',dir,'--dry-run'],{encoding:'utf8'});
+  assert.equal(initPreview.status,0,initPreview.stderr);
+  assert.equal(JSON.parse(initPreview.stdout).dryRun,true);
   const setup=spawnSync(process.execPath,[oranit,'--workspace',dir],{encoding:'utf8'});
   assert.equal(setup.status,0,setup.stderr);
   for(const subcommand of ['status','refresh','locate']){
