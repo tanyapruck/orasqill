@@ -68,7 +68,7 @@ function validateWriteLocation(root,target){
   }
 }
 
-export async function configureRouting(argv,{ask,print=()=>{}}={}){
+export async function configureRouting(argv,{ask,print=message=>stdout.write(message+'\n')}={}){
   const parsed=parseConfigureArgs(argv);
   const root=path.resolve(parsed.workspace);
   ensure(existsSync(root),'WORKSPACE_REQUIRED: run oranit to initialize this workspace first');
