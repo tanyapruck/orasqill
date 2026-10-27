@@ -24,15 +24,18 @@ oranit
 | `oranit --profile openai-led` | Create Codex's missing candidate only; leave Claude unchanged |
 | `oranit --profile other` | Create an **optional Other Model** route with no model selected |
 | `oranit --workspace /path/to/project` | Target a particular workspace |
-| `oranit --dry-run` | Preview changes without writing files |
-| `oranit status` | Check whether the index matches current source |
-| `oranit locate "keyword"` | Find candidate files, symbols and approximate line numbers |
-| `oranit refresh` | Rebuild the index after source changes, leaving model config untouched |
+| `oranit --dry-run` | Preview initialization without writing files |
+| `orasqill oranit --configure` | Interactive mapping interview with preview, explicit approval and per-agent write |
+| `orasqill --help` | List supported commands |
+| `orasqill status` | Check whether the index matches current source |
+| `orasqill locate "keyword"` | Find candidate files, symbols and approximate line numbers |
+| `orasqill refresh` | Rebuild the index after source changes, leaving model config untouched |
 
-Without `npm link`, call the source CLI directly:
+Without `npm link`, initialize with the source CLI directly. The `orasqill` command also has a Node entrypoint:
 
 ```sh
 node /path/to/orasqill/.agent-workflow/bin/oranit.mjs --workspace /path/to/your-workspace
+node /path/to/orasqill/.agent-workflow/bin/orasqill.mjs status --workspace /path/to/your-workspace
 ```
 
 ## 2. Commands inside Claude Code and Codex
@@ -48,13 +51,13 @@ To start with a preset in Claude Code, use `/configure-models claude-led`. Agent
 ## 3. Inspect model config (read-only)
 
 ```sh
-node .agent-workflow/bin/model-config.mjs preview claude-orchestrator
-node .agent-workflow/bin/model-config.mjs preview openai-orchestrator
-node .agent-workflow/bin/model-config.mjs preview other-orchestrator
-node .agent-workflow/bin/model-config.mjs validate .agent-workflow/config.json
-node .agent-workflow/bin/model-config.mjs resolve claude-code --workspace .
-node .agent-workflow/bin/model-config.mjs resolve codex --workspace .
-node .agent-workflow/bin/model-config.mjs resolve other --workspace .
+orasqill models preview claude-orchestrator
+orasqill models preview openai-orchestrator
+orasqill models preview other-orchestrator
+orasqill models validate .agent-workflow/config.json
+orasqill models resolve claude-code --workspace .
+orasqill models resolve codex --workspace .
+orasqill models resolve other --workspace .
 ```
 
 To create an **agent-specific** mapping manually (only if that agent's route does not exist):
@@ -77,36 +80,36 @@ if (-not (Test-Path '.agent-workflow/routing/codex.json')) {
 }
 ```
 
-For an existing workspace, use the model configuration Skill for the **explicitly selected target**. Claude Code edits only `routing/claude-code.json`, Codex only `routing/codex.json`; Other Model uses `routing/other.json` when the user selects it. The shared `.agent-workflow/config.json` is not a model selector. `resolve` previews candidate mappings without activating or switching agents.
+Run `orasqill oranit --configure` for an interactive terminal interview: choose `claude-code`, `codex` or `other`, inspect the existing values, propose model/effort changes, then type `yes` to write the selected route. It will keep the profile `unconfirmed` and never launch a model. You can also use the model configuration Skill for the **explicitly selected target**. Claude Code edits only `routing/claude-code.json`, Codex only `routing/codex.json`; Other Model uses `routing/other.json` when the user selects it. The shared `.agent-workflow/config.json` is not a model selector. `resolve` previews candidate mappings without activating or switching agents.
 
 ## 4. Plan Ledger: execute and review an approved task
 
 Example workflow for an agreed documentation task. Record actual work and test results.
 
 ```sh
-node .agent-workflow/bin/plan-ledger.mjs start docs-demo \
+orasqill plan start docs-demo \
   --goal "Improve an agreed README sentence" \
   --step "Make the agreed README edit" \
   --step "Inspect the diff" \
   --accept "The agreed README sentence is correct"
 
 # After actually making the approved edit:
-node .agent-workflow/bin/plan-ledger.mjs step docs-demo --step S1 --evidence "Inspected the modified README"
+orasqill plan step docs-demo --step S1 --evidence "Inspected the modified README"
 # After actually checking git diff:
-node .agent-workflow/bin/plan-ledger.mjs step docs-demo --step S2 --evidence "git diff --check and diff inspection completed"
+orasqill plan step docs-demo --step S2 --evidence "git diff --check and diff inspection completed"
 # Record the real result of the acceptance check (A1 refers to the first --accept):
-node .agent-workflow/bin/plan-ledger.mjs check docs-demo --status pass --accept A1 --result "Checked the requested README sentence and diff"
-node .agent-workflow/bin/plan-ledger.mjs report docs-demo
-node .agent-workflow/bin/plan-ledger.mjs finish docs-demo
+orasqill plan check docs-demo --status pass --accept A1 --result "Checked the requested README sentence and diff"
+orasqill plan report docs-demo
+orasqill plan finish docs-demo
 ```
 
 | Additional command | When to use |
 |---|---|
-| `node .agent-workflow/bin/plan-ledger.mjs finding <task-id> --description "..." --impact "..." --reason "..." --necessary yes\|no` | Log work outside the plan |
-| `node .agent-workflow/bin/plan-ledger.mjs amend <task-id> --finding F1 --step "..." --approvalref "..."` | Amend **only after real user approval** |
-| `node .agent-workflow/bin/plan-ledger.mjs review <task-id> --reviewer "..." --independent yes --result pass --evidence "..."` | Record an actual independent HIGH_RISK review |
-| `node .agent-workflow/bin/manual-handoff.mjs resume` | Continue a unique unfinished authorized task on the current branch |
-| `node .agent-workflow/bin/manual-handoff.mjs start\|checkpoint\|export\|finish <task-id> ...` | Legacy/manual handoff commands; cannot bypass locked-plan gates |
+| `orasqill plan finding <task-id> --description "..." --impact "..." --reason "..." --necessary yes\|no` | Log work outside the plan |
+| `orasqill plan amend <task-id> --finding F1 --step "..." --approvalref "..."` | Amend **only after real user approval** |
+| `orasqill plan review <task-id> --reviewer "..." --independent yes --result pass --evidence "..."` | Record an actual independent HIGH_RISK review |
+| `orasqill handoff resume` | Continue a unique unfinished authorized task on the current branch |
+| `orasqill handoff start\|checkpoint\|export\|finish <task-id> ...` | Legacy/manual handoff commands; cannot bypass locked-plan gates |
 
 For acceptance checks, see [Plan execution](../.agents/skills/agent-workflow-orchestrator/references/plan-execution.md).
 
@@ -115,9 +118,9 @@ For acceptance checks, see [Plan execution](../.agents/skills/agent-workflow-orc
 Use the Delegate Tree Skill, customize the [example tree](../.agent-workflow/examples/nested-tree.example.json) to your task and preview the proposed plan.
 
 ```sh
-node .agent-workflow/bin/nested-delegation.mjs plan nested-tree.json --locked-plan .agent-workflow/state/<task-id>/plan.json
-node .agent-workflow/bin/nested-delegation.mjs packet nested-tree.json otp --locked-plan .agent-workflow/state/<task-id>/plan.json
-node .agent-workflow/bin/task-planner.mjs <scheduler-tasks.json> --locked-plan .agent-workflow/state/<task-id>/plan.json
+orasqill delegate plan nested-tree.json --locked-plan .agent-workflow/state/<task-id>/plan.json
+orasqill delegate packet nested-tree.json otp --locked-plan .agent-workflow/state/<task-id>/plan.json
+orasqill schedule <scheduler-tasks.json> --locked-plan .agent-workflow/state/<task-id>/plan.json
 ```
 
 These commands prepare task proposals; execution depends on your connected agent runtime.
@@ -129,7 +132,7 @@ Verify a target project:
 ```sh
 git rev-parse --verify HEAD                      # an initial commit exists
 git branch --show-current                       # a nonempty named branch
-node .agent-workflow/bin/external-skills.mjs list
+orasqill deps list
 # external-skills.lock.json registry is required for this command.
 git check-ignore .agent-workflow/state/install-check/plan.json
 # must exit 0: the future local plan file is ignored
@@ -138,10 +141,10 @@ git check-ignore .agent-workflow/state/install-check/plan.json
 Inspect external Skill references:
 
 ```sh
-node .agent-workflow/bin/external-skills.mjs list
-node .agent-workflow/bin/external-skills.mjs check-updates --source matt
-node .agent-workflow/bin/external-skills.mjs verify-file karpathy-guidelines /path/to/original/SKILL.md
-node .agent-workflow/bin/external-skills.mjs verify-reference writing-for-agents skills/productivity/writing-for-agents/SKILL-MECHANICS.md /path/to/original/SKILL-MECHANICS.md
+orasqill deps list
+orasqill deps check-updates --source matt
+orasqill deps verify-file karpathy-guidelines /path/to/original/SKILL.md
+orasqill deps verify-reference writing-for-agents skills/productivity/writing-for-agents/SKILL-MECHANICS.md /path/to/original/SKILL-MECHANICS.md
 ```
 
 From the **Orasqill source checkout** (not a minimal destination install), run:
