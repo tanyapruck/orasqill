@@ -28,7 +28,9 @@ test('CLI contract exposes init-only oranit and all utilities through orasqill',
   assert.deepEqual(parseCommand(['status']).args,['status']);
   assert.deepEqual(parseCommand(['locate','keyword']).args,['locate','keyword']);
   assert.deepEqual(parseCommand(['refresh']).args,['refresh']);
-  assert.equal(parseCommand(['oranit','--configure']).command,'configure');
+  assert.equal(parseCommand(['--configure']).command,'configure');
+  assert.deepEqual(parseCommand(['--configure','--agent','codex']).args,['--agent','codex']);
+  assert.throws(()=>parseCommand(['oranit','--configure']),/INIT_ONLY/);
   assert.equal(parseCommand(['deps','list']).tool,'external-skills.mjs');
   assert.equal(parseCommand(['plan','report','task']).tool,'plan-ledger.mjs');
   assert.equal(parseCommand(['models','resolve','codex']).tool,'model-config.mjs');
