@@ -1,4 +1,4 @@
-# Orasqill
+# Orasqill - A OrchestRAtor skill
 
 **Give your coding agents a map, a plan, and a clean handoff.**
 
