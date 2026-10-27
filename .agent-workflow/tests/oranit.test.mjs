@@ -31,6 +31,8 @@ test('oranit init bootstraps fresh workspace, code index, ignored config and all
   assert.equal(config.setup.profile,'claude-orchestrator');
   assert.deepEqual(config.routing.implementer.preferred[0],{runtime:'claude-code',model:'claude-sonnet-5-5',effort:'medium'});
   assert.deepEqual(config.stage_preferences.complex_implement,{role:'implementer',runtime:'claude-code',model:'claude-sonnet-5-5',effort:'high'});
+  assert.deepEqual(config.stage_preferences.scoped_implement,{role:'implementer'});
+  assert.deepEqual(config.stage_preferences.computer_use,{role:'implementer',runtime:'codex',model:'gpt-6.1-terra',effort:'medium'});
   assert.equal(config.routing.reviewer.preferred[0].model,'gpt-6.1-sol');
   assert.equal(config.stage_preferences.critical_review.requested_mode,'ultra');
   for(const p of ['.agents/skills/oranit/SKILL.md','.agents/skills/configure-models/SKILL.md',
