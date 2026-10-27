@@ -22,7 +22,7 @@ A **user-invoked workspace initialization Skill**, not permission to modify appl
 
 Before any broad repo search or reading many files:
 
-- Run `orasqill status` (or `orasqill status`) from the target workspace.
+- Run `orasqill status` from the target workspace.
 - Run `orasqill locate "keyword"` to get a small ranked candidate list. If missing, run `oranit`. If `INDEX_STALE`, run `orasqill refresh` and query again. Do not trust stale positions. If the index is partial, oversized-file-skipped, or has no matches, fall back to scoped filesystem search and report that it was necessary.
 - **Confirm against live code**: read the selected file and relevant imports, callers, config, tests and context (the full relevant file where appropriate) before editing. An index **never** replaces source inspection, approval, type-checks, targeted regression or HIGH_RISK independent review.
 - After source edits, refresh the generated index when needed; do not claim fresh index until the real command succeeds. Keep user-provided notes separate from generated facts.
@@ -39,6 +39,6 @@ orasqill locate "keyword" --workspace .      # precise candidate source paths/sy
 orasqill refresh --workspace .                  # rebuild generated index, never model config
 ```
 
-If the PATH command is unavailable, use `node .agent-workflow/bin/oranit.mjs` for initialization, or `node .agent-workflow/bin/orasqill.mjs` for utilities. Use `orasqill oranit --configure` for interactive, approval-gated model mapping updates. Running the CLI outside the intended workspace requires `--workspace`.
+If the PATH command is unavailable, use `node .agent-workflow/bin/oranit.mjs` for initialization, or `node .agent-workflow/bin/orasqill.mjs` for utilities. Use `orasqill --configure` for interactive, approval-gated model mapping updates. Running the CLI outside the intended workspace requires `--workspace`.
 
 **Complete when:** initialization succeeded or genuinely reported a blocker; the index, shared config and relevant agent-local routing candidates exist (or existing files were preserved), and the next Agent knows to navigate via a fresh index while inspecting real code before changes. No model is launched, no Git action is authorized.
