@@ -19,13 +19,13 @@ oranit
 
 | CLI command | Purpose |
 |---|---|
-| `oranit` (or `orasqill init`) | **Initialize only**: shared workspace state and separate Claude Code/Codex model candidates |
+| `oranit` | **Initialize only**: shared workspace state and separate Claude Code/Codex model candidates |
 | `oranit --profile claude-led` | Create Claude Code's missing candidate only; leave Codex unchanged |
 | `oranit --profile openai-led` | Create Codex's missing candidate only; leave Claude unchanged |
 | `oranit --profile other` | Create an **optional Other Model** route with no model selected |
 | `oranit --workspace /path/to/project` | Target a particular workspace |
 | `oranit --dry-run` | Preview initialization without writing files |
-| `orasqill --configure` | Interactive mapping interview with preview, explicit approval and per-agent write |
+| `orasqill configure` | Interactive mapping interview with preview, explicit approval and per-agent write |
 | `orasqill --help` | List supported commands |
 | `orasqill status` | Check whether the index matches current source |
 | `orasqill locate "keyword"` | Find candidate files, symbols and approximate line numbers |
@@ -80,7 +80,7 @@ if (-not (Test-Path '.agent-workflow/routing/codex.json')) {
 }
 ```
 
-Run `orasqill --configure` for an interactive terminal interview: choose `claude-code`, `codex` or `other`, inspect the existing values, propose model/effort changes, then type `yes` to write the selected route. It will keep the profile `unconfirmed` and never launch a model. You can also use the model configuration Skill for the **explicitly selected target**. Claude Code edits only `routing/claude-code.json`, Codex only `routing/codex.json`; Other Model uses `routing/other.json` when the user selects it. The shared `.agent-workflow/config.json` is not a model selector. `resolve` previews candidate mappings without activating or switching agents.
+Run `orasqill configure` for an interactive terminal interview: choose `claude-code`, `codex` or `other`, inspect the existing values, propose model/effort changes, then type `yes` to write the selected route. It will keep the profile `unconfirmed` and never launch a model. You can also use the model configuration Skill for the **explicitly selected target**. Claude Code edits only `routing/claude-code.json`, Codex only `routing/codex.json`; Other Model uses `routing/other.json` when the user selects it. The shared `.agent-workflow/config.json` is not a model selector. `resolve` previews candidate mappings without activating or switching agents.
 
 ## 4. Plan Ledger: execute and review an approved task
 
