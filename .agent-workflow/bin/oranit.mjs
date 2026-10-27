@@ -14,11 +14,14 @@ const SOURCES=[
   '.agents/skills/agent-workflow-orchestrator',
   '.agents/skills/configure-models',
   '.agents/skills/oranit',
+  '.agents/skills/delegate-tree',
   '.claude/skills/agent-workflow-orchestrator',
   '.claude/skills/configure-models',
   '.claude/skills/oranit',
+  '.claude/skills/delegate-tree',
   '.agent-workflow/bin',
   '.agent-workflow/profiles',
+  '.agent-workflow/examples',
   '.agent-workflow/config.example.json',
   '.agent-workflow/external-skills.lock.json'
 ];
