@@ -23,8 +23,11 @@ function positiveInteger(x){return Number.isSafeInteger(x)&&x>=1;}
 export function validateNestedTree(tree,lockedPlan,platform=process.platform){
   requireOk(tree&&tree.version===1&&validName(tree.rootTaskId)&&validName(tree.planStepId),
     'TREE_SCHEMA_REQUIRED: rootTaskId, planStepId and version 1');
-  requireOk(lockedPlan?.schemaVersion===1&&Array.isArray(lockedPlan.steps)&&lockedPlan.steps.length,
-    'LOCKED_PLAN_REQUIRED: use plan-ledger plan.json');
+  requireOk(lockedPlan?.schemaVersion===1&&lockedPlan.status==='active'&&
+    lockedPlan.taskId===tree.rootTaskId&&Array.isArray(lockedPlan.steps)&&lockedPlan.steps.length,
+    'LOCKED_PLAN_REQUIRED: matching active plan-ledger plan.json and root task ID');
+  requireOk(!(lockedPlan.findings??[]).some(f=>f.status==='approval-required'),
+    'APPROVAL_REQUIRED: resolve essential out-of-plan findings before delegation');
   const next=lockedPlan.steps.find(s=>s.status==='pending');
   requireOk(next&&next.id===tree.planStepId,'OUT_OF_PLAN: only next pending locked step may be delegated');
   requireOk(Array.isArray(tree.nodes)&&tree.nodes.length>=2&&tree.nodes.length<=100,
