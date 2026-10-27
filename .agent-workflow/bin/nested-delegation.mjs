@@ -56,6 +56,7 @@ export function validateNestedTree(tree,lockedPlan,platform=process.platform){
     map.get('root').kind==='orchestrator','ROOT_REQUIRED: root orchestrator with parentId null');
   requireOk(tree.nodes.filter(n=>n.parentId===null).length===1,
     'ROOT_REQUIRED: exactly one root');
+  requireOk((map.get('root').dependsOn??[]).length===0,'DEPENDENCY_SCOPE: root has no sibling dependencies');
   requireOk(map.get('root').objective===next.text,
     'OUT_OF_PLAN: root objective must exactly match next pending locked step');
   requireOk(tree.nodes.every(n=>n.id==='root'||validName(n.parentId)&&map.has(n.parentId)),
@@ -89,7 +90,7 @@ export function validateNestedTree(tree,lockedPlan,platform=process.platform){
       'BUDGET_EXCEEDED: child budgets must sum to at most parent budget');
     const peers=new Map(children.map(n=>[n.id,n]));
     for(const n of children){
-      requireOk(n.dependsOn.every(id=>id!==n.id&&peers.has(id)),
+      requireOk((n.dependsOn??[]).every(id=>id!==n.id&&peers.has(id)),
         'DEPENDENCY_SCOPE: dependencies must be distinct siblings');
       for(const other of children){
         if(other.id===n.id)continue;
