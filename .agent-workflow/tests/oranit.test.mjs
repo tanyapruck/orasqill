@@ -21,7 +21,7 @@ function workspace(t){
 
 test('oranit init bootstraps fresh workspace, code index, ignored config and all agent skills',t=>{
   const dir=workspace(t);
-  const r=execute(['init','--workspace',dir,'--profile','claude-led']);
+  const r=execute(['--workspace',dir,'--profile','claude-led']);
   assert.equal(r.config,'created_unconfirmed');
   assert.equal(r.index,'created');
   assert.equal(r.partial,false);
@@ -57,14 +57,14 @@ test('oranit init bootstraps fresh workspace, code index, ignored config and all
 
 test('safe repeat init preserves manually edited config and index until refresh',t=>{
   const dir=workspace(t);
-  execute(['init','--workspace',dir,'--profile','openai-led']);
+  execute(['--workspace',dir,'--profile','openai-led']);
   const cfg=path.join(dir,'.agent-workflow/config.json');
   const old=JSON.parse(readFileSync(cfg,'utf8'));old.userNotes='retain-me';
   writeFileSync(cfg,JSON.stringify(old));
   const index=path.join(dir,'.agent-workflow/index/codebase-map.json');
   const before=readFileSync(index,'utf8');
   writeFileSync(path.join(dir,'src/auth/otp.ts'),'export function verifyOTPChanged() {}\n');
-  const r=execute(['init','--workspace',dir,'--profile','claude-led']);
+  const r=execute(['--workspace',dir,'--profile','claude-led']);
   assert.equal(r.config,'preserved');
   assert.match(r.index,/stale_preserved/);
   assert.equal(JSON.parse(readFileSync(cfg,'utf8')).userNotes,'retain-me');
@@ -81,7 +81,7 @@ test('safe repeat init preserves manually edited config and index until refresh'
 
 test('dry-run does not write files, even model config or ignore rules',t=>{
   const dir=workspace(t);
-  const r=execute(['init','--workspace',dir,'--dry-run']);
+  const r=execute(['--workspace',dir,'--dry-run']);
   assert.equal(r.dryRun,true);
   assert.ok(r.assetFilesCreated>0);
   for(const f of ['.agent-workflow/config.json','.agent-workflow/index/codebase-map.json',
@@ -94,7 +94,7 @@ test('initialization preserves preexisting AGENTS and .gitignore content',t=>{
   const dir=workspace(t);
   writeFileSync(path.join(dir,'AGENTS.md'),'USER RULES STAY HERE\n');
   writeFileSync(path.join(dir,'.gitignore'),'custom-folder/\n');
-  execute(['init','--workspace',dir]);
+  execute(['--workspace',dir]);
   assert.equal(readFileSync(path.join(dir,'AGENTS.md'),'utf8'),'USER RULES STAY HERE\n');
   assert.ok(readFileSync(path.join(dir,'.gitignore'),'utf8').startsWith('custom-folder/\n'));
   assert.equal(JSON.parse(readFileSync(path.join(dir,'.agent-workflow/config.json'),'utf8')).setup.profile,'project-specific');
@@ -102,7 +102,7 @@ test('initialization preserves preexisting AGENTS and .gitignore content',t=>{
 
 test('index detects content and file-set drift, requiring refresh for live lookup',t=>{
   const dir=workspace(t);
-  execute(['init','--workspace',dir]);
+  execute(['--workspace',dir]);
   const other=path.join(dir,'src/auth/session.ts');
   writeFileSync(other,'export function session() {}');
   assert.deepEqual(execute(['status','--workspace',dir]).added,['src/auth/session.ts']);
@@ -139,21 +139,44 @@ test('scanner reports partial coverage and exact current file fingerprints',t=>{
 
 test('rejects path traversal, unknown modes, and attempts to write through workspace symlinks',t=>{
   const dir=workspace(t);
-  assert.throws(()=>execute(['init','--workspace',dir,'--profile','secret']),/PROFILE_REQUIRED/);
+  assert.throws(()=>execute(['--workspace',dir,'--profile','secret']),/PROFILE_REQUIRED/);
   assert.throws(()=>execute(['locate','x','--workspace',dir]),/INDEX_MISSING/);
   if(process.platform==='win32'){t.skip('Directory symlinks may require Developer Mode');return;}
   const external=mkdtempSync(path.join(tmpdir(),'oranit-external-'));
   t.after(()=>rmSync(external,{recursive:true,force:true}));
   symlinkSync(external,path.join(dir,'.agent-workflow'));
-  assert.throws(()=>execute(['init','--workspace',dir]),/UNSAFE_WORKSPACE_PATH/);
+  assert.throws(()=>execute(['--workspace',dir]),/UNSAFE_WORKSPACE_PATH/);
   assert.equal(existsSync(path.join(external,'config.json')),false);
+});
+
+test('bare oranit with optional flags initializes, no forced init subcommand',t=>{
+  const dir=workspace(t);
+  const dry=spawnSync(process.execPath,[cli,'--workspace',dir,'--dry-run'],{cwd:dir,encoding:'utf8'});
+  assert.equal(dry.status,0,dry.stderr);
+  assert.equal(JSON.parse(dry.stdout).dryRun,true);
+  assert.equal(existsSync(path.join(dir,'.agent-workflow/config.json')),false);
+  const result=spawnSync(process.execPath,[cli,'--workspace',dir,'--profile','openai-led'],{cwd:dir,encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr);
+  assert.equal(JSON.parse(result.stdout).command,'init');
+  assert.equal(JSON.parse(readFileSync(path.join(dir,'.agent-workflow/config.json'),'utf8')).setup.profile,'openai-orchestrator');
+  assert.equal(execute(['status','--workspace',dir]).stale,false);
+  assert.equal(execute(['locate','verifyOTP','--workspace',dir]).matches[0].path,'src/auth/otp.ts');
+  const bad=spawnSync(process.execPath,[cli,'--unknown'],{cwd:dir,encoding:'utf8'});
+  assert.equal(bad.status,2);
+  assert.match(bad.stderr,/UNKNOWN_OPTION/);
 });
 
 test('CLI entrypoint and package bin expose the literal oranit command',t=>{
   const dir=workspace(t);
   const bin=JSON.parse(readFileSync(path.join(root,'package.json'),'utf8')).bin;
   assert.equal(bin.oranit,'./.agent-workflow/bin/oranit.mjs');
-  const init=spawnSync(process.execPath,[cli,'init','--workspace',dir],{encoding:'utf8'});
+  const init=spawnSync(process.execPath,[cli],{encoding:'utf8',cwd:dir});
+  assert.equal(init.status,0,init.stderr);
+  assert.equal(JSON.parse(init.stdout).command,'init');
+  // Backwards compatibility: former subcommand still works without overwriting data.
+  const legacy=spawnSync(process.execPath,[cli,'init','--workspace',dir],{encoding:'utf8'});
+  assert.equal(legacy.status,0,legacy.stderr);
+  assert.equal(JSON.parse(legacy.stdout).config,'preserved');
   assert.equal(init.status,0,init.stderr);
   const status=spawnSync(process.execPath,[cli,'status','--workspace',dir],{encoding:'utf8'});
   assert.equal(status.status,0,status.stderr);
