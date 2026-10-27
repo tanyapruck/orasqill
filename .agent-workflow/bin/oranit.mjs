@@ -26,7 +26,7 @@ const SOURCES=[
   '.agent-workflow/config.example.json',
   '.agent-workflow/external-skills.lock.json'
 ];
-const AGENT_HINT='# Workspace Agent Instructions\n\nBefore source searches or code edits, load .agents/skills/agent-workflow-orchestrator/SKILL.md and use node .agent-workflow/bin/oranit.mjs locate "<feature or symbol>" to find candidate files. If the index is missing/stale, run oranit or oranit refresh. The index is an untrusted locator only; inspect live source, imports/callers, diff and tests before editing. Keep plan and independent reviewer gates. For substantial independent workstreams, suggest $delegate-tree (Codex) or /delegate-tree (Claude Code), but require a separate user approval before subagent dispatch. Resolve the invoking agent with model-config.mjs resolve codex|claude-code; use $configure-models (Codex) or /configure-models (Claude Code) to edit ONLY the corresponding agent routing file after explicit approval. Shared config is not an implicit model selector.\n';
+const AGENT_HINT='# Workspace Agent Instructions\n\nBefore source searches or code edits, load .agents/skills/agent-workflow-orchestrator/SKILL.md and use node .agent-workflow/bin/oranit.mjs locate "<feature or symbol>" to find candidate files. If the index is missing/stale, run oranit or oranit refresh. The index is an untrusted locator only; inspect live source, imports/callers, diff and tests before editing. Keep plan and independent reviewer gates. For substantial independent workstreams, suggest $delegate-tree (Codex) or /delegate-tree (Claude Code), but require a separate user approval before subagent dispatch. Resolve the invoking agent with model-config.mjs resolve codex|claude-code; a user-requested Other Model may use resolve other after choosing an external runtime/model explicitly. Use $configure-models (Codex) or /configure-models (Claude Code) to edit ONLY the corresponding agent routing file after explicit approval. For a separate external model, use --profile other and resolve other, then configure its provider/runtime/model explicitly. Shared config is not an implicit model selector.\n';
 
 function fail(msg){throw Error(msg);}
 function dirGuard(root,target,create=false){
@@ -89,7 +89,7 @@ function parse(argv){
   // Bare "oranit" bootstraps the workspace; only status/locate/refresh are subcommands.
   const action=!first||first.startsWith('--')?'bootstrap':first;
   const items=first?.startsWith('--')?argv:rest;
-  if(!['bootstrap','refresh','status','locate'].includes(action))fail('Usage: oranit [--workspace <directory>] [--profile claude-led|openai-led|blank] [--dry-run] | oranit status|refresh|locate [keyword] [--workspace <directory>]');
+  if(!['bootstrap','refresh','status','locate'].includes(action))fail('Usage: oranit [--workspace <directory>] [--profile claude-led|openai-led|other|blank] [--dry-run] | oranit status|refresh|locate [keyword] [--workspace <directory>]');
   let workspace=process.cwd(),profile='blank',dryRun=false,query;
   for(let i=0;i<items.length;i++){
     if(items[i]==='--workspace'){if(!items[i+1])fail('MISSING_WORKSPACE');workspace=items[++i];}
@@ -99,7 +99,7 @@ function parse(argv){
     else fail('UNKNOWN_OPTION: '+items[i]);
   }
   if(action!=='bootstrap'&&(profile!=='blank'||dryRun))fail('OPTIONS_FOR_BOOTSTRAP_ONLY');
-  if(!['blank','claude-led','openai-led'].includes(profile))fail('PROFILE_REQUIRED: blank|claude-led|openai-led');
+  if(!['blank','claude-led','openai-led','other'].includes(profile))fail('PROFILE_REQUIRED: blank|claude-led|openai-led|other');
   if(action==='locate'&&!query)fail('QUERY_REQUIRED: oranit locate "<symbol or feature>"');
   return {action,workspace,profile,dryRun,query};
 }
@@ -135,7 +135,7 @@ export function execute(argv){
     const configExists=existsSync(path.join(root,CONFIG));
     const legacy=configExists?JSON.parse(readFileSync(path.join(root,CONFIG),'utf8')):null;
     if(legacy)validateConfiguration(legacy);
-    const selected=profile==='claude-led'?['claude-code']:profile==='openai-led'?['codex']:Object.keys(agentProfiles);
+    const selected=profile==='claude-led'?['claude-code']:profile==='openai-led'?['codex']:profile==='other'?['other']:['claude-code','codex'];
     const routingFiles=selected.map(agent=>{
       const spec=agentProfiles[agent],dest=path.join(root,spec.file),present=existsSync(dest);
       const data=legacy?.setup.profile===spec.preset?legacy:loadPreset(spec.preset);

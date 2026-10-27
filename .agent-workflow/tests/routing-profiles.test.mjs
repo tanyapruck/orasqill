@@ -116,3 +116,22 @@ test('portable install documentation copies both profiles without enabling runti
   assert.equal(base.setup.status,'unconfirmed');
   assert.deepEqual(base.routing.orchestrator.preferred,[]);
 });
+
+test('Other Model is a third opt-in blank candidate; original role profiles are unchanged',()=>{
+  const other=load('other-orchestrator');
+  assert.equal(other.version,1);
+  assert.equal(other.setup.status,'unconfirmed');
+  assert.equal(other.setup.profile,'other-orchestrator');
+  assert.equal(other.routing.orchestrator.automatic_switching,false);
+  assert.equal(other.routing.reviewer.require_independent_author,true);
+  for(const role of roles){
+    assert.deepEqual(other.routing[role].preferred,[]);
+    assert.deepEqual(other.routing[role].fallback,[]);
+  }
+  assert.deepEqual(other.runtimes,{});
+  assert.deepEqual(other.workers,{});
+  const readme=readFileSync(path.join(root,'README.md'),'utf8');
+  assert.match(readme,/oranit --profile other/);
+  assert.match(readme,/model-config\.mjs resolve other/);
+  assert.match(readme,/\.agent-workflow\/routing\/other\.json/);
+});

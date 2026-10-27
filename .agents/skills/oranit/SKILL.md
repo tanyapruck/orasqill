@@ -1,6 +1,6 @@
 ---
 name: oranit
-description: Initialize a workspace with a shared code index and independent Claude Code/Codex model routes.
+description: Initialize shared workspace and independent Claude Code, Codex and optional Other Model routes.
 disable-model-invocation: true
 user-invocable: true
 argument-hint: "[status|locate|refresh] [workspace]"
@@ -14,7 +14,7 @@ A **user-invoked workspace setup and locator Skill**, not permission to modify a
 
 1. Determine the actual workspace root; verify the user intends changes in this directory. Do not assume the repository is HoroOne or the Orasqill source checkout.
 2. When the user invokes **`oranit` without a subcommand**, initialize the shared **Index/Config** and independent **Agent Routing** files with `node .agent-workflow/bin/oranit.mjs --workspace "<root>"`. If CLI is installed on PATH, `oranit` is equivalent. Use `--dry-run` first if existing instructions, security, or scope make writes uncertain.
-3. Default `oranit` creates a neutral shared `.agent-workflow/config.json` and **two independent candidates**: `.agent-workflow/routing/claude-code.json` and `.agent-workflow/routing/codex.json`. `--profile claude-led` creates only Claude's missing route; `--profile openai-led` creates only Codex's missing route. Neither option overwrites the other agent or shared config. Existing legacy global profiles remain preserved; their matching agent route may be copied without overwriting it. All generated model configs are `unconfirmed` unless preserving existing previously configured values. Ignore `.agent-workflow/routing/`, shared config, index and task state in Git.
+3. Default `oranit` creates a neutral shared `.agent-workflow/config.json` and **two independent candidates**: `.agent-workflow/routing/claude-code.json` and `.agent-workflow/routing/codex.json`. `--profile claude-led` creates only Claude's missing route; `--profile openai-led` creates only Codex's missing route. **`--profile other`** creates only `.agent-workflow/routing/other.json`, with **empty model selections** until the user explicitly chooses provider, runtime and model IDs. This third route is optional and does not change Claude or Codex. Neither option overwrites another agent or shared config. Existing legacy global profiles remain preserved; their matching agent route may be copied without overwriting it. All generated model configs are `unconfirmed` unless preserving existing previously configured values. Ignore `.agent-workflow/routing/`, shared config, index and task state in Git.
 4. The command installs the portable `$delegate-tree` and `$configure-models` Skills and Claude's `/configure-models` adapter. After setup, offer the model configuration interview for the **invoking agent's route only**. Do **not** infer config activation from presence of JSON; writing new candidate mappings requires the interview's separate explicit approval.
 5. Initial index is `.agent-workflow/index/codebase-map.json`. It contains **path + approximate symbol names/line hints + hashes**, not source snippets, credentials or a proof of correctness. No vector DB required.
 
@@ -32,6 +32,7 @@ Before any broad repo search or reading many files:
 ```sh
 oranit --workspace .                    # install missing Skills and initialize both systems
 oranit --profile claude-led --workspace .   # Claude route only; Codex remains independent
+oranit --profile other --workspace .        # optional Other Model, no models guessed
 oranit --dry-run --workspace .          # proposal; no file writes
 oranit status --workspace .                   # detect added, changed and removed indexed files
 oranit locate "keyword" --workspace .      # precise candidate source paths/symbol hints

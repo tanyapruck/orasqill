@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
 
 const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const commandGuide = readFileSync(path.join(source, 'docs/command-reference.md'), 'utf8');
 const readme = readFileSync(path.join(source, 'README.md'), 'utf8');
 
 function destination(t) {
@@ -44,23 +45,23 @@ function destination(t) {
   return dir;
 }
 
-test('documented install includes original Skill, helpers, registry and destination ignore rule', () => {
-  assert.match(readme, /cp -R .*\.agents\/skills\/agent-workflow-orchestrator/);
-  assert.match(readme, /cp -R .*\.agents\/skills\/configure-models/);
-  assert.match(readme, /cp -R .*\.agents\/skills\/oranit/);
-  assert.match(readme, /cp -R .*\.agents\/skills\/delegate-tree/);
-  assert.match(readme, /cp -R .*\.agent-workflow\/examples/);
-  assert.match(readme, /\.claude\/skills\/configure-models/);
-  assert.match(readme, /cp -R .*\.agent-workflow\/bin/);
-  assert.match(readme, /cp .*\.agent-workflow\/external-skills\.lock\.json/);
-  assert.match(readme, /cp .*\.agent-workflow\/config\.example\.json/);
-  assert.match(readme, /cp -R .*\.agent-workflow\/profiles/);
-  assert.match(readme, /\.agent-workflow\/state\//);
-  assert.match(readme, /\.agent-workflow\/routing\//);
-  assert.match(readme, /model-config\.mjs resolve claude-code/);
-  assert.match(readme, /model-config\.mjs resolve codex/);
-  assert.match(readme, /git check-ignore \.agent-workflow\/state\/install-check\/plan\.json/);
-  assert.match(readme, /merge.*\.gitignore|add.*\.gitignore/i);
+test('developer command reference documents manual install, helpers, registry and ignore rules', () => {
+  assert.match(commandGuide, /cp -R .*\.agents\/skills\/agent-workflow-orchestrator/);
+  assert.match(commandGuide, /cp -R .*\.agents\/skills\/configure-models/);
+  assert.match(commandGuide, /cp -R .*\.agents\/skills\/oranit/);
+  assert.match(commandGuide, /cp -R .*\.agents\/skills\/delegate-tree/);
+  assert.match(commandGuide, /cp -R .*\.agent-workflow\/examples/);
+  assert.match(commandGuide, /\.claude\/skills\/configure-models/);
+  assert.match(commandGuide, /cp -R .*\.agent-workflow\/bin/);
+  assert.match(commandGuide, /cp .*\.agent-workflow\/external-skills\.lock\.json/);
+  assert.match(commandGuide, /cp .*\.agent-workflow\/config\.example\.json/);
+  assert.match(commandGuide, /cp -R .*\.agent-workflow\/profiles/);
+  assert.match(commandGuide, /\.agent-workflow\/state\//);
+  assert.match(commandGuide, /\.agent-workflow\/routing\//);
+  assert.match(commandGuide, /model-config\.mjs resolve claude-code/);
+  assert.match(commandGuide, /model-config\.mjs resolve codex/);
+  assert.match(commandGuide, /git check-ignore \.agent-workflow\/state\/install-check\/plan\.json/);
+  assert.match(commandGuide, /merge.*\.gitignore|add.*\.gitignore/i);
 });
 
 test('fresh destination can list source-pinned third-party skills without application files', t => {
@@ -172,4 +173,12 @@ test('fresh consumer can follow the documented end-to-end plan, acceptance and f
   assert.equal(task.status, 'finished');
   assert.match(readFileSync(path.join(stateDir, 'final-report.md'), 'utf8'), /PLAN COMPLETE/);
   assert.doesNotMatch(git('status', '--short'), /\.agent-workflow\/state\//);
+});
+
+test('public README stays short and links to the complete command reference',()=>{
+  assert.match(readme,/\[Command Reference\]\(docs\/command-reference\.md\)/);
+  assert.match(readme,/\[Model Routing\]\(docs\/model-routing\.md\)/);
+  assert.match(readme,/\[Developer Notes\]\(docs\/developer-notes\.md\)/);
+  assert.equal((readme.match(/^\`\`\`/gm)||[]).length,2);
+  assert.ok(readme.split(/\r?\n/).length<130);
 });

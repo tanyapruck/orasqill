@@ -12,7 +12,7 @@ const cli=path.join(repo,'.agent-workflow/bin/model-config.mjs');
 const clone=x=>structuredClone(x);
 
 test('both installed presets preview without modifying local config',()=>{
-  for(const name of ['claude-orchestrator','openai-orchestrator']){
+  for(const name of ['claude-orchestrator','openai-orchestrator','other-orchestrator']){
     const preset=loadPreset(name);
     assert.equal(preset.setup.status,'unconfirmed');
     assert.equal(preset.setup.profile,name);
@@ -145,4 +145,44 @@ test('resolve selects agent by explicit invoking runtime, independent of global 
   assert.equal(child.status,0,child.stderr);
   assert.equal(JSON.parse(child.stdout).agent,'claude-code');
   assert.equal(JSON.parse(child.stdout).executionAuthorized,false);
+});
+
+test('other profile is intentionally unconfigured until a user selects an external provider/model',()=>{
+  const preset=loadPreset('other-orchestrator');
+  assert.equal(preset.setup.profile,'other-orchestrator');
+  assert.equal(preset.setup.status,'unconfirmed');
+  assert.deepEqual(preset.routing.orchestrator.preferred,[]);
+  assert.deepEqual(preset.routing.implementer.preferred,[]);
+  assert.deepEqual(preset.routing.reviewer.preferred,[]);
+  assert.equal(preset.routing.reviewer.require_independent_author,true);
+  assert.equal(preset.routing.orchestrator.automatic_switching,false);
+  assert.equal(JSON.parse(run(['preview','other-orchestrator'])).validation.valid,true);
+});
+
+test('custom runtimes accept meaningful model identifiers with optional effort',()=>{
+  const external={runtime:'external-runtime',provider:'example-provider',model:'example-model-v1'};
+  assert.equal(validateCandidate(external),true);
+  let custom=loadPreset('other-orchestrator');
+  custom.routing.orchestrator.preferred=[external];
+  custom.routing.implementer.preferred=[{...external,effort:'medium'}];
+  assert.equal(validateConfiguration(custom).valid,true);
+  assert.throws(()=>validateCandidate({runtime:'codex',model:'gpt-6.1-sol'}),/EFFORT_REQUIRED/);
+  assert.throws(()=>validateCandidate({runtime:'external-runtime',model:'x',effort:'unsupported'}),/EFFORT_REQUIRED/);
+  assert.throws(()=>validateCandidate({runtime:'external-runtime',model:'x',provider:''}),/PROVIDER_REQUIRED/);
+  assert.throws(()=>validateCandidate({runtime:'external-runtime',model:'x',requested_mode:'ultra'}),/ULTRA_REQUIRES_RUNTIME/);
+});
+
+test('other route resolves independently from Claude Code, Codex and historical profile',t=>{
+  const dir=mkdtempSync(path.join(tmpdir(),'orasqill-other-config-'));
+  t.after(()=>rmSync(dir,{recursive:true,force:true}));
+  const other=JSON.parse(run(['resolve','other','--workspace',dir]));
+  assert.equal(other.agent,'other');
+  assert.equal(other.source,'bundled-candidate');
+  assert.equal(other.config.setup.profile,'other-orchestrator');
+  assert.equal(other.executionAuthorized,false);
+  assert.equal(JSON.parse(run(['resolve','claude-code','--workspace',dir])).config.setup.profile,'claude-orchestrator');
+  assert.equal(JSON.parse(run(['resolve','codex','--workspace',dir])).config.setup.profile,'openai-orchestrator');
+  const cliResult=spawnSync(process.execPath,[cli,'resolve','other','--workspace',dir],{encoding:'utf8'});
+  assert.equal(cliResult.status,0,cliResult.stderr);
+  assert.equal(JSON.parse(cliResult.stdout).source,'bundled-candidate');
 });
