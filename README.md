@@ -69,7 +69,7 @@ Use slash commands in your agent chat; run `oranit` **only to initialize** a wor
 
 | Terminal command | What it does |
 |---|---|
-| `oranit` | Initialize shared project state and the two default agent routes |
+| `oranit` (short for `orasqill init`) | Initialize shared project state and the two default agent routes |
 | `oranit --profile claude-led` | Create only the missing Claude Code route |
 | `oranit --profile openai-led` | Create only the missing Codex route |
 | `oranit --profile other` | Add an optional, empty Other Model route |
