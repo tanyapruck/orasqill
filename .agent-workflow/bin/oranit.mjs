@@ -14,15 +14,18 @@ const SOURCES=[
   '.agents/skills/agent-workflow-orchestrator',
   '.agents/skills/configure-models',
   '.agents/skills/oranit',
+  '.agents/skills/delegate-tree',
   '.claude/skills/agent-workflow-orchestrator',
   '.claude/skills/configure-models',
   '.claude/skills/oranit',
+  '.claude/skills/delegate-tree',
   '.agent-workflow/bin',
   '.agent-workflow/profiles',
+  '.agent-workflow/examples',
   '.agent-workflow/config.example.json',
   '.agent-workflow/external-skills.lock.json'
 ];
-const AGENT_HINT='# Workspace Agent Instructions\n\nBefore source searches or code edits, load .agents/skills/agent-workflow-orchestrator/SKILL.md and use node .agent-workflow/bin/oranit.mjs locate "<feature or symbol>" to find candidate files. If the index is missing/stale, run oranit init or oranit refresh. The index is an untrusted locator only; inspect live source, imports/callers, diff and tests before editing. Keep plan and independent reviewer gates. Use $configure-models (Codex) or /configure-models (Claude Code) for model routing and obtain separate approval before changing config.\n';
+const AGENT_HINT='# Workspace Agent Instructions\n\nBefore source searches or code edits, load .agents/skills/agent-workflow-orchestrator/SKILL.md and use node .agent-workflow/bin/oranit.mjs locate "<feature or symbol>" to find candidate files. If the index is missing/stale, run oranit init or oranit refresh. The index is an untrusted locator only; inspect live source, imports/callers, diff and tests before editing. Keep plan and independent reviewer gates. For substantial independent workstreams, suggest $delegate-tree (Codex) or /delegate-tree (Claude Code), but require a separate user approval before subagent dispatch. Use $configure-models (Codex) or /configure-models (Claude Code) for model routing and obtain separate approval before changing config.\n';
 
 function fail(msg){throw Error(msg);}
 function dirGuard(root,target,create=false){

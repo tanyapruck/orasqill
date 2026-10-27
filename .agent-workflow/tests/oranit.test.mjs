@@ -36,7 +36,10 @@ test('oranit init bootstraps fresh workspace, code index, ignored config and all
   for(const p of ['.agents/skills/oranit/SKILL.md','.agents/skills/configure-models/SKILL.md',
     '.agents/skills/agent-workflow-orchestrator/SKILL.md','.claude/skills/oranit/SKILL.md',
     '.claude/skills/configure-models/SKILL.md','.agent-workflow/bin/model-config.mjs',
-    '.agent-workflow/bin/repo-index.mjs','.agent-workflow/index/codebase-map.json','AGENTS.md']){
+    '.agent-workflow/bin/repo-index.mjs','.agent-workflow/bin/nested-delegation.mjs',
+    '.agents/skills/delegate-tree/SKILL.md','.claude/skills/delegate-tree/SKILL.md',
+    '.agent-workflow/examples/nested-tree.example.json',
+    '.agent-workflow/index/codebase-map.json','AGENTS.md']){
     assert.ok(existsSync(path.join(dir,p)),p);
   }
   const ignore=readFileSync(path.join(dir,'.gitignore'),'utf8');

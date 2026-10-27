@@ -19,6 +19,10 @@ function destination(t) {
   // Exact required paths named in README: canonical Skill, CLI, and the provenance registry.
   cpSync(path.join(source, '.agents/skills/agent-workflow-orchestrator'),
     path.join(dir, '.agents/skills/agent-workflow-orchestrator'), { recursive: true });
+  cpSync(path.join(source, '.agents/skills/delegate-tree'),
+    path.join(dir, '.agents/skills/delegate-tree'), {recursive:true});
+  cpSync(path.join(source, '.claude/skills/delegate-tree'),
+    path.join(dir, '.claude/skills/delegate-tree'), {recursive:true});
   cpSync(path.join(source, '.agents/skills/oranit'),
     path.join(dir, '.agents/skills/oranit'), {recursive:true});
   cpSync(path.join(source, '.claude/skills/oranit'),
@@ -35,6 +39,8 @@ function destination(t) {
     path.join(dir, '.agent-workflow/config.example.json'));
   cpSync(path.join(source, '.agent-workflow/profiles'),
     path.join(dir, '.agent-workflow/profiles'), {recursive:true});
+  cpSync(path.join(source, '.agent-workflow/examples'),
+    path.join(dir, '.agent-workflow/examples'), {recursive:true});
   return dir;
 }
 
@@ -42,6 +48,8 @@ test('documented install includes original Skill, helpers, registry and destinat
   assert.match(readme, /cp -R .*\.agents\/skills\/agent-workflow-orchestrator/);
   assert.match(readme, /cp -R .*\.agents\/skills\/configure-models/);
   assert.match(readme, /cp -R .*\.agents\/skills\/oranit/);
+  assert.match(readme, /cp -R .*\.agents\/skills\/delegate-tree/);
+  assert.match(readme, /cp -R .*\.agent-workflow\/examples/);
   assert.match(readme, /\.claude\/skills\/configure-models/);
   assert.match(readme, /cp -R .*\.agent-workflow\/bin/);
   assert.match(readme, /cp .*\.agent-workflow\/external-skills\.lock\.json/);
@@ -65,6 +73,10 @@ test('fresh destination can list source-pinned third-party skills without applic
   assert.ok(existsSync(path.join(dest, '.agent-workflow/bin/plan-ledger.mjs')));
   assert.ok(existsSync(path.join(dest, '.agents/skills/configure-models/SKILL.md')));
   assert.ok(existsSync(path.join(dest, '.agents/skills/oranit/SKILL.md')));
+  assert.ok(existsSync(path.join(dest, '.agents/skills/delegate-tree/SKILL.md')));
+  assert.ok(existsSync(path.join(dest, '.claude/skills/delegate-tree/SKILL.md')));
+  assert.ok(existsSync(path.join(dest, '.agent-workflow/bin/nested-delegation.mjs')));
+  assert.ok(existsSync(path.join(dest, '.agent-workflow/examples/nested-tree.example.json')));
   assert.ok(existsSync(path.join(dest, '.claude/skills/oranit/SKILL.md')));
   assert.ok(existsSync(path.join(dest, '.agent-workflow/bin/oranit.mjs')));
   assert.ok(existsSync(path.join(dest, '.claude/skills/configure-models/SKILL.md')));

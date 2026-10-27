@@ -4,6 +4,6 @@
 
 Before coordinating verify: authorized objective, plan, risk, actual Git/working-tree access, configured agent readiness, allowed resources, write ownership, acceptable depth and final integration owner. If the actual runtime is not confirmed, use bounded direct work or report `SETUP_REQUIRED` rather than pretending workers are available.
 
-An authorized parent may delegate a *bounded sub-orchestrator* packet specifying original plan-step ID, objective, allowed/forbidden paths, validation evidence, budget, depth and stop conditions. The child must report out-of-plan discoveries as findings; it cannot expand the packet. Only the designated integration owner handles final integration and reviewer gates.
+An authorized parent may delegate a *bounded sub-orchestrator* packet (see `delegate-tree` Skill and `.agent-workflow/bin/nested-delegation.mjs` for the read-only tree/packet validator) specifying original plan-step ID, objective, allowed/forbidden paths, validation evidence, budget, depth and stop conditions. The child must report out-of-plan discoveries as findings; it cannot expand the packet. Only the designated integration owner handles final integration and reviewer gates.
 
 For a human-controlled handoff, verify predecessor inactivity and actual branch/HEAD/status/diff. Read the same locked plan. Resume the next unfinished step rather than appointing a new root or opening a second task. Agent/provider availability changing during work does not automatically reassign ownership.

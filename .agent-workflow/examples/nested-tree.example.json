@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "rootTaskId": "feature-123",
+  "planStepId": "S1",
+  "limits": {
+    "maxDepth": 2,
+    "maxActiveWorkers": 3
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "parentId": null,
+      "kind": "orchestrator",
+      "objective": "Implement the approved feature",
+      "risk": "STANDARD",
+      "budget": 1000,
+      "resources": {
+        "read": [
+          "src"
+        ],
+        "write": [
+          "src"
+        ]
+      },
+      "acceptance": [
+        "All children complete and integrated tests pass"
+      ]
+    },
+    {
+      "id": "auth",
+      "parentId": "root",
+      "kind": "orchestrator",
+      "objective": "Deliver authentication component",
+      "risk": "STANDARD",
+      "budget": 500,
+      "resources": {
+        "read": [
+          "src/auth"
+        ],
+        "write": [
+          "src/auth"
+        ]
+      },
+      "acceptance": [
+        "Auth-specific tests pass"
+      ]
+    },
+    {
+      "id": "payment",
+      "parentId": "root",
+      "kind": "orchestrator",
+      "objective": "Deliver payment component",
+      "risk": "STANDARD",
+      "budget": 500,
+      "resources": {
+        "read": [
+          "src/payment"
+        ],
+        "write": [
+          "src/payment"
+        ]
+      },
+      "acceptance": [
+        "Payment-specific tests pass"
+      ]
+    },
+    {
+      "id": "otp",
+      "parentId": "auth",
+      "kind": "worker",
+      "objective": "Implement authentication OTP module",
+      "risk": "STANDARD",
+      "budget": 500,
+      "resources": {
+        "read": [
+          "src/auth/otp.ts"
+        ],
+        "write": [
+          "src/auth/otp.ts"
+        ]
+      },
+      "acceptance": [
+        "OTP module tests pass"
+      ]
+    },
+    {
+      "id": "stripe",
+      "parentId": "payment",
+      "kind": "worker",
+      "objective": "Implement payment charge module",
+      "risk": "STANDARD",
+      "budget": 500,
+      "resources": {
+        "read": [
+          "src/payment/charge.ts"
+        ],
+        "write": [
+          "src/payment/charge.ts"
+        ]
+      },
+      "acceptance": [
+        "Payment module tests pass"
+      ]
+    }
+  ]
+}

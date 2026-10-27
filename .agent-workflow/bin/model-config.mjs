@@ -38,8 +38,20 @@ export function validateConfiguration(config) {
     }
   }
   if(config.delegation){
-    requireValid(object(config.delegation)&&Number.isInteger(config.delegation.max_parallel_workers)&&config.delegation.max_parallel_workers>=1,'DELEGATION_REQUIRED: invalid worker limit');
-    requireValid(config.delegation.max_parallel_workers===1,'PARALLEL_SETUP_REQUIRED: explicit runtime isolation review needed before parallel workers');
+    const d=config.delegation;
+    const depth=d.max_depth??1; // Historical user configs without this optional field remain valid.
+    requireValid(object(d)&&Number.isSafeInteger(depth)&&depth>=1&&depth<=6&&
+      Number.isSafeInteger(d.max_parallel_workers)&&d.max_parallel_workers>=1&&d.max_parallel_workers<=16,
+      'DELEGATION_REQUIRED: depth 1-6 and workers 1-16 required');
+    if(d.max_parallel_workers>1){
+      const c=d.runtime_capabilities;
+      requireValid(config.setup.status==='confirmed'&&object(c)&&
+        c.supportsConcurrentWorkers===true&&c.enforcesOwnership===true&&
+        c.enforcesIsolation===true&&
+        config.task_execution?.mode==='bounded_parallel'&&
+        config.task_execution.max_active_child_tasks>=d.max_parallel_workers,
+        'PARALLEL_SETUP_REQUIRED: confirmed candidate capabilities, ownership/isolation and global worker limit required');
+    }
   }
   requireValid(object(config.workers??{})&&object(config.runtimes??{}),'SETUP_REQUIRED: workers and runtimes must be objects');
   return {valid:true,setupStatus:config.setup.status,checkedRoles:roles.length,checkedStages:Object.keys(config.stage_preferences??{}).length,warning:'Structural validation only: runtime/model availability, reviewer identity, effort support and skill loadability remain unverified.'};

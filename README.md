@@ -80,10 +80,12 @@ mkdir -p .agents/skills .agent-workflow
 cp -R /path/to/orasqill/.agents/skills/agent-workflow-orchestrator .agents/skills/
 cp -R /path/to/orasqill/.agents/skills/configure-models .agents/skills/
 cp -R /path/to/orasqill/.agents/skills/oranit .agents/skills/
+cp -R /path/to/orasqill/.agents/skills/delegate-tree .agents/skills/
 cp -R /path/to/orasqill/.agent-workflow/bin .agent-workflow/
 cp /path/to/orasqill/.agent-workflow/external-skills.lock.json .agent-workflow/
 cp /path/to/orasqill/.agent-workflow/config.example.json .agent-workflow/
 cp -R /path/to/orasqill/.agent-workflow/profiles .agent-workflow/
+cp -R /path/to/orasqill/.agent-workflow/examples .agent-workflow/
 ```
 
 ### Windows PowerShell
@@ -94,10 +96,12 @@ New-Item -ItemType Directory -Force '.agents\skills', '.agent-workflow' | Out-Nu
 Copy-Item -Recurse (Join-Path $src '.agents\skills\agent-workflow-orchestrator') '.agents\skills\'
 Copy-Item -Recurse (Join-Path $src '.agents\skills\configure-models') '.agents\skills\'
 Copy-Item -Recurse (Join-Path $src '.agents\skills\oranit') '.agents\skills\'
+Copy-Item -Recurse (Join-Path $src '.agents\skills\delegate-tree') '.agents\skills\'
 Copy-Item -Recurse (Join-Path $src '.agent-workflow\bin') '.agent-workflow\'
 Copy-Item (Join-Path $src '.agent-workflow\external-skills.lock.json') '.agent-workflow\'
 Copy-Item (Join-Path $src '.agent-workflow\config.example.json') '.agent-workflow\'
 Copy-Item -Recurse (Join-Path $src '.agent-workflow\profiles') '.agent-workflow\'
+Copy-Item -Recurse (Join-Path $src '.agent-workflow\examples') '.agent-workflow\'
 ```
 
 **Connect your agent.** Add a short pointer to your existing `AGENTS.md` (or create it if absent):
@@ -225,6 +229,31 @@ Use `plan-ledger.mjs finding <task-id> --description "..." --impact "..." --reas
 ### High-risk change?
 
 Authentication, payments, security, migrations, destructive or production changes require separate protected-action permission and a genuinely **independent eligible reviewer**. After an actual review, its result can be recorded with `plan-ledger.mjs review <task-id> --reviewer "<actual-reviewer>" --independent yes --result pass --evidence "<verifiable-reference>"`. A typed reviewer name does *not* prove independence. Missing or failed review blocks `HIGH_RISK` completion. See [review gates](.agents/skills/agent-workflow-orchestrator/references/review-validation.md).
+
+## Nested Orchestration: delegate a task tree
+
+**`$delegate-tree`** (Codex) or **`/delegate-tree`** (Claude Code) starts an opt-in hierarchical delegation workflow. The agent may also **recommend it** for an approved large task containing substantial independent components; it must show the scope/benefit and request approval before any real worker is spawned. For small or tightly coupled changes, use the ordinary single-agent path.
+
+A nested tree can have **Root Orchestrator → Sub-Orchestrator → Worker** (depth 2). Root owns the master locked plan and integration. Sub-Orchestrators may subdivide only the bounded parent packet; children never independently add scope or lower HIGH_RISK classification. Work is partitioned by non-overlapping write paths and child budgets that sum within the parent. A single **global** concurrency budget applies to all branches.
+
+```text
+Root (Codex/Claude; Master Locked Plan)
+├── Auth Sub-Orchestrator ── OTP Worker
+└── Payment Sub-Orchestrator ── Payment Worker
+          ↓ Child findings / validation evidence
+Root Integration → Acceptance → Independent HIGH_RISK Review → Close
+```
+
+The checked-in example `.agent-workflow/examples/nested-tree.example.json` is a template; adapt `rootTaskId`, `planStepId`, and the root objective **exactly** to the next pending step in your `plan-ledger` file before running:
+
+```sh
+node .agent-workflow/bin/nested-delegation.mjs plan nested-tree.json --locked-plan .agent-workflow/state/<task-id>/plan.json
+node .agent-workflow/bin/nested-delegation.mjs packet nested-tree.json otp --locked-plan .agent-workflow/state/<task-id>/plan.json
+```
+
+Add `--config .agent-workflow/config.json` to compare requested and configured depth/capacity. Both commands are **read-only** and return a proposal with `readyToDispatch:false`, `agentsLaunched:0`, and reasons to stop. They never launch subagents or grant approval. The default profile remains **one sequential worker at delegation depth 1**. Depth 2 and higher global concurrency are **opt-in**: the chosen client must actually support subagents, enforce file ownership/isolation and global caps, load required coding Skills in every worker, and receive explicit user permission. Even a `confirmed` config is not proof those conditions hold in a particular session.
+
+Install the Claude command adapter into the destination workspace's `.claude/skills/delegate-tree/SKILL.md` (using the same optional copy process as `/oranit`) or run `oranit init` for a fresh installation. `AGENTS.md` in Orasqill contains the conditional recommendation trigger for agents; it does **not** silently delegate. External runtime execution, independent eligible reviewers, test evidence, approvals for protected Git/production actions and merging remain separate human/runtime checks.
 
 ## Agent handoff and optional scheduling
 

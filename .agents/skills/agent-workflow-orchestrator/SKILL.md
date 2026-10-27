@@ -49,7 +49,7 @@ The user or authorized parent chooses the receiving agent; the original writer s
 | Editing SKILL.md, AGENTS.md, CLAUDE.md or agent instructions | `references/DEPENDENCIES.md` |
 | Consequential unresolved decisions before Plan lock | `references/planning-interview.md` |
 | Choosing Claude/OpenAI orchestrator profile or checking runtime, capacity or role readiness | `references/setup-routing.md` |
-| Worker packets, adaptive parallelism and resource ownership | `references/delegation.md` |
+| Worker packets, nested delegation and resource ownership | `references/delegation.md` |
 | HIGH_RISK validation or independent review | `references/review-validation.md` |
 | Resuming work or user-directed provider handoff | `references/manual-handoff.md` |
 | Context/token budget decisions | `references/token-budget.md` |
