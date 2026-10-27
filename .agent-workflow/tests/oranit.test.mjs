@@ -6,6 +6,7 @@ import {spawnSync} from 'node:child_process';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execute} from '../bin/oranit.mjs';
+import {resolveAgentRouting,loadPreset} from '../bin/model-config.mjs';
 import {scanWorkspace,compareIndex,locate} from '../bin/repo-index.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
@@ -28,13 +29,16 @@ test('bare oranit bootstraps fresh workspace, code index, ignored config and all
   assert.ok(r.assetFilesCreated>5);
   const config=JSON.parse(readFileSync(path.join(dir,'.agent-workflow/config.json'),'utf8'));
   assert.equal(config.setup.status,'unconfirmed');
-  assert.equal(config.setup.profile,'claude-orchestrator');
-  assert.deepEqual(config.routing.implementer.preferred[0],{runtime:'claude-code',model:'claude-sonnet-5-5',effort:'medium'});
-  assert.deepEqual(config.stage_preferences.complex_implement,{role:'implementer',runtime:'claude-code',model:'claude-sonnet-5-5',effort:'high'});
-  assert.deepEqual(config.stage_preferences.scoped_implement,{role:'implementer'});
-  assert.deepEqual(config.stage_preferences.computer_use,{role:'implementer',runtime:'codex',model:'gpt-6.1-terra',effort:'medium'});
-  assert.equal(config.routing.reviewer.preferred[0].model,'gpt-6.1-sol');
-  assert.equal(config.stage_preferences.critical_review.requested_mode,'ultra');
+  assert.equal(config.setup.profile,'project-specific');
+  assert.deepEqual(config.routing.implementer.preferred,[]);
+  const claude=resolveAgentRouting('claude-code',dir);
+  const codex=resolveAgentRouting('codex',dir);
+  assert.equal(claude.source,'agent-local');
+  assert.equal(codex.source,'bundled-candidate');
+  assert.equal(claude.config.routing.implementer.preferred[0].model,'claude-sonnet-5-5');
+  assert.equal(claude.config.stage_preferences.critical_review.requested_mode,'ultra');
+  assert.equal(codex.config.routing.implementer.preferred[0].model,'gpt-6.1-sol');
+  assert.equal(claude.executionAuthorized,false);
   for(const p of ['.agents/skills/oranit/SKILL.md','.agents/skills/configure-models/SKILL.md',
     '.agents/skills/agent-workflow-orchestrator/SKILL.md','.claude/skills/oranit/SKILL.md',
     '.claude/skills/configure-models/SKILL.md','.agent-workflow/bin/model-config.mjs',
@@ -47,6 +51,7 @@ test('bare oranit bootstraps fresh workspace, code index, ignored config and all
   const ignore=readFileSync(path.join(dir,'.gitignore'),'utf8');
   assert.match(ignore,/\.agent-workflow\/index\//);
   assert.match(ignore,/\.agent-workflow\/config\.json/);
+  assert.match(ignore,/\.agent-workflow\/routing\//);
   const index=JSON.parse(readFileSync(path.join(dir,'.agent-workflow/index/codebase-map.json'),'utf8'));
   assert.equal(index.files.some(x=>x.path==='src/auth/otp.ts'),true);
   assert.equal(execute(['status','--workspace',dir]).stale,false);
@@ -66,9 +71,11 @@ test('repeated oranit preserves manually edited config and index until refresh',
   writeFileSync(path.join(dir,'src/auth/otp.ts'),'export function verifyOTPChanged() {}\n');
   const r=execute(['--workspace',dir,'--profile','claude-led']);
   assert.equal(r.config,'preserved');
+  assert.equal(resolveAgentRouting('codex',dir).source,'agent-local');
+  assert.equal(resolveAgentRouting('claude-code',dir).source,'agent-local');
   assert.match(r.index,/stale_preserved/);
   assert.equal(JSON.parse(readFileSync(cfg,'utf8')).userNotes,'retain-me');
-  assert.equal(JSON.parse(readFileSync(cfg,'utf8')).setup.profile,'openai-orchestrator');
+  assert.equal(JSON.parse(readFileSync(cfg,'utf8')).setup.profile,'project-specific');
   assert.equal(readFileSync(index,'utf8'),before);
   assert.equal(execute(['status','--workspace',dir]).stale,true);
   assert.throws(()=>execute(['locate','verifyOTPChanged','--workspace',dir]),/INDEX_STALE/);
@@ -84,7 +91,8 @@ test('dry-run does not write files, even model config or ignore rules',t=>{
   const r=execute(['--workspace',dir,'--dry-run']);
   assert.equal(r.dryRun,true);
   assert.ok(r.assetFilesCreated>0);
-  for(const f of ['.agent-workflow/config.json','.agent-workflow/index/codebase-map.json',
+  for(const f of ['.agent-workflow/config.json','.agent-workflow/routing/claude-code.json',
+   '.agent-workflow/routing/codex.json','.agent-workflow/index/codebase-map.json',
    '.gitignore','AGENTS.md','.agents/skills/oranit/SKILL.md']){
     assert.equal(existsSync(path.join(dir,f)),false);
   }
@@ -158,7 +166,8 @@ test('bare oranit with optional flags bootstraps without any required subcommand
   const result=spawnSync(process.execPath,[cli,'--workspace',dir,'--profile','openai-led'],{cwd:dir,encoding:'utf8'});
   assert.equal(result.status,0,result.stderr);
   assert.equal(JSON.parse(result.stdout).command,'oranit');
-  assert.equal(JSON.parse(readFileSync(path.join(dir,'.agent-workflow/config.json'),'utf8')).setup.profile,'openai-orchestrator');
+  assert.equal(JSON.parse(readFileSync(path.join(dir,'.agent-workflow/config.json'),'utf8')).setup.profile,'project-specific');
+  assert.equal(resolveAgentRouting('codex',dir).source,'agent-local');
   assert.equal(execute(['status','--workspace',dir]).stale,false);
   assert.equal(execute(['locate','verifyOTP','--workspace',dir]).matches[0].path,'src/auth/otp.ts');
   const bad=spawnSync(process.execPath,[cli,'--unknown'],{cwd:dir,encoding:'utf8'});
@@ -185,4 +194,66 @@ test('CLI entrypoint and package bin expose the literal oranit command',t=>{
   const located=spawnSync(process.execPath,[cli,'locate','verifyOTP','--workspace',dir],{encoding:'utf8'});
   assert.equal(located.status,0,located.stderr);
   assert.equal(JSON.parse(located.stdout).matches[0].path,'src/auth/otp.ts');
+});
+
+test('both agent profiles are installed separately by default and do not overwrite each other',t=>{
+  const dir=workspace(t);
+  execute(['--workspace',dir]);
+  const claude=path.join(dir,'.agent-workflow/routing/claude-code.json');
+  const codex=path.join(dir,'.agent-workflow/routing/codex.json');
+  const shared=path.join(dir,'.agent-workflow/config.json');
+  const c=JSON.parse(readFileSync(claude,'utf8'));
+  c.userNotes='CLAUDE ONLY';
+  writeFileSync(claude,JSON.stringify(c));
+  const prevCodex=readFileSync(codex,'utf8'),prevShared=readFileSync(shared,'utf8');
+  execute(['--workspace',dir,'--profile','openai-led']);
+  assert.equal(JSON.parse(readFileSync(claude,'utf8')).userNotes,'CLAUDE ONLY');
+  assert.equal(readFileSync(codex,'utf8'),prevCodex);
+  assert.equal(readFileSync(shared,'utf8'),prevShared);
+  assert.equal(resolveAgentRouting('claude-code',dir).config.userNotes,'CLAUDE ONLY');
+  assert.equal(resolveAgentRouting('codex',dir).config.routing.orchestrator.preferred[0].runtime,'codex');
+});
+
+test('legacy shared Claude-led config is preserved and migrated only for Claude; Codex stays independent',t=>{
+  const dir=workspace(t),folder=path.join(dir,'.agent-workflow');
+  mkdirSync(folder,{recursive:true});
+  const legacy=loadPreset('claude-orchestrator');
+  legacy.userNotes='legacy-claude';
+  writeFileSync(path.join(folder,'config.json'),JSON.stringify(legacy,null,2));
+  execute(['--workspace',dir,'--profile','claude-led']);
+  assert.equal(resolveAgentRouting('claude-code',dir).config.userNotes,'legacy-claude');
+  assert.equal(resolveAgentRouting('codex',dir).source,'bundled-candidate');
+  execute(['--workspace',dir,'--profile','openai-led']);
+  assert.equal(resolveAgentRouting('codex',dir).source,'agent-local');
+  assert.equal(resolveAgentRouting('codex',dir).config.routing.orchestrator.preferred[0].runtime,'codex');
+  assert.equal(JSON.parse(readFileSync(path.join(folder,'config.json'),'utf8')).userNotes,'legacy-claude');
+});
+
+test('legacy global custom config never selects a different agent model automatically',t=>{
+  const dir=workspace(t),folder=path.join(dir,'.agent-workflow');
+  mkdirSync(folder,{recursive:true});
+  const legacy=loadPreset('openai-orchestrator');
+  legacy.setup.profile='project-specific';
+  writeFileSync(path.join(folder,'config.json'),JSON.stringify(legacy));
+  assert.equal(resolveAgentRouting('claude-code',dir).source,'bundled-candidate');
+  assert.equal(resolveAgentRouting('codex',dir).source,'bundled-candidate');
+  execute(['--workspace',dir,'--profile','claude-led']);
+  assert.equal(resolveAgentRouting('claude-code',dir).config.routing.orchestrator.preferred[0].runtime,'claude-code');
+});
+
+test('agent-specific file cannot impersonate other agent, and symlinked routing directory blocks init and resolve',t=>{
+  const dir=workspace(t);
+  execute(['--workspace',dir]);
+  const file=path.join(dir,'.agent-workflow/routing/claude-code.json');
+  writeFileSync(file,JSON.stringify(loadPreset('openai-orchestrator')));
+  assert.throws(()=>resolveAgentRouting('claude-code',dir),/ROUTING_AGENT_MISMATCH/);
+  assert.throws(()=>execute(['--workspace',dir]),/ROUTING_AGENT_MISMATCH/);
+  assert.throws(()=>resolveAgentRouting('anything',dir),/AGENT_REQUIRED/);
+  if(process.platform==='win32')return;
+  const other=workspace(t),external=mkdtempSync(path.join(tmpdir(),'routing-untrusted-'));
+  t.after(()=>rmSync(external,{recursive:true,force:true}));
+  mkdirSync(path.join(other,'.agent-workflow'),{recursive:true});
+  symlinkSync(external,path.join(other,'.agent-workflow/routing'));
+  assert.throws(()=>execute(['--workspace',other]),/UNSAFE_WORKSPACE_PATH/);
+  assert.throws(()=>resolveAgentRouting('codex',other),/UNSAFE_CONFIG_PATH/);
 });
