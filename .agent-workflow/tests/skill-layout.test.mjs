@@ -133,7 +133,7 @@ test('core is progressively disclosed but never hides plan, approval or high-ris
 
 test('README uses one authoritative provenance pointer and describes complete install smoke',()=>{
   // The README is human-facing distribution documentation, not always-loaded model context.
-  for(const section of ['## Install in another Git repository','## Quick start','## Tests, limitations and sharing']) assert.ok(guide.includes(section));
+  for(const section of ['## Customer Guide','## Developer Guide','## AI Guide','### Install in another Git repository','### Quick start','### Tests, limitations and sharing']) assert.ok(guide.includes(section));
   assert.equal((guide.match(/not vendored or copied/gi)||[]).length,1);
   assert.match(guide,/external-skills\.lock\.json registry is required/);
   assert.match(guide,/git check-ignore \.agent-workflow\/state\/install-check\/plan\.json/);
