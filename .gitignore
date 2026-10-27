@@ -1,5 +1,6 @@
 .agent-workflow/state/
 .agent-workflow/config.json
+.agent-workflow/routing/
 .agent-workflow/index/
 node_modules/
 .DS_Store
