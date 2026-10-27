@@ -76,7 +76,7 @@ oranit
 | `oranit --workspace /path/to/project` | Target a particular workspace |
 | `oranit --dry-run` | Preview changes without writing files |
 | `oranit status` | Check whether the index matches current source |
-| `oranit locate "verifyOTP"` | Find candidate files, symbols and approximate line numbers |
+| `oranit locate "keyword"` | Find candidate files, symbols and approximate line numbers |
 | `oranit refresh` | Rebuild the index after source changes, leaving model config untouched |
 
 Without `npm link`, call the source CLI directly:
