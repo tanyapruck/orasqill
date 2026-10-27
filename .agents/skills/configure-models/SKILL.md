@@ -8,7 +8,7 @@ description: >
 
 # Configure Models — interactive routing interview
 
-**This is an opt-in configuration assistant, not an agent launcher.** The terminal equivalent is `orasqill --configure`, with explicit approval before any routing file write. Run only after the user invokes this Skill or explicitly asks to configure mapping. A Slash/Skill call **starts an interview**, not permission to write config, enable workers, change accounts, switch runtimes, or merge code.
+**This is an opt-in configuration assistant, not an agent launcher.** The terminal equivalent is `orasqill configure`, with explicit approval before any routing file write. Run only after the user invokes this Skill or explicitly asks to configure mapping. A Slash/Skill call **starts an interview**, not permission to write config, enable workers, change accounts, switch runtimes, or merge code.
 
 ## 1. Inspect before asking
 

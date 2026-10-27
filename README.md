@@ -69,13 +69,13 @@ Use slash commands in your agent chat; run `oranit` **only to initialize** a wor
 
 | Terminal command | What it does |
 |---|---|
-| `oranit` (short for `orasqill init`) | Initialize shared project state and the two default agent routes |
+| `oranit` | Initialize shared project state and the two default agent routes |
 | `oranit --profile claude-led` | Create only the missing Claude Code route |
 | `oranit --profile openai-led` | Create only the missing Codex route |
 | `oranit --profile other` | Add an optional, empty Other Model route |
 | `orasqill status` / `orasqill refresh` | Check or rebuild the code index |
 | `orasqill locate "keyword"` | Find candidate files and symbols |
-| `orasqill --configure` | Interactively edit an agent's model mapping with a separate approval step |
+| `orasqill configure` | Interactively edit an agent's model mapping with a separate approval step |
 | `orasqill models resolve other` | Preview Other Model routing without launching a model |
 | `orasqill deps list` | List third-party Skill dependencies and their status |
 | `orasqill deps check-updates` | Check upstream Skill changes; does not install anything |

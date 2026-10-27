@@ -197,7 +197,7 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
   try{
     const args=process.argv.slice(2);
     if(['status','locate','refresh'].includes(args[0])||args.includes('--configure'))
-      fail('INIT_ONLY: oranit only initializes; use orasqill status|locate|refresh or orasqill --configure');
+      fail('INIT_ONLY: oranit only initializes; use orasqill status|locate|refresh or orasqill configure');
     console.log(JSON.stringify(execute(process.argv.slice(2)),null,2));
   }catch(e){console.error('ORANIT BLOCKED: '+e.message);process.exitCode=2;}
 }

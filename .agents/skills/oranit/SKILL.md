@@ -8,7 +8,7 @@ argument-hint: "[--profile claude-led|openai-led|other] [--workspace <dir>] [--d
 
 # Oranit — workspace initialization only
 
-`oranit` is the short form of `orasqill init`. Everything except initialization uses `orasqill` directly (for example `orasqill --configure` and `orasqill locate "keyword"`).
+`oranit` is the **only** workspace initialization command. Everything except initialization uses `orasqill` directly (for example `orasqill configure` and `orasqill locate "keyword"`).
 
 A **user-invoked workspace initialization Skill**, not permission to modify application code, activate model runtimes, or bypass review. For CLI usage, see `.agent-workflow/bin/oranit.mjs` and `.agent-workflow/bin/orasqill.mjs`.
 
@@ -41,6 +41,6 @@ orasqill locate "keyword" --workspace .      # precise candidate source paths/sy
 orasqill refresh --workspace .                  # rebuild generated index, never model config
 ```
 
-If the PATH command is unavailable, use `node .agent-workflow/bin/oranit.mjs` for initialization, or `node .agent-workflow/bin/orasqill.mjs` for utilities. Use `orasqill --configure` for interactive, approval-gated model mapping updates. Running the CLI outside the intended workspace requires `--workspace`.
+If the PATH command is unavailable, use `node .agent-workflow/bin/oranit.mjs` for initialization, or `node .agent-workflow/bin/orasqill.mjs` for utilities. Use `orasqill configure` for interactive, approval-gated model mapping updates. Running the CLI outside the intended workspace requires `--workspace`.
 
 **Complete when:** initialization succeeded or genuinely reported a blocker; the index, shared config and relevant agent-local routing candidates exist (or existing files were preserved), and the next Agent knows to navigate via a fresh index while inspecting real code before changes. No model is launched, no Git action is authorized.
