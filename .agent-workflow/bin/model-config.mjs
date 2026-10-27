@@ -1,10 +1,14 @@
 /** Read-only validation and preview for Orasqill's interactive model mapping Skill. */
-import {readFileSync, lstatSync} from 'node:fs';
+import {readFileSync, lstatSync, existsSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const knownProfiles=new Set(['claude-orchestrator','openai-orchestrator']);
+export const agentProfiles=Object.freeze({
+  'claude-code':{preset:'claude-orchestrator',file:'.agent-workflow/routing/claude-code.json'},
+  codex:{preset:'openai-orchestrator',file:'.agent-workflow/routing/codex.json'}
+});
 const efforts=new Set(['low','medium','high','xhigh','max']);
 const stages=['triage','plan','implement','scoped_implement','complex_implement','computer_use','review','critical_review','final_report'];
 const roles=['orchestrator','implementer','reviewer'];
@@ -81,9 +85,55 @@ function readConfig(file){
   return JSON.parse(readFileSync(file,'utf8'));
 }
 
+/** Resolve one invoking agent's candidate mapping without ever using the other agent's config.
+ * Missing routes use the matching legacy profile only, otherwise the built-in unconfirmed preset.
+ * Source files and candidate values remain read-only; this never switches the actual model. */
+export function resolveAgentRouting(agent, workspace=process.cwd()){
+  const spec=agentProfiles[agent];
+  requireValid(spec,'AGENT_REQUIRED: explicit claude-code or codex identity required');
+  const rootDir=path.resolve(workspace);
+  requireValid(existsSync(rootDir)&&lstatSync(rootDir).isDirectory()&&!lstatSync(rootDir).isSymbolicLink(),
+    'WORKSPACE_REQUIRED: real directory required');
+  const localFile=path.join(rootDir,spec.file);
+  const legacyFile=path.join(rootDir,'.agent-workflow/config.json');
+  function verifyPath(file){
+    let current=rootDir;
+    for(const segment of path.relative(rootDir,file).split(path.sep)){
+      current=path.join(current,segment);
+      if(!existsSync(current))return false;
+      const st=lstatSync(current);
+      requireValid(!st.isSymbolicLink(),'UNSAFE_CONFIG_PATH: symlink component');
+      if(current!==file)requireValid(st.isDirectory(),'UNSAFE_CONFIG_PATH: directory expected');
+    }
+    return true;
+  }
+  if(verifyPath(localFile)){
+    const config=readConfig(localFile);
+    validateConfiguration(config);
+    requireValid(config.setup.profile===spec.preset,'ROUTING_AGENT_MISMATCH: wrong owner profile in agent route');
+    return {agent,source:'agent-local',file:localFile,config,validation:validateConfiguration(config),executionAuthorized:false};
+  }
+  if(verifyPath(legacyFile)){
+    const legacy=readConfig(legacyFile);
+    validateConfiguration(legacy);
+    if(legacy.setup.profile===spec.preset){
+      return {agent,source:'matching-legacy',file:legacyFile,config:legacy,
+        validation:validateConfiguration(legacy),executionAuthorized:false};
+    }
+  }
+  const config=loadPreset(spec.preset);
+  return {agent,source:'bundled-candidate',file:null,config,
+    validation:validateConfiguration(config),executionAuthorized:false};
+}
+
 export function run(argv){
   const [command,arg,...rest]=argv;
-  requireValid(rest.length===0,'Usage: model-config.mjs preview <profile> | validate <path>');
+  if(command==='resolve'){
+    requireValid(rest.length===0||(rest.length===2&&rest[0]==='--workspace'&&text(rest[1])),
+      'Usage: model-config.mjs resolve claude-code|codex [--workspace <directory>]');
+    return JSON.stringify(resolveAgentRouting(arg,rest.length?rest[1]:process.cwd()),null,2);
+  }
+  requireValid(rest.length===0,'Usage: model-config.mjs preview <profile> | validate <path> | resolve claude-code|codex [--workspace <directory>]');
   if(command==='preview'){
     const preset=loadPreset(arg);
     return JSON.stringify({profile:arg,config:preset,validation:validateConfiguration(preset)},null,2);
@@ -94,7 +144,7 @@ export function run(argv){
     const data=readConfig(file);
     return JSON.stringify({file,validation:validateConfiguration(data)},null,2);
   }
-  throw Error('Usage: model-config.mjs preview <profile> | validate <path>');
+  throw Error('Usage: model-config.mjs preview <profile> | validate <path> | resolve claude-code|codex [--workspace <directory>]');
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
