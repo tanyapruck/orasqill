@@ -52,11 +52,20 @@
     "implement": {
       "role": "implementer"
     },
+    "scoped_implement": {
+      "role": "implementer"
+    },
     "complex_implement": {
       "role": "implementer",
       "runtime": "claude-code",
       "model": "claude-sonnet-5-5",
       "effort": "high"
+    },
+    "computer_use": {
+      "role": "implementer",
+      "runtime": "codex",
+      "model": "gpt-6.1-terra",
+      "effort": "medium"
     },
     "review": {
       "role": "reviewer"
