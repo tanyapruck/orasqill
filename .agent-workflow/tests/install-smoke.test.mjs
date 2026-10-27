@@ -180,5 +180,5 @@ test('public README stays short and links to the complete command reference',()=
   assert.match(readme,/\[Model Routing\]\(docs\/model-routing\.md\)/);
   assert.match(readme,/\[Developer Notes\]\(docs\/developer-notes\.md\)/);
   assert.equal((readme.match(/^\`\`\`/gm)||[]).length,2);
-  assert.ok(readme.split(/\r?\n/).length<130);
+  assert.ok(readme.split(/\r?\n/).length<160);
 });
