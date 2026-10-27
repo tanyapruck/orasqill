@@ -37,14 +37,15 @@ git clone https://github.com/tanyapruckp-pan/orasqill.git /path/to/orasqill
 cd /path/to/orasqill
 npm link
 cd /path/to/your-workspace
-oranit --workspace . --profile claude-led
-# or --profile openai-led; omit --profile for a neutral, unconfirmed config
+oranit
+# Optional: oranit --profile claude-led
+# Or use --profile openai-led; no profile creates a neutral, unconfirmed config
 ```
 
 If you don't want a globally linked command, you can use the same CLI **directly from its source**:
 
 ```sh
-node /path/to/orasqill/.agent-workflow/bin/oranit.mjs init --workspace /path/to/your-workspace
+node /path/to/orasqill/.agent-workflow/bin/oranit.mjs --workspace /path/to/your-workspace
 ```
 
 On a fresh workspace, it installs the packaged portable Orchestrator, `oranit` and `configure-models` Skills (plus Claude Slash adapters), supporting CLI files, two profiles, the registry, an initial `AGENTS.md` if absent, and appropriate ignore rules. It creates:
