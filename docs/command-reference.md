@@ -152,7 +152,7 @@ npm test
 
 ## 7. Manual installation (only when not using `oranit`)
 
-The commands below are alternatives to `oranit` when you need manual installation. Compare files before replacing them.
+The commands below are alternatives to `oranit` when you need manual installation. Compare files before replacing them. Keep `.agent-workflow/LICENSE.orasqill.txt` with any copied Orasqill files; the target project's own `LICENSE` must remain untouched.
 
 **macOS, Linux or Git Bash**
 
@@ -166,6 +166,7 @@ cp -R /path/to/orasqill/.agents/skills/oranit .agents/skills/
 cp -R /path/to/orasqill/.agents/skills/delegate-tree .agents/skills/
 cp -R /path/to/orasqill/.agent-workflow/bin .agent-workflow/
 cp /path/to/orasqill/.agent-workflow/external-skills.lock.json .agent-workflow/
+cp -n /path/to/orasqill/.agent-workflow/LICENSE.orasqill.txt .agent-workflow/
 cp /path/to/orasqill/.agent-workflow/config.example.json .agent-workflow/
 cp -R /path/to/orasqill/.agent-workflow/profiles .agent-workflow/
 cp -R /path/to/orasqill/.agent-workflow/examples .agent-workflow/
@@ -182,6 +183,9 @@ Copy-Item -Recurse (Join-Path $src '.agents\skills\oranit') '.agents\skills\'
 Copy-Item -Recurse (Join-Path $src '.agents\skills\delegate-tree') '.agents\skills\'
 Copy-Item -Recurse (Join-Path $src '.agent-workflow\bin') '.agent-workflow\'
 Copy-Item (Join-Path $src '.agent-workflow\external-skills.lock.json') '.agent-workflow\'
+if (-not (Test-Path '.agent-workflow\LICENSE.orasqill.txt')) {
+  Copy-Item (Join-Path $src '.agent-workflow\LICENSE.orasqill.txt') '.agent-workflow\'
+}
 Copy-Item (Join-Path $src '.agent-workflow\config.example.json') '.agent-workflow\'
 Copy-Item -Recurse (Join-Path $src '.agent-workflow\profiles') '.agent-workflow\'
 Copy-Item -Recurse (Join-Path $src '.agent-workflow\examples') '.agent-workflow\'
