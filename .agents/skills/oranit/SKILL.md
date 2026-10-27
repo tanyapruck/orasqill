@@ -3,12 +3,14 @@ name: oranit
 description: Initialize shared workspace and independent Claude Code, Codex and optional Other Model routes.
 disable-model-invocation: true
 user-invocable: true
-argument-hint: "[status|locate|refresh] [workspace]"
+argument-hint: "[--profile claude-led|openai-led|other] [--workspace <dir>] [--dry-run]"
 ---
 
-# Oranit — workspace bootstrap and codebase navigation
+# Oranit — workspace initialization only
 
-A **user-invoked workspace setup and locator Skill**, not permission to modify application code, activate model runtimes, or bypass review. For CLI usage, see `.agent-workflow/bin/oranit.mjs`.
+`oranit` is the short form of `orasqill init`. Everything except initialization uses `orasqill` directly (for example `orasqill --configure` and `orasqill locate "keyword"`).
+
+A **user-invoked workspace initialization Skill**, not permission to modify application code, activate model runtimes, or bypass review. For CLI usage, see `.agent-workflow/bin/oranit.mjs` and `.agent-workflow/bin/orasqill.mjs`.
 
 ## Initialization: ask only what is missing
 
@@ -22,23 +24,23 @@ A **user-invoked workspace setup and locator Skill**, not permission to modify a
 
 Before any broad repo search or reading many files:
 
-- Run `node .agent-workflow/bin/oranit.mjs status` (or `oranit status`) from the target workspace.
-- Run `oranit locate "keyword"` to get a small ranked candidate list. If missing, run `oranit`. If `INDEX_STALE`, run `oranit refresh` and query again. Do not trust stale positions. If the index is partial, oversized-file-skipped, or has no matches, fall back to scoped filesystem search and report that it was necessary.
+- Run `orasqill status` from the target workspace.
+- Run `orasqill locate "keyword"` to get a small ranked candidate list. If missing, run `oranit`. If `INDEX_STALE`, run `orasqill refresh` and query again. Do not trust stale positions. If the index is partial, oversized-file-skipped, or has no matches, fall back to scoped filesystem search and report that it was necessary.
 - **Confirm against live code**: read the selected file and relevant imports, callers, config, tests and context (the full relevant file where appropriate) before editing. An index **never** replaces source inspection, approval, type-checks, targeted regression or HIGH_RISK independent review.
 - After source edits, refresh the generated index when needed; do not claim fresh index until the real command succeeds. Keep user-provided notes separate from generated facts.
 
-## CLI commands
+## CLI commands (oranit initializes, orasqill handles utilities)
 
 ```sh
 oranit --workspace .                    # install missing Skills and initialize both systems
 oranit --profile claude-led --workspace .   # Claude route only; Codex remains independent
 oranit --profile other --workspace .        # optional Other Model, no models guessed
 oranit --dry-run --workspace .          # proposal; no file writes
-oranit status --workspace .                   # detect added, changed and removed indexed files
-oranit locate "keyword" --workspace .      # precise candidate source paths/symbol hints
-oranit refresh --workspace .                  # rebuild generated index, never model config
+orasqill status --workspace .                   # detect added, changed and removed indexed files
+orasqill locate "keyword" --workspace .      # precise candidate source paths/symbol hints
+orasqill refresh --workspace .                  # rebuild generated index, never model config
 ```
 
-If the PATH command is unavailable, run `node .agent-workflow/bin/oranit.mjs` with the same arguments after installing the Skill. Running the CLI outside the intended workspace requires `--workspace`.
+If the PATH command is unavailable, use `node .agent-workflow/bin/oranit.mjs` for initialization, or `node .agent-workflow/bin/orasqill.mjs` for utilities. Use `orasqill --configure` for interactive, approval-gated model mapping updates. Running the CLI outside the intended workspace requires `--workspace`.
 
 **Complete when:** initialization succeeded or genuinely reported a blocker; the index, shared config and relevant agent-local routing candidates exist (or existing files were preserved), and the next Agent knows to navigate via a fresh index while inspecting real code before changes. No model is launched, no Git action is authorized.

@@ -193,11 +193,18 @@ test('CLI entrypoint and package bin expose the literal oranit command',t=>{
   assert.doesNotMatch(rejected.stderr,/Error: ENOENT/);
   assert.equal(execute(['--workspace',dir]).config,'preserved');
   const status=spawnSync(process.execPath,[cli,'status','--workspace',dir],{encoding:'utf8'});
-  assert.equal(status.status,0,status.stderr);
-  assert.equal(JSON.parse(status.stdout).stale,false);
+  assert.equal(status.status,2);
+  assert.match(status.stderr,/INIT_ONLY/);
   const located=spawnSync(process.execPath,[cli,'locate','verifyOTP','--workspace',dir],{encoding:'utf8'});
-  assert.equal(located.status,0,located.stderr);
-  assert.equal(JSON.parse(located.stdout).matches[0].path,'src/auth/otp.ts');
+  assert.equal(located.status,2);
+  assert.match(located.stderr,/INIT_ONLY/);
+  const utility=path.join(root,'.agent-workflow/bin/orasqill.mjs');
+  const s=spawnSync(process.execPath,[utility,'status','--workspace',dir],{encoding:'utf8'});
+  assert.equal(s.status,0,s.stderr);
+  assert.equal(JSON.parse(s.stdout).stale,false);
+  const l=spawnSync(process.execPath,[utility,'locate','verifyOTP','--workspace',dir],{encoding:'utf8'});
+  assert.equal(l.status,0,l.stderr);
+  assert.equal(JSON.parse(l.stdout).matches[0].path,'src/auth/otp.ts');
 });
 
 test('both agent profiles are installed separately by default and do not overwrite each other',t=>{

@@ -13,7 +13,7 @@ Claude Code and Codex can use the same project while retaining separate model pr
 
 An **optional third route** `.agent-workflow/routing/other.json` supports custom models from another provider/runtime without altering the two existing routes. It is created only when you choose `oranit --profile other`.
 
-Run `model-config.mjs resolve claude-code`, `resolve codex`, or `resolve other` to inspect the selected mapping. Other Model requires an explicit user choice; it is never silently substituted. Agent identity must come from the actual runtime rather than an arbitrary filename.
+Run `orasqill models resolve claude-code`, `orasqill models resolve codex`, or `orasqill models resolve other` to inspect the selected mapping. Other Model requires an explicit user choice; it is never silently substituted. Agent identity must come from the actual runtime rather than an arbitrary filename.
 
 You can customize model/effort assignments per agent. Bundled profiles are suggested starting points:
 
@@ -29,9 +29,9 @@ You can customize model/effort assignments per agent. Bundled profiles are sugge
 | HIGH_RISK review | Claude Opus 5.5 — xhigh | GPT-6.1 Sol — Ultra (requested review mode; API effort max) |
 | Final report | GPT-6 Luna — low | Claude Haiku 5.5 — low |
 
-**Other Model:** Start with `oranit --profile other`, then use `$configure-models` or `/configure-models` to explicitly target **other**. Fill in a real provider, installed runtime/adapter ID and model identifier for each role you want enabled. If the external runtime has no equivalent reasoning-effort control, omit `effort`. No external provider is bundled, verified or launched by this selection.
+**Other Model:** Start with `oranit --profile other`, then use `orasqill --configure --agent other` (interactive, approval-gated), or `$configure-models` or `/configure-models` to explicitly target **other**. Fill in a real provider, installed runtime/adapter ID and model identifier for each role you want enabled. If the external runtime has no equivalent reasoning-effort control, omit `effort`. No external provider is bundled, verified or launched by this selection.
 
-The agent-local profiles default to `setup.status = "unconfirmed"` until you configure each runtime. If an existing workspace has a legacy Claude-led (or OpenAI-led) shared config, `oranit` preserves it; the corresponding agent can retain its matching mapping without changing the other agent. Terra is a specialist for scoped implementation in OpenAI-led mode and for computer-use tasks in either mode. In the Claude-led high-risk reviewer profile, Ultra is a *requested client mode*, not an API effort level.
+The agent-local profiles default to `setup.status = "unconfirmed"` until you configure each runtime. `orasqill --configure` changes only one explicitly selected route, does not enable model calls and requires a final `yes` approval. If an existing workspace has a legacy Claude-led (or OpenAI-led) shared config, `oranit` preserves it; the corresponding agent can retain its matching mapping without changing the other agent. Terra is a specialist for scoped implementation in OpenAI-led mode and for computer-use tasks in either mode. In the Claude-led high-risk reviewer profile, Ultra is a *requested client mode*, not an API effort level.
 
 Details: [Model routing and setup](../.agents/skills/agent-workflow-orchestrator/references/setup-routing.md).
 

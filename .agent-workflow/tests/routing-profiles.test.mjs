@@ -133,6 +133,6 @@ test('Other Model is a third opt-in blank candidate; original role profiles are 
   assert.deepEqual(other.workers,{});
   const readme=readFileSync(path.join(root,'README.md'),'utf8');
   assert.match(readme,/oranit --profile other/);
-  assert.match(readme,/model-config\.mjs resolve other/);
+  assert.match(readme,/orasqill models resolve other/);
   assert.match(readme,/\.agent-workflow\/routing\/other\.json/);
 });

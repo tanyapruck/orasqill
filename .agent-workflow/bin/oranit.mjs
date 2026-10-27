@@ -27,7 +27,7 @@ const SOURCES=[
   '.agent-workflow/external-skills.lock.json',
   '.agent-workflow/LICENSE.orasqill.txt'
 ];
-const AGENT_HINT='# Workspace Agent Instructions\n\nBefore source searches or code edits, load .agents/skills/agent-workflow-orchestrator/SKILL.md and use node .agent-workflow/bin/oranit.mjs locate "<feature or symbol>" to find candidate files. If the index is missing/stale, run oranit or oranit refresh. The index is an untrusted locator only; inspect live source, imports/callers, diff and tests before editing. Keep plan and independent reviewer gates. For substantial independent workstreams, suggest $delegate-tree (Codex) or /delegate-tree (Claude Code), but require a separate user approval before subagent dispatch. Resolve the invoking agent with model-config.mjs resolve codex|claude-code; a user-requested Other Model may use resolve other after choosing an external runtime/model explicitly. Use $configure-models (Codex) or /configure-models (Claude Code) to edit ONLY the corresponding agent routing file after explicit approval. For a separate external model, use --profile other and resolve other, then configure its provider/runtime/model explicitly. Shared config is not an implicit model selector.\n';
+const AGENT_HINT='# Workspace Agent Instructions\n\nBefore source searches or code edits, load .agents/skills/agent-workflow-orchestrator/SKILL.md and use orasqill locate "<feature or symbol>" to find candidate files. If the index is missing/stale, run oranit or orasqill refresh. The index is an untrusted locator only; inspect live source, imports/callers, diff and tests before editing. Keep plan and independent reviewer gates. For substantial independent workstreams, suggest $delegate-tree (Codex) or /delegate-tree (Claude Code), but require a separate user approval before subagent dispatch. Resolve the invoking agent with orasqill models resolve codex|claude-code; a user-requested Other Model may use orasqill models resolve other after choosing an external runtime/model explicitly. Use $configure-models (Codex) or /configure-models (Claude Code) to edit ONLY the corresponding agent routing file after explicit approval. For a separate external model, use oranit --profile other and orasqill models resolve other, then configure its provider/runtime/model explicitly. Shared config is not an implicit model selector.\n';
 
 function fail(msg){throw Error(msg);}
 function dirGuard(root,target,create=false){
@@ -82,7 +82,7 @@ function readIndex(root){
   dirGuard(root,file);
   if(!existsSync(file))fail('INDEX_MISSING: run oranit');
   const index=JSON.parse(readFileSync(file,'utf8'));
-  if(index.version!==1||index.kind!=='codebase-locator'||!Array.isArray(index.files))fail('INDEX_INVALID: run oranit refresh');
+  if(index.version!==1||index.kind!=='codebase-locator'||!Array.isArray(index.files))fail('INDEX_INVALID: run orasqill refresh');
   return index;
 }
 function parse(argv){
@@ -90,7 +90,7 @@ function parse(argv){
   // Bare "oranit" bootstraps the workspace; only status/locate/refresh are subcommands.
   const action=!first||first.startsWith('--')?'bootstrap':first;
   const items=first?.startsWith('--')?argv:rest;
-  if(!['bootstrap','refresh','status','locate'].includes(action))fail('Usage: oranit [--workspace <directory>] [--profile claude-led|openai-led|other|blank] [--dry-run] | oranit status|refresh|locate [keyword] [--workspace <directory>]');
+  if(!['bootstrap','refresh','status','locate'].includes(action))fail('Usage: oranit [--workspace <directory>] [--profile claude-led|openai-led|other|blank] [--dry-run] | orasqill status|refresh|locate [keyword] [--workspace <directory>]');
   let workspace=process.cwd(),profile='blank',dryRun=false,query;
   for(let i=0;i<items.length;i++){
     if(items[i]==='--workspace'){if(!items[i+1])fail('MISSING_WORKSPACE');workspace=items[++i];}
@@ -101,7 +101,7 @@ function parse(argv){
   }
   if(action!=='bootstrap'&&(profile!=='blank'||dryRun))fail('OPTIONS_FOR_BOOTSTRAP_ONLY');
   if(!['blank','claude-led','openai-led','other'].includes(profile))fail('PROFILE_REQUIRED: blank|claude-led|openai-led|other');
-  if(action==='locate'&&!query)fail('QUERY_REQUIRED: oranit locate "<symbol or feature>"');
+  if(action==='locate'&&!query)fail('QUERY_REQUIRED: orasqill locate "<symbol or feature>"');
   return {action,workspace,profile,dryRun,query};
 }
 function rootOf(workspace){
@@ -185,7 +185,7 @@ export function execute(argv){
   const drift=compareIndex(index,current);
   if(action==='status')return {command:action,workspace:root,...drift,filesIndexed:index.files.length};
   if(action==='locate'){
-    if(drift.stale)fail('INDEX_STALE: run oranit refresh; changes='+[...drift.added,...drift.removed,...drift.changed].slice(0,8).join(','));
+    if(drift.stale)fail('INDEX_STALE: run orasqill refresh; changes='+[...drift.added,...drift.removed,...drift.changed].slice(0,8).join(','));
     return {command:'locate',query,workspace:root,matches:locate(index,query),note:'Open and verify live source around symbols plus imports/callers before editing.'};
   }
   if(action==='refresh'){
@@ -194,6 +194,10 @@ export function execute(argv){
   }
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  try{console.log(JSON.stringify(execute(process.argv.slice(2)),null,2));}
-  catch(e){console.error('ORANIT BLOCKED: '+e.message);process.exitCode=2;}
+  try{
+    const args=process.argv.slice(2);
+    if(['status','locate','refresh'].includes(args[0])||args.includes('--configure'))
+      fail('INIT_ONLY: oranit only initializes; use orasqill status|locate|refresh or orasqill --configure');
+    console.log(JSON.stringify(execute(process.argv.slice(2)),null,2));
+  }catch(e){console.error('ORANIT BLOCKED: '+e.message);process.exitCode=2;}
 }

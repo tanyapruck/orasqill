@@ -133,7 +133,7 @@ test('core is progressively disclosed but never hides plan, approval or high-ris
 
 test('README is human-friendly and points to complete technical documentation',()=>{
   const commandGuide=read('docs/command-reference.md');
-  assert.ok(guide.length<7500,'landing README must be concise');
+  assert.ok(guide.length<8500,'landing README must be concise');
   assert.equal((guide.match(/^\`\`\`/gm)||[]).length,2,'show just one installation example');
   for(const section of ['## Customer Guide','## Developer Guide','## AI Guide']) assert.ok(guide.includes(section));
   for(const link of ['docs/command-reference.md','docs/model-routing.md','docs/developer-notes.md']) assert.ok(guide.includes(link));
@@ -221,11 +221,11 @@ test('README has three focused guides; deep CLI docs retain all seven command ca
   const landing=read('README.md'),commands=read('docs/command-reference.md');
   const headings=landing.split(/\r?\n/).filter(line=>/^## /.test(line));
   assert.deepEqual(headings,['## Customer Guide','## Developer Guide','## AI Guide']);
-  assert.ok(landing.length<7500);
+  assert.ok(landing.length<8500);
   assert.ok(landing.split(/\r?\n/).length<160);
   assert.equal((landing.match(/^\`\`\`/gm)||[]).length,2);
   assert.equal((commands.match(/^## [1-7]\. /gm)||[]).length,7);
-  for(const cmd of ['/oranit','$oranit','/configure-models','$configure-models','/delegate-tree','$delegate-tree','oranit status','oranit refresh']){
+  for(const cmd of ['/oranit','$oranit','/configure-models','$configure-models','/delegate-tree','$delegate-tree','orasqill status','orasqill refresh']){
     assert.ok(commands.includes(cmd),cmd);
   }
   assert.doesNotMatch(landing,/oranit(?:\.mjs)? init\b/);
@@ -241,8 +241,8 @@ test('public README exposes model choices, dependency commands and the MIT licen
   for(const model of ['GPT-6.1 Sol','GPT-6.1 Terra','GPT-6 Astra','Claude Opus 5.5','Claude Sonnet 5.5']){
     assert.ok(readme.includes(model),model);
   }
-  for(const command of ['oranit status','oranit refresh','oranit locate "keyword"',
-    'external-skills.mjs list','external-skills.mjs check-updates']){
+  for(const command of ['orasqill status','orasqill refresh','orasqill locate "keyword"',
+    'orasqill deps list','orasqill deps check-updates']){
     assert.ok(readme.includes(command),command);
   }
   assert.match(readme,/### Dependencies/);

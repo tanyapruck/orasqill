@@ -125,7 +125,7 @@ test('portability: installer includes both skill forms and validator',()=>{
   assert.match(guide,/\.claude\/skills\/configure-models/);
   assert.match(guide,/\/configure-models/);
   assert.match(guide,/\$configure-models/);
-  assert.match(guide,/model-config\.mjs validate/);
+  assert.match(guide,/orasqill models validate/);
   assert.match(readFileSync(path.join(repo,'README.md'),'utf8'),/not.*auto/i);
 });
 
