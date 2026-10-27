@@ -119,14 +119,14 @@ test('skill can be explicitly invoked but cannot treat invocation as write permi
 });
 
 test('portability: installer includes both skill forms and validator',()=>{
-  const guide=readFileSync(path.join(repo,'README.md'),'utf8');
+  const guide=readFileSync(path.join(repo,'docs/command-reference.md'),'utf8');
   assert.match(guide,/cp -R .*\.agents\/skills\/configure-models/);
   assert.match(guide,/Copy-Item -Recurse .*\.agents\\skills\\configure-models/);
   assert.match(guide,/\.claude\/skills\/configure-models/);
   assert.match(guide,/\/configure-models/);
   assert.match(guide,/\$configure-models/);
   assert.match(guide,/model-config\.mjs validate/);
-  assert.match(guide,/not.*auto/i);
+  assert.match(readFileSync(path.join(repo,'README.md'),'utf8'),/not.*auto/i);
 });
 
 test('resolve selects agent by explicit invoking runtime, independent of global legacy profile',t=>{

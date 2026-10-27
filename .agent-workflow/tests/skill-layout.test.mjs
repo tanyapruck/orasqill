@@ -222,6 +222,7 @@ test('README has three focused guides; deep CLI docs retain all seven command ca
   const headings=landing.split(/\r?\n/).filter(line=>/^## /.test(line));
   assert.deepEqual(headings,['## Customer Guide','## Developer Guide','## AI Guide']);
   assert.ok(landing.length<7500);
+  assert.ok(landing.split(/\r?\n/).length<160);
   assert.equal((landing.match(/^\`\`\`/gm)||[]).length,2);
   assert.equal((commands.match(/^## [1-7]\. /gm)||[]).length,7);
   for(const cmd of ['/oranit','$oranit','/configure-models','$configure-models','/delegate-tree','$delegate-tree','oranit status','oranit refresh']){
@@ -230,4 +231,27 @@ test('README has three focused guides; deep CLI docs retain all seven command ca
   assert.doesNotMatch(landing,/oranit(?:\.mjs)? init\b/);
   assert.match(landing,/\[AGENTS\.md\]\(AGENTS\.md\)/);
   assert.match(landing,/\[Orchestrator Skill\]\(\.agents\/skills\/agent-workflow-orchestrator\/SKILL\.md\)/);
+});
+
+test('public README exposes model choices, dependency commands and the MIT license',()=>{
+  const readme=read('README.md');
+  const license=read('LICENSE');
+  const packageInfo=JSON.parse(read('package.json'));
+  assert.match(readme,/### Model mapping/);
+  for(const model of ['GPT-6.1 Sol','GPT-6.1 Terra','GPT-6 Astra','Claude Opus 5.5','Claude Sonnet 5.5']){
+    assert.ok(readme.includes(model),model);
+  }
+  for(const command of ['oranit status','oranit refresh','oranit locate "keyword"',
+    'external-skills.mjs list','external-skills.mjs check-updates']){
+    assert.ok(readme.includes(command),command);
+  }
+  assert.match(readme,/### Dependencies/);
+  assert.match(readme,/Karpathy guidelines/);
+  assert.match(readme,/\[MIT License\]\(LICENSE\)/);
+  assert.match(readme,/repository must also be made public/);
+  assert.match(license,/^MIT License\n+Copyright \(c\) 2026 tanyapruckp-pan/m);
+  assert.match(license,/Permission is hereby granted, free of charge/);
+  assert.match(license,/The above copyright notice and this permission notice shall be included/);
+  assert.equal(packageInfo.license,'MIT');
+  assert.equal(packageInfo.private,true);
 });
