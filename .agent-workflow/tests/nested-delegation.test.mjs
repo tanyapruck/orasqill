@@ -10,7 +10,7 @@ import {validateNestedTree,previewNestedTree,run} from '../bin/nested-delegation
 const repo=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const example=JSON.parse(readFileSync(path.join(repo,'.agent-workflow/examples/nested-tree.example.json'),'utf8'));
 const exampleConfig=JSON.parse(readFileSync(path.join(repo,'.agent-workflow/config.example.json'),'utf8'));
-const plan={schemaVersion:1,status:'active',steps:[{id:'S1',status:'pending',text:'Implement the approved feature'},{id:'S2',status:'pending',text:'Integrate feature'}]};
+const plan={schemaVersion:1,taskId:'feature-123',status:'active',findings:[],steps:[{id:'S1',status:'pending',text:'Implement the approved feature'},{id:'S2',status:'pending',text:'Integrate feature'}]};
 const clone=x=>structuredClone(x);
 function bad(mutator,error){
   const t=clone(example);
@@ -42,6 +42,12 @@ test('example produces a bounded 2-level tree of Root / sub-orchestrators / work
 
 test('locked plan must exist, be next pending and match root objective exactly',()=>{
   assert.throws(()=>validateNestedTree(example,{},'win32'),/LOCKED_PLAN_REQUIRED/);
+  const wrongTask=clone(plan);wrongTask.taskId='another-task';
+  assert.throws(()=>validateNestedTree(example,wrongTask,'win32'),/LOCKED_PLAN_REQUIRED/);
+  const completed=clone(plan);completed.status='finished';
+  assert.throws(()=>validateNestedTree(example,completed,'win32'),/LOCKED_PLAN_REQUIRED/);
+  const pendingApproval=clone(plan);pendingApproval.findings=[{id:'F1',status:'approval-required'}];
+  assert.throws(()=>validateNestedTree(example,pendingApproval,'win32'),/APPROVAL_REQUIRED/);
   bad(t=>{t.planStepId='S2';},/OUT_OF_PLAN/);
   bad(t=>{node(t,'root').objective='Close something else';},/OUT_OF_PLAN/);
   const withDone=clone(plan);withDone.steps[0].status='done';
