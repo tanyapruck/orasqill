@@ -12,7 +12,7 @@ description: >
 
 ## 1. Inspect before asking
 
-If model config is absent in the current workspace, initialize it alongside the code index with the separate user-invoked `oranit init` workflow (or read the neutral template for a preview). Do not assume an initialized workspace means models or providers are active.
+If model config is absent in the current workspace, initialize it alongside the code index with the separate user-invoked `oranit` workflow (or read the neutral template for a preview). Do not assume an initialized workspace means models or providers are active.
 
 - Determine the active repository root and whether `.agent-workflow/config.json`, `.agent-workflow/config.example.json`, `.agent-workflow/profiles/claude-orchestrator.json` and `.agent-workflow/profiles/openai-orchestrator.json` exist. Never assume HoroOne-specific settings.
 - Read current config **if present**; summarize its existing role mappings and `stage_preferences`. Do not print credentials, secrets or arbitrary unrelated config values.
