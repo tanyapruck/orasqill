@@ -35,7 +35,7 @@ test('read-only validate works on a user config, preserving bytes',t=>{
   writeFileSync(file,raw);
   const out=JSON.parse(run(['validate',file]));
   assert.equal(out.validation.setupStatus,'unconfirmed');
-  assert.equal(out.validation.checkedStages,7);
+  assert.equal(out.validation.checkedStages,9);
   assert.match(out.validation.warning,/Structural validation only/);
   const child=spawnSync(process.execPath,[cli,'validate',file],{encoding:'utf8'});
   assert.equal(child.status,0,child.stderr);
