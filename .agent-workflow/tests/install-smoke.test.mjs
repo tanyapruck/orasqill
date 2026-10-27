@@ -56,6 +56,9 @@ test('documented install includes original Skill, helpers, registry and destinat
   assert.match(readme, /cp .*\.agent-workflow\/config\.example\.json/);
   assert.match(readme, /cp -R .*\.agent-workflow\/profiles/);
   assert.match(readme, /\.agent-workflow\/state\//);
+  assert.match(readme, /\.agent-workflow\/routing\//);
+  assert.match(readme, /model-config\.mjs resolve claude-code/);
+  assert.match(readme, /model-config\.mjs resolve codex/);
   assert.match(readme, /git check-ignore \.agent-workflow\/state\/install-check\/plan\.json/);
   assert.match(readme, /merge.*\.gitignore|add.*\.gitignore/i);
 });
