@@ -108,11 +108,11 @@ node .agent-workflow/bin/plan-ledger.mjs finish docs-demo
 | `node .agent-workflow/bin/manual-handoff.mjs resume` | Continue a unique unfinished authorized task on the current branch |
 | `node .agent-workflow/bin/manual-handoff.mjs start\|checkpoint\|export\|finish <task-id> ...` | Legacy/manual handoff commands; cannot bypass locked-plan gates |
 
-For acceptance checks, see [Plan execution](skills/agent-workflow-orchestrator/references/plan-execution.md).
+For acceptance checks, see [Plan execution](../.agents/skills/agent-workflow-orchestrator/references/plan-execution.md).
 
 ## 5. Nested delegation, task scheduling and handoffs
 
-Use the Delegate Tree Skill, customize the [example tree](examples/nested-tree.example.json) to your task and preview the proposed plan.
+Use the Delegate Tree Skill, customize the [example tree](../.agent-workflow/examples/nested-tree.example.json) to your task and preview the proposed plan.
 
 ```sh
 node .agent-workflow/bin/nested-delegation.mjs plan nested-tree.json --locked-plan .agent-workflow/state/<task-id>/plan.json
@@ -187,7 +187,7 @@ Copy-Item -Recurse (Join-Path $src '.agent-workflow\profiles') '.agent-workflow\
 Copy-Item -Recurse (Join-Path $src '.agent-workflow\examples') '.agent-workflow\'
 ```
 
-To install Claude Code commands manually, copy the [Orchestrator adapter](skills/agent-workflow-orchestrator/SKILL.md) and the command adapters into `.claude/skills/`:
+To install Claude Code commands manually, copy the [Orchestrator adapter](../.agents/skills/agent-workflow-orchestrator/SKILL.md) and the command adapters into `.claude/skills/`:
 
 ```sh
 mkdir -p .claude/skills
