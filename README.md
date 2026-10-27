@@ -6,6 +6,10 @@ Working with AI coding agents is fast—until they search the same files again, 
 
 Orasqill adds a lightweight workflow to your existing project. It works with **Claude Code**, **Codex**, and an optional **Other Model** configuration. You keep control of the code and the decisions.
 
+**No more rethinking the same decisions. No more chasing new issues and forgetting the original task.**
+
+Orasqill keeps your agents focused on the agreed plan, tracks new findings without losing sight of the original goal, and helps every handoff pick up where the last agent left off.
+
 ## Customer Guide
 
 ### Why Orasqill exists
@@ -55,7 +59,7 @@ That's it. Orasqill creates a local code index and starting model candidates. It
 
 ### Commands
 
-Use these commands in your project. Slash commands go in the agent chat; `oranit` and `node` commands go in a terminal.
+Use slash commands in your agent chat; run `oranit` **only to initialize** a workspace. Run every other terminal command with `orasqill`.
 
 | Task | Claude Code | Codex |
 |---|---|---|
@@ -69,11 +73,12 @@ Use these commands in your project. Slash commands go in the agent chat; `oranit
 | `oranit --profile claude-led` | Create only the missing Claude Code route |
 | `oranit --profile openai-led` | Create only the missing Codex route |
 | `oranit --profile other` | Add an optional, empty Other Model route |
-| `oranit status` / `oranit refresh` | Check or rebuild the code index |
-| `oranit locate "keyword"` | Find candidate files and symbols |
-| `node .agent-workflow/bin/model-config.mjs resolve other` | Preview the optional Other Model route without launching a model |
-| `node .agent-workflow/bin/external-skills.mjs list` | List third-party Skill dependencies and their status |
-| `node .agent-workflow/bin/external-skills.mjs check-updates` | Check upstream Skill changes; does not install anything |
+| `orasqill status` / `orasqill refresh` | Check or rebuild the code index |
+| `orasqill locate "keyword"` | Find candidate files and symbols |
+| `orasqill oranit --configure` | Interactively edit an agent's model mapping with a separate approval step |
+| `orasqill models resolve other` | Preview Other Model routing without launching a model |
+| `orasqill deps list` | List third-party Skill dependencies and their status |
+| `orasqill deps check-updates` | Check upstream Skill changes; does not install anything |
 
 See the [Command Reference](docs/command-reference.md) for all advanced commands.
 
@@ -127,7 +132,7 @@ If you're an AI coding agent working in a project with Orasqill, **start with [A
 | Your task | Read this Skill |
 |---|---|
 | Plan, execute, or hand off a multi-step change | [Orchestrator Skill](.agents/skills/agent-workflow-orchestrator/SKILL.md) |
-| Set up or navigate a workspace | [Oranit Skill](.agents/skills/oranit/SKILL.md) |
+| Initialize a workspace | [Oranit Skill](.agents/skills/oranit/SKILL.md) |
 | Select or review model assignments | [Configure Models Skill](.agents/skills/configure-models/SKILL.md) |
 | Propose nested delegation | [Delegate Tree Skill](.agents/skills/delegate-tree/SKILL.md) |
 
