@@ -7,11 +7,11 @@ import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const load=name=>JSON.parse(readFileSync(path.join(root,'.agent-workflow/profiles',name+'.json'),'utf8'));
 const profiles=['openai-orchestrator','claude-orchestrator'];
-const stages=['triage','plan','implement','complex_implement','review','critical_review','final_report'];
+const stages=['triage','plan','implement','scoped_implement','complex_implement','computer_use','review','critical_review','final_report'];
 const roles=['orchestrator','implementer','reviewer'];
 const efforts=new Set(['low','medium','high','xhigh','max']);
 const models={
-  'gpt-6.1-sol':'codex','gpt-6-astra':'codex','gpt-6-luna':'codex',
+  'gpt-6.1-sol':'codex','gpt-6.1-terra':'codex','gpt-6-astra':'codex','gpt-6-luna':'codex',
   'claude-opus-5-5':'claude-code','claude-sonnet-5-5':'claude-code','claude-haiku-5-5':'claude-code'
 };
 const modelCandidate=(choice)=>{
@@ -56,6 +56,10 @@ for(const name of profiles){
       assert.equal(x.model,undefined);
       assert.equal(x.runtime,undefined);
     }
+    assert.equal(p.stage_preferences.scoped_implement.role,'implementer');
+    assert.equal(p.stage_preferences.computer_use.model,'gpt-6.1-terra');
+    assert.equal(p.stage_preferences.computer_use.runtime,'codex');
+    assert.equal(p.stage_preferences.computer_use.effort,'medium');
     assert.equal(p.stage_preferences.plan.role,'orchestrator');
     assert.equal(p.stage_preferences.implement.role,'implementer');
     assert.equal(p.stage_preferences.review.role,'reviewer');
@@ -76,6 +80,8 @@ test('Claude-led profile uses Claude for planning and implementation, Codex for 
   assert.deepEqual(p.routing.reviewer.preferred[0],{runtime:'codex',model:'gpt-6.1-sol',effort:'xhigh'});
   assert.deepEqual(p.stage_preferences.critical_review,{role:'reviewer',runtime:'codex',model:'gpt-6.1-sol',effort:'max',requested_mode:'ultra'});
   assert.deepEqual(p.stage_preferences.complex_implement,{role:'implementer',runtime:'claude-code',model:'claude-sonnet-5-5',effort:'high'});
+  assert.deepEqual(p.stage_preferences.scoped_implement,{role:'implementer'});
+  assert.deepEqual(p.stage_preferences.computer_use,{role:'implementer',runtime:'codex',model:'gpt-6.1-terra',effort:'medium'});
   assert.equal(p.routing.orchestrator.automatic_switching,false);
   assert.equal(p.delegation.max_parallel_workers,1);
   assert.deepEqual(p.runtimes,{});
@@ -87,6 +93,8 @@ test('OpenAI-led profile uses Codex for planning and Claude for independent revi
   assert.deepEqual(p.routing.orchestrator.preferred[0],{runtime:'codex',model:'gpt-6.1-sol',effort:'high'});
   assert.deepEqual(p.routing.reviewer.preferred[0],{runtime:'claude-code',model:'claude-opus-5-5',effort:'high'});
   assert.equal(p.stage_preferences.complex_implement.model,'gpt-6-astra');
+  assert.deepEqual(p.stage_preferences.scoped_implement,{role:'implementer',runtime:'codex',model:'gpt-6.1-terra',effort:'high'});
+  assert.deepEqual(p.stage_preferences.computer_use,{role:'implementer',runtime:'codex',model:'gpt-6.1-terra',effort:'medium'});
 });
 
 test('portable install documentation copies both profiles without enabling runtime access',()=>{
