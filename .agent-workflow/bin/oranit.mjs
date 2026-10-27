@@ -37,7 +37,7 @@ function dirGuard(root,target,create=false){
     current=path.join(current,segment);
     if(!existsSync(current)){
       if(create)mkdirSync(current,{mode:0o700});
-      else continue; // Preflight permits paths that init will create later.
+      else continue; // Preflight permits paths that bootstrap will create later.
     }
     const info=lstatSync(current);
     if(!info.isDirectory()||info.isSymbolicLink())fail('UNSAFE_WORKSPACE_PATH: '+current);
@@ -85,10 +85,10 @@ function readIndex(root){
 }
 function parse(argv){
   const [first,...rest]=argv;
-  // Bare "oranit" is workspace initialization. Keep "oranit init" as a legacy alias.
-  const action=!first||first==='init'||first.startsWith('--')?'init':first;
+  // Bare "oranit" bootstraps the workspace. Explicit "init" is not a command.
+  const action=!first||first.startsWith('--')?'bootstrap':first;
   const items=first?.startsWith('--')?argv:rest;
-  if(!['init','refresh','status','locate'].includes(action))fail('Usage: oranit [--workspace <directory>] [--profile claude-led|openai-led|blank] [--dry-run] | oranit status|refresh|locate [keyword] [--workspace <directory>]');
+  if(!['bootstrap','refresh','status','locate'].includes(action))fail('Usage: oranit [--workspace <directory>] [--profile claude-led|openai-led|blank] [--dry-run] | oranit status|refresh|locate [keyword] [--workspace <directory>]');
   let workspace=process.cwd(),profile='blank',dryRun=false,query;
   for(let i=0;i<items.length;i++){
     if(items[i]==='--workspace'){if(!items[i+1])fail('MISSING_WORKSPACE');workspace=items[++i];}
@@ -97,7 +97,7 @@ function parse(argv){
     else if(action==='locate'&&query===undefined&&!items[i].startsWith('--'))query=items[i];
     else fail('UNKNOWN_OPTION: '+items[i]);
   }
-  if(action!=='init'&&(profile!=='blank'||dryRun))fail('OPTIONS_FOR_INIT_ONLY');
+  if(action!=='bootstrap'&&(profile!=='blank'||dryRun))fail('OPTIONS_FOR_INIT_ONLY');
   if(!['blank','claude-led','openai-led'].includes(profile))fail('PROFILE_REQUIRED: blank|claude-led|openai-led');
   if(action==='locate'&&!query)fail('QUERY_REQUIRED: oranit locate "<symbol or feature>"');
   return {action,workspace,profile,dryRun,query};
@@ -122,7 +122,7 @@ function ensureIgnore(root,dryRun){
 export function execute(argv){
   const {action,workspace,profile,dryRun,query}=parse(argv);
   const root=rootOf(workspace);
-  if(action==='init'){
+  if(action==='bootstrap'){
     const assets=bundled(),created=[],preserved=[];
     // Preflight all paths before the first write.
     for(const rel of [...assets,INDEX,CONFIG,'.gitignore','AGENTS.md'])dirGuard(root,path.join(root,rel));
@@ -155,7 +155,7 @@ export function execute(argv){
       const drift=compareIndex(old,fresh);
       if(drift.stale)indexStatus='stale_preserved_run_oranit_refresh';
     }
-    return {command:'init',workspace:root,dryRun,profile:configExists?'existing_preserved':profile,
+    return {command:'oranit',workspace:root,dryRun,profile:configExists?'existing_preserved':profile,
       config:configExists?'preserved':'created_unconfirmed',index:indexStatus,filesIndexed:fresh.files.length,
       partial:fresh.partial,assetFilesCreated:dryRun?assets.filter(rel=>!existsSync(path.join(root,rel))).length:created.length,
       assetFilesPreserved:dryRun?assets.filter(rel=>existsSync(path.join(root,rel))).length:preserved.length,
