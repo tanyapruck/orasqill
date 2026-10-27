@@ -10,7 +10,7 @@
 
 **Nested delegation recommendation:** When a substantial locked task has independently scoped subsystems, consider `.agents/skills/delegate-tree/SKILL.md` and suggest `$delegate-tree` (Codex) or `/delegate-tree` (Claude Code). Show a bounded Root → Sub-Orchestrator → Worker plan, then request explicit approval before invoking subagents. Default to direct/sequential work; a plan-only CLI packet is not an executed worker.
 
-**User-invoked model mapping:** for `$configure-models` or a request to configure agent models/effort, read `.agents/skills/configure-models/SKILL.md`. A guided preview is not authorization to write config or launch agents; request explicit consent before changing `.agent-workflow/config.json`.
+**Agent-local model mapping:** Resolve the verified invoking agent via `node .agent-workflow/bin/model-config.mjs resolve claude-code|codex --workspace .` (choose the real runtime), never by assuming the shared `.agent-workflow/config.json` declares a global leader. Claude Code uses `.agent-workflow/routing/claude-code.json`, Codex uses `.agent-workflow/routing/codex.json`; the two share index and plan state, **not** their model assignments. For `$configure-models` or `/configure-models`, read `.agents/skills/configure-models/SKILL.md`; request user approval before writing the selected agent's local file.
 
 **Optional deep planning:** load original upstream `grill-with-docs` only for selected pre-plan design clarification; see `references/planning-interview.md`. External Skills stay separately owned and versioned, never blended into this Skill.
 

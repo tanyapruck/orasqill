@@ -14,20 +14,21 @@ description: >
 
 If model config is absent in the current workspace, initialize it alongside the code index with the separate user-invoked `oranit` workflow (or read the neutral template for a preview). Do not assume an initialized workspace means models or providers are active.
 
-- Determine the active repository root and whether `.agent-workflow/config.json`, `.agent-workflow/config.example.json`, `.agent-workflow/profiles/claude-orchestrator.json` and `.agent-workflow/profiles/openai-orchestrator.json` exist. Never assume HoroOne-specific settings.
-- Read current config **if present**; summarize its existing role mappings and `stage_preferences`. Do not print credentials, secrets or arbitrary unrelated config values.
+- Determine the active repository root and the **actual invoking agent** (`claude-code` or `codex`) from trusted runtime context. Read `.agent-workflow/routing/claude-code.json` or `.agent-workflow/routing/codex.json` only for the invoking agent, plus `.agent-workflow/config.json` for shared limits. A model label or config filename is not proof of agent identity. Never assume HoroOne-specific settings.
+- Read the invoking agent's resolved route (prefer the agent-local file, otherwise a matching legacy config or matching bundled preset). Do not take the other agent's route as the default. Summarize relevant role mappings and `stage_preferences`, not credentials or unrelated settings.
 - Read `.agents/skills/agent-workflow-orchestrator/references/setup-routing.md` when available, especially the Ultra vs API effort distinction.
 - Optional read-only commands:
   - `node .agent-workflow/bin/model-config.mjs preview claude-orchestrator`
   - `node .agent-workflow/bin/model-config.mjs preview openai-orchestrator`
   - `node .agent-workflow/bin/model-config.mjs validate .agent-workflow/config.json`
+  - `node .agent-workflow/bin/model-config.mjs resolve claude-code|codex --workspace .` (choose **exactly one** from trusted invoking runtime identity)
 - Missing prerequisites: explain `SETUP_REQUIRED` and the install instructions; do not guess file contents or write into an unknown repo.
 
 ## 2. Interview, one decision at a time
 
 Reuse choices already provided in this conversation or the existing config. Ask **only consequential missing questions**, with a brief proposed default. The user may say `defaults` to accept the displayed preset, or `cancel` at any time.
 
-1. **Profile**: Claude-led, OpenAI-led or custom; choose whom the user authorizes as Orchestrator. If already named, skip this question.
+1. **Current agent**: if invoked in Claude Code, configure the `claude-code` route (Claude-led by default); if invoked in Codex, configure the `codex` route (OpenAI-led by default). A request to edit the **other** agent's routing requires a separately explicit target and approval; never infer global selection.
 2. **Runtime availability**: identify what is actually installed/available (Claude Code, Codex or another user-specified runtime); never claim availability from profile JSON.
 3. **Role mapping**: Orchestrator, Implementer and independent Reviewer; then stage-specific triage, scoped code fixes (Terra only for OpenAI-led), visual/computer-use (Terra candidate), complex implementation, HIGH_RISK review and final report. Inherit normal stages from their role unless the user explicitly wants overrides.
 4. **Effort**: low / medium / high / xhigh / max, **only if the chosen runtime supports it**. Keep special client `Ultra` separately as `requested_mode: "ultra"`, not `reasoning.effort: "ultra"`. In the Claude-led reference preset, critical review has `effort:"max"` plus `requested_mode:"ultra"` pending runtime support.
@@ -39,17 +40,17 @@ Do not grill for already-known facts, ask unrelated preferences, or invent a mod
 ## 3. Propose before making changes
 
 - Show a compact **Before → After** table with role, model, runtime, effort and optional `requested_mode`; flag unavailable, unknown or unsafe choices clearly.
-- Present the **exact file path** and scope of changes. For a new config, start with one of the checked-in profiles or `config.example.json`; for an existing config, **edit only requested keys** and preserve unrelated fields, user additions, worker settings and comments outside JSON. JSON cannot preserve inline comments; warn if encountering nonstandard JSON.
+- Present the **exact agent-local target**: `.agent-workflow/routing/claude-code.json` for Claude Code, or `.agent-workflow/routing/codex.json` for Codex. Use the matching preset when absent, or preserve the resolved matching legacy config as a migration source. Edit only requested keys and preserve unrelated fields. **Do not overwrite the workspace-shared `.agent-workflow/config.json` to switch agent models.** JSON cannot preserve inline comments; warn about nonstandard JSON.
 - Keep `version:1`, `setup.status:"unconfirmed"`, `automatic_switching:false`, `routing.reviewer.require_independent_author:true`, `fallback:[]` unless the user separately authorizes and the runtime enforces additional capabilities. Do not enable parallel workers, provider switching or launch a subagent as a side effect of model selection.
-- Never write credentials into the JSON. Ensure `.agent-workflow/config.json` is ignored by Git; don't accidentally stage or commit a local user config.
-- Request explicit approval for the **proposed write**: “บันทึกค่าที่แสดงลง `.agent-workflow/config.json` หรือไม่?” This confirmation is separate from invoking `/configure-models`.
+- Never write credentials into JSON. Ensure `.agent-workflow/config.json` and `.agent-workflow/routing/` are ignored by Git. Do not stage agent-local model choices.
+- Request explicit approval for the **specific agent's proposed write** (name its full `.agent-workflow/routing/<agent>.json` path). Approval for Claude's route does not authorize changes to Codex or to shared task settings.
 - If the user declines or cancels, provide the proposed mapping without editing files.
 
 ## 4. Apply only after approval; verify honestly
 
-- Write only `.agent-workflow/config.json` within the verified intended project; **do not modify the shared example/presets** to change a single user's choices.
-- Validate with `node .agent-workflow/bin/model-config.mjs validate .agent-workflow/config.json`. If validation fails, report it and do not mark setup confirmed. Validation is structural only; check model access/effort and actual Skill loadability separately.
+- Write only the **approved agent-local** `.agent-workflow/routing/claude-code.json` or `.agent-workflow/routing/codex.json` in the verified workspace. Do not edit the other agent's mapping, shared config or checked-in example/presets.
+- Validate with `node .agent-workflow/bin/model-config.mjs validate .agent-workflow/routing/<agent>.json`; then preview the **same agent** using `model-config.mjs resolve <agent> --workspace .`. If invalid, stop. Validation is structural only; independently check model access, effort and Skill readiness.
 - Provide a final mapping summary, the file path (or no-write state), remaining `SETUP_REQUIRED` items, and explicit fact that **no models were launched and no runtime mapping was activated** merely by creating JSON.
 - Configuration edits are not permission to commit, push, merge, deploy, or start workers.
 
-**Complete when:** the user has a reviewed mapping and, only if explicitly approved, a validated local config while the setup status correctly reflects actual runtime readiness.
+**Complete when:** the invoking agent has a reviewed, agent-local mapping (or no-write preview), the other agent remains unchanged, and the setup status reflects actual runtime readiness.

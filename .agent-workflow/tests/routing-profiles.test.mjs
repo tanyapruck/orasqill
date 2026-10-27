@@ -111,6 +111,7 @@ test('portable install documentation copies both profiles without enabling runti
   assert.match(guide,/setup\.status = "unconfirmed"/);
   assert.match(setup,/never.*launch|not a runtime dispatcher/i);
   assert.match(ignore,/^\.agent-workflow\/config\.json$/m);
+  assert.match(ignore,/^\.agent-workflow\/routing\/$/m);
   const base=JSON.parse(read('.agent-workflow/config.example.json'));
   assert.equal(base.setup.status,'unconfirmed');
   assert.deepEqual(base.routing.orchestrator.preferred,[]);

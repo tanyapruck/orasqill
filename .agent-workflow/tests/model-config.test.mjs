@@ -5,7 +5,7 @@ import {existsSync,mkdtempSync,readFileSync,rmSync,writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {loadPreset,validateConfiguration,validateCandidate,run} from '../bin/model-config.mjs';
+import {loadPreset,validateConfiguration,validateCandidate,resolveAgentRouting,run} from '../bin/model-config.mjs';
 
 const repo=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const cli=path.join(repo,'.agent-workflow/bin/model-config.mjs');
@@ -127,4 +127,22 @@ test('portability: installer includes both skill forms and validator',()=>{
   assert.match(guide,/\$configure-models/);
   assert.match(guide,/model-config\.mjs validate/);
   assert.match(guide,/not.*auto/i);
+});
+
+test('resolve selects agent by explicit invoking runtime, independent of global legacy profile',t=>{
+  const dir=mkdtempSync(path.join(tmpdir(),'orasqill-routing-'));
+  t.after(()=>rmSync(dir,{recursive:true,force:true}));
+  const c=JSON.parse(run(['resolve','codex','--workspace',dir]));
+  const a=JSON.parse(run(['resolve','claude-code','--workspace',dir]));
+  assert.equal(c.config.routing.orchestrator.preferred[0].runtime,'codex');
+  assert.equal(a.config.routing.orchestrator.preferred[0].runtime,'claude-code');
+  assert.equal(a.source,'bundled-candidate');
+  assert.equal(c.executionAuthorized,false);
+  assert.throws(()=>run(['resolve','guess','--workspace',dir]),/AGENT_REQUIRED/);
+  assert.throws(()=>run(['resolve','__proto__','--workspace',dir]),/AGENT_REQUIRED/);
+  assert.throws(()=>run(['resolve','codex','--workspace','../','unknown']),/Usage:/);
+  const child=spawnSync(process.execPath,[cli,'resolve','claude-code','--workspace',dir],{encoding:'utf8'});
+  assert.equal(child.status,0,child.stderr);
+  assert.equal(JSON.parse(child.stdout).agent,'claude-code');
+  assert.equal(JSON.parse(child.stdout).executionAuthorized,false);
 });

@@ -202,6 +202,19 @@ test('configure-models is a real, explicit slash Skill with a portable Codex ent
   assert.ok(existsSync(path.join(root,'.agent-workflow/bin/model-config.mjs')));
 });
 
+test('routing separation is explicit in workspace agents and model configuration Skills',()=>{
+  const agent=read('AGENTS.md');
+  const config=read('.agents/skills/configure-models/SKILL.md');
+  const bootstrap=read('.agents/skills/oranit/SKILL.md');
+  const setup=read('.agents/skills/agent-workflow-orchestrator/references/setup-routing.md');
+  for(const doc of [agent,config,bootstrap,setup]){
+    assert.match(doc,/routing\/claude-code\.json/);
+    assert.match(doc,/routing\/codex\.json/);
+  }
+  assert.match(read('.agent-workflow/bin/README.md'),/resolve claude-code\|codex/);
+  assert.match(read('.gitignore'),/^\.agent-workflow\/routing\/$/m);
+});
+
 test('README is reader-oriented with exactly three guides and one command reference',()=>{
   const readme=read('README.md');
   const headings=readme.split(/\r?\n/).filter(line=>/^## /.test(line));
