@@ -75,7 +75,7 @@ Use slash commands in your agent chat; run `oranit` **only to initialize** a wor
 | `oranit --profile other` | Add an optional, empty Other Model route |
 | `orasqill status` / `orasqill refresh` | Check or rebuild the code index |
 | `orasqill locate "keyword"` | Find candidate files and symbols |
-| `orasqill oranit --configure` | Interactively edit an agent's model mapping with a separate approval step |
+| `orasqill --configure` | Interactively edit an agent's model mapping with a separate approval step |
 | `orasqill models resolve other` | Preview Other Model routing without launching a model |
 | `orasqill deps list` | List third-party Skill dependencies and their status |
 | `orasqill deps check-updates` | Check upstream Skill changes; does not install anything |
