@@ -4,10 +4,11 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
-const knownProfiles=new Set(['claude-orchestrator','openai-orchestrator']);
+const knownProfiles=new Set(['claude-orchestrator','openai-orchestrator','other-orchestrator']);
 export const agentProfiles=Object.freeze({
   'claude-code':{preset:'claude-orchestrator',file:'.agent-workflow/routing/claude-code.json'},
-  codex:{preset:'openai-orchestrator',file:'.agent-workflow/routing/codex.json'}
+  codex:{preset:'openai-orchestrator',file:'.agent-workflow/routing/codex.json'},
+  other:{preset:'other-orchestrator',file:'.agent-workflow/routing/other.json'}
 });
 const efforts=new Set(['low','medium','high','xhigh','max']);
 const stages=['triage','plan','implement','scoped_implement','complex_implement','computer_use','review','critical_review','final_report'];
@@ -63,7 +64,15 @@ export function validateConfiguration(config) {
 
 export function validateCandidate(candidate){
   requireValid(object(candidate)&&text(candidate.model)&&text(candidate.runtime),'MODEL_REQUIRED: runtime and model must be nonempty strings');
-  requireValid(efforts.has(candidate.effort),'EFFORT_REQUIRED: use low|medium|high|xhigh|max; Ultra is not an API effort');
+  // External runtimes may not expose effort controls. Omit the hint when unsupported.
+  if(candidate.effort!==undefined){
+    requireValid(efforts.has(candidate.effort),'EFFORT_REQUIRED: use low|medium|high|xhigh|max; Ultra is not an API effort');
+  } else {
+    requireValid(!['claude-code','codex'].includes(candidate.runtime),
+      'EFFORT_REQUIRED: Claude Code and Codex need an explicit effort hint');
+  }
+  if(candidate.provider!==undefined)requireValid(text(candidate.provider),
+    'PROVIDER_REQUIRED: optional provider must be a nonempty string');
   if(candidate.requested_mode!==undefined){
     requireValid(candidate.requested_mode==='ultra'&&candidate.effort==='max','ULTRA_REQUIRES_RUNTIME: use effort max plus requested_mode ultra (manual client verification)');
   }
@@ -71,7 +80,7 @@ export function validateCandidate(candidate){
 }
 
 export function loadPreset(name){
-  requireValid(knownProfiles.has(name),'PROFILE_REQUIRED: choose claude-orchestrator or openai-orchestrator');
+  requireValid(knownProfiles.has(name),'PROFILE_REQUIRED: choose claude-orchestrator, openai-orchestrator or other-orchestrator');
   const file=path.join(root,'.agent-workflow/profiles',name+'.json');
   const data=JSON.parse(readFileSync(file,'utf8'));
   validateConfiguration(data);
@@ -89,7 +98,7 @@ function readConfig(file){
  * Missing routes use the matching legacy profile only, otherwise the built-in unconfirmed preset.
  * Source files and candidate values remain read-only; this never switches the actual model. */
 export function resolveAgentRouting(agent, workspace=process.cwd()){
-  requireValid(Object.hasOwn(agentProfiles,agent),'AGENT_REQUIRED: explicit claude-code or codex identity required');
+  requireValid(Object.hasOwn(agentProfiles,agent),'AGENT_REQUIRED: explicit claude-code, codex or other identity required');
   const spec=agentProfiles[agent];
   const rootDir=path.resolve(workspace);
   requireValid(existsSync(rootDir)&&lstatSync(rootDir).isDirectory()&&!lstatSync(rootDir).isSymbolicLink(),
@@ -130,10 +139,10 @@ export function run(argv){
   const [command,arg,...rest]=argv;
   if(command==='resolve'){
     requireValid(rest.length===0||(rest.length===2&&rest[0]==='--workspace'&&text(rest[1])),
-      'Usage: model-config.mjs resolve claude-code|codex [--workspace <directory>]');
+      'Usage: model-config.mjs resolve claude-code|codex|other [--workspace <directory>]');
     return JSON.stringify(resolveAgentRouting(arg,rest.length?rest[1]:process.cwd()),null,2);
   }
-  requireValid(rest.length===0,'Usage: model-config.mjs preview <profile> | validate <path> | resolve claude-code|codex [--workspace <directory>]');
+  requireValid(rest.length===0,'Usage: model-config.mjs preview <profile> | validate <path> | resolve claude-code|codex|other [--workspace <directory>]');
   if(command==='preview'){
     const preset=loadPreset(arg);
     return JSON.stringify({profile:arg,config:preset,validation:validateConfiguration(preset)},null,2);
@@ -144,7 +153,7 @@ export function run(argv){
     const data=readConfig(file);
     return JSON.stringify({file,validation:validateConfiguration(data)},null,2);
   }
-  throw Error('Usage: model-config.mjs preview <profile> | validate <path> | resolve claude-code|codex [--workspace <directory>]');
+  throw Error('Usage: model-config.mjs preview <profile> | validate <path> | resolve claude-code|codex|other [--workspace <directory>]');
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
