@@ -166,7 +166,9 @@ Two included **suggested** profiles are available after installation. This only 
 | Orchestrator / plan | GPT-6.1 Sol — high | Claude Opus 5.5 — high |
 | Triage / reconnaissance | GPT-6 Luna — low | Claude Haiku 5.5 — low |
 | Implementation | GPT-6.1 Sol — medium | Claude Sonnet 5.5 — medium (Claude Code) |
+| Scoped code fixes | GPT-6.1 Terra — high | Claude Sonnet 5.5 — medium (inherits Implementer) |
 | Complex implementation | GPT-6 Astra — high | Claude Sonnet 5.5 — high |
+| Visual QA / computer use | GPT-6.1 Terra — medium | GPT-6.1 Terra — medium (Codex specialist) |
 | Independent review | Claude Opus 5.5 — high | GPT-6.1 Sol — xhigh |
 | HIGH_RISK review | Claude Opus 5.5 — xhigh | GPT-6.1 Sol — Ultra (requested review mode; API effort max) |
 | Final report | GPT-6 Luna — low | Claude Haiku 5.5 — low |
@@ -186,6 +188,8 @@ Copy-Item '.agent-workflow/profiles/claude-orchestrator.json' '.agent-workflow/c
 # OR
 Copy-Item '.agent-workflow/profiles/openai-orchestrator.json' '.agent-workflow/config.json'
 ```
+
+**Terra routing decision:** GPT-6.1 Terra (`gpt-6.1-terra`) is used selectively for **small, scoped, testable code changes** in OpenAI-led workflows and **screen-based UI / computer-use tasks** in either profile. The main Implementer remains Sol (OpenAI-led) or Claude Sonnet (Claude-led); architecture/complex implementation and independent review stay with the more capable assigned models. Luna remains assigned to fast, inexpensive triage and reporting. Escalate a Terra assignment back to the authorized Implementer when changes span services or involve unknown dependencies, security-sensitive logic or repeated failed validations—do not silently switch models. A dedicated `scoped_implement` stage and `computer_use` stage are optional suggested routes and do **not** automatically dispatch agents or override the plan. On the Claude-led preset, choosing the Codex-based `computer_use` stage is a **cross-provider handoff** and needs explicit approval and verified access; it is not the Claude code Implementer. Official model docs: [Terra](https://developers.openai.com/api/docs/models/gpt-6.1-terra), [model-selection guide](https://developers.openai.com/api/docs/guides/model-selection). Its standard API token price is lower than Sol's, but end-to-end costs and coding quality depend on the task.
 
 All sample profiles keep `setup.status = "unconfirmed"`, empty runtime/worker registrations, `automatic_switching = false`, and a single sequential worker. The `stage_preferences` entries are recommendations, not executable dispatch rules; a stage with only `role` inherits that role's preferred candidate. Each actual runtime, model/effort control, access and required external Skill **must be verified in its executing environment** and approved before marking setup confirmed. Cross-provider handoff remains manual and independent review is a separate eligible agent/session, not just another model label.
 
