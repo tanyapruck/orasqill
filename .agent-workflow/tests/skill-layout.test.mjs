@@ -255,3 +255,13 @@ test('public README exposes model choices, dependency commands and the MIT licen
   assert.equal(packageInfo.license,'MIT');
   assert.equal(packageInfo.private,true);
 });
+
+test('public clone instructions use the current GitHub owner',()=>{
+  const landing=read('README.md');
+  const reference=read('docs/command-reference.md');
+  for(const doc of [landing,reference]){
+    assert.doesNotMatch(doc,/github\.com\/tanyapruckp-pan\/orasqill/i);
+    assert.match(doc,/github\.com\/tanyapruck\/orasqill\.git/);
+  }
+  assert.equal((reference.match(/github\.com\/tanyapruck\/orasqill\.git/g)||[]).length,2);
+});
