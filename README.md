@@ -26,128 +26,50 @@ An eligible agent can coordinate when explicitly authorized; no provider is the 
 
 Third-party Skills are **not vendored or copied** into Orasqill. Their original owners, paths and reviewed Git fingerprints are recorded in [the independent registry](.agent-workflow/external-skills.lock.json); verify installation and loadability in each agent's runtime. Optional Matt Pocock and Ponytail integrations are never automatic.
 
-## Oranit: initialize a workspace with one command
+## Command Reference
 
-**`oranit init` now sets up both the codebase locator and the model-configuration starting point.** The index helps an AI jump to likely relevant files/symbols before reading actual source; it doesn't replace source inspection or tests. The new model config is intentionally **unconfirmed**, not an active model routing session.
+All Orasqill commands are collected **in this section**. Start with **`oranit`** in a target workspace; no `init` subcommand is supported. The **Skill commands** below are entered in an agent chat, while the CLI commands are run in a shell. The helpers do not launch models or bypass authorization gates.
 
-From a local checkout of this (currently private) repository, you can install the command on your PATH using Node.js 20+:
+### 1. Set up a workspace
+
+From an accessible Orasqill checkout (the repository is currently private):
 
 ```sh
 git clone https://github.com/tanyapruckp-pan/orasqill.git /path/to/orasqill
 cd /path/to/orasqill
 npm link
 cd /path/to/your-workspace
-oranit init --workspace . --profile claude-led
-# or --profile openai-led; omit --profile for a neutral, unconfirmed config
+oranit
 ```
 
-If you don't want a globally linked command, you can use the same CLI **directly from its source**:
+| CLI command | Purpose |
+|---|---|
+| `oranit` | **Initialize** a workspace: install missing Orasqill Skills, create a local code index and unconfirmed model config |
+| `oranit --profile claude-led` | Initialize with the Claude-led candidate mapping |
+| `oranit --profile openai-led` | Initialize with the OpenAI-led candidate mapping |
+| `oranit --workspace /path/to/project` | Target a particular workspace |
+| `oranit --dry-run` | Preview changes without writing files |
+| `oranit status` | Check whether the index matches current source |
+| `oranit locate "verifyOTP"` | Find candidate files, symbols and approximate line numbers |
+| `oranit refresh` | Rebuild the index after source changes, leaving model config untouched |
+
+Without `npm link`, call the source CLI directly:
 
 ```sh
-node /path/to/orasqill/.agent-workflow/bin/oranit.mjs init --workspace /path/to/your-workspace
+node /path/to/orasqill/.agent-workflow/bin/oranit.mjs --workspace /path/to/your-workspace
 ```
 
-On a fresh workspace, it installs the packaged portable Orchestrator, `oranit` and `configure-models` Skills (plus Claude Slash adapters), supporting CLI files, two profiles, the registry, an initial `AGENTS.md` if absent, and appropriate ignore rules. It creates:
+### 2. Commands inside Claude Code and Codex
 
-- `.agent-workflow/index/codebase-map.json` — generated index of nonsecret code paths, symbols and hashes, ignored by Git.
-- `.agent-workflow/config.json` — neutral or explicitly selected model candidate mapping, always `unconfirmed` and ignored by Git.
+| Goal | Claude Code | Codex |
+|---|---|---|
+| Initialize workspace | `/oranit` | `$oranit` |
+| Review or change model/effort roles | `/configure-models` | `$configure-models` |
+| Propose bounded multi-level delegation | `/delegate-tree` | `$delegate-tree` |
 
-**Existing Skill files, model config and agent instructions are preserved.** The command only appends missing local ignore rules to an existing `.gitignore`. If `AGENTS.md` already exists, add the index-first instruction there yourself (or use the canonical Orchestrator Skill); it will not be silently replaced. Choosing a model profile doesn't launch models, confirm runtime credentials or grant delegation rights. For a preview with **no writes**, run `oranit init --dry-run --workspace .`.
+For Claude Code, a preset can be suggested with `/configure-models claude-led`. These Skills only start a guided workflow: writing model config, dispatching agents and protected operations still require their own authorization.
 
-### Index-first workflow
-
-```sh
-oranit status                               # detect code drift
-oranit locate "verifyOTP"                   # ranked file paths and symbol/line hints
-# Read the actual target files, imports, callers and tests before editing.
-oranit refresh                              # update index after changed source files
-```
-
-If an index is missing, run `oranit init`; if stale, `oranit locate` blocks until `oranit refresh`. On partial/oversized/excluded coverage or zero matches, use a scoped code search rather than claiming the index is exhaustive. Hashes detect source changes, but the index is **not a compiler/semantic dependency graph**.
-
-Use **`/oranit init`** in Claude Code or **`$oranit`** in Codex to launch the workspace initialization Skill. After bootstrap, use **`/configure-models`** or **`$configure-models`** to review and separately approve adjustments to model roles/efforts. Skill invocation and CLI initialization never count as model-runtime approval.
-
-## Install in another Git repository
-
-Clone Orasqill somewhere you can access, then copy its reusable files into your project. **The destination is your project; do not overwrite existing agent instructions.**
-
-### macOS, Linux or Git Bash
-
-```sh
-git clone https://github.com/tanyapruckp-pan/orasqill.git /path/to/orasqill
-cd /path/to/your-project
-mkdir -p .agents/skills .agent-workflow
-cp -R /path/to/orasqill/.agents/skills/agent-workflow-orchestrator .agents/skills/
-cp -R /path/to/orasqill/.agents/skills/configure-models .agents/skills/
-cp -R /path/to/orasqill/.agents/skills/oranit .agents/skills/
-cp -R /path/to/orasqill/.agents/skills/delegate-tree .agents/skills/
-cp -R /path/to/orasqill/.agent-workflow/bin .agent-workflow/
-cp /path/to/orasqill/.agent-workflow/external-skills.lock.json .agent-workflow/
-cp /path/to/orasqill/.agent-workflow/config.example.json .agent-workflow/
-cp -R /path/to/orasqill/.agent-workflow/profiles .agent-workflow/
-cp -R /path/to/orasqill/.agent-workflow/examples .agent-workflow/
-```
-
-### Windows PowerShell
-
-```powershell
-$src = 'C:\path\to\orasqill'
-New-Item -ItemType Directory -Force '.agents\skills', '.agent-workflow' | Out-Null
-Copy-Item -Recurse (Join-Path $src '.agents\skills\agent-workflow-orchestrator') '.agents\skills\'
-Copy-Item -Recurse (Join-Path $src '.agents\skills\configure-models') '.agents\skills\'
-Copy-Item -Recurse (Join-Path $src '.agents\skills\oranit') '.agents\skills\'
-Copy-Item -Recurse (Join-Path $src '.agents\skills\delegate-tree') '.agents\skills\'
-Copy-Item -Recurse (Join-Path $src '.agent-workflow\bin') '.agent-workflow\'
-Copy-Item (Join-Path $src '.agent-workflow\external-skills.lock.json') '.agent-workflow\'
-Copy-Item (Join-Path $src '.agent-workflow\config.example.json') '.agent-workflow\'
-Copy-Item -Recurse (Join-Path $src '.agent-workflow\profiles') '.agent-workflow\'
-Copy-Item -Recurse (Join-Path $src '.agent-workflow\examples') '.agent-workflow\'
-```
-
-**Connect your agent.** Add a short pointer to your existing `AGENTS.md` (or create it if absent):
-
-```md
-For multi-step, delegated or agent-handoff tasks, read
-`.agents/skills/agent-workflow-orchestrator/SKILL.md` before editing.
-```
-
-For Claude Code, optionally copy [its discovery adapter](.claude/skills/agent-workflow-orchestrator/SKILL.md) to the equivalent destination path, **and copy [the model mapping Slash Skill](.claude/skills/configure-models/SKILL.md) to `.claude/skills/configure-models/SKILL.md`** if you want the `/configure-models` command. On macOS/Linux: `mkdir -p .claude/skills && cp -R /path/to/orasqill/.claude/skills/configure-models .claude/skills/`. On PowerShell: `New-Item -ItemType Directory -Force '.claude\skills' | Out-Null; Copy-Item -Recurse (Join-Path $src '.claude\skills\configure-models') '.claude\skills\'`. The canonical `.agents/skills/configure-models/` is also used by Codex as `$configure-models`. For Claude's `/oranit`, additionally copy `.claude/skills/oranit/` to the destination `.claude/skills/` (or use the automatic `oranit init` bootstrap); the portable `.agents/skills/oranit/` supports `$oranit` in Codex. If your Claude setup supports `@AGENTS.md` in `CLAUDE.md`, use it only after checking for existing instructions. For Codex or any other agent, explicitly request that it load the canonical Skill if automatic discovery is unavailable. **Installing Orasqill does not install its external prerequisite Skills.**
-
-**Keep task checkpoints private.** Merge this line into the destination project's `.gitignore`:
-
-```gitignore
-.agent-workflow/state/
-.agent-workflow/config.json
-.agent-workflow/index/
-```
-
-State can contain goals, paths, findings and user-reported approval notes. Never put secrets in it. Gitignored state does not follow a Git push to another computer.
-
-### Verify the installation
-
-Run in the **destination** repository:
-
-```sh
-git rev-parse --verify HEAD                      # an initial commit exists
-git branch --show-current                       # a nonempty named branch
-node .agent-workflow/bin/external-skills.mjs list
-# external-skills.lock.json registry is required for this command.
-git check-ignore .agent-workflow/state/install-check/plan.json
-# must exit 0: the future local plan file is ignored
-```
-
-If these fail, fix the repository setup, copied registry, or ignore rule first. The registry check **does not** establish that an external Skill was loaded into an agent. For optional delegation config, copy the installed `.agent-workflow/config.example.json` to `.agent-workflow/config.json` and confirm real agent capabilities and authority; an example config does not enable workers.
-
-### Interactive Model Mapping Skill (recommended)
-
-Instead of manually editing JSON, invoke the opt-in, user-controlled setup interview **after installing the Skill**:
-
-- **Claude Code:** `/configure-models` or `/configure-models claude-led`
-- **Codex:** `$configure-models` and optionally say `use Claude-led`, `OpenAI-led` or `custom`
-
-The Skill reads existing configuration and the two saved profiles, asks one consequential question at a time only where details are missing, then shows **Before → After** for every changed role and effort. It does **not** auto-write: invoking the command only begins the interview. It must ask for explicit confirmation before saving `.agent-workflow/config.json`. The file remains `setup.status = "unconfirmed"` until *actual* runtime/model support, user authorization and required external Skills have been checked. Review independence and HIGH_RISK gates are unchanged.
-
-Read-only preview / validation helpers:
+### 3. Inspect model config (read-only)
 
 ```sh
 node .agent-workflow/bin/model-config.mjs preview claude-orchestrator
@@ -155,53 +77,27 @@ node .agent-workflow/bin/model-config.mjs preview openai-orchestrator
 node .agent-workflow/bin/model-config.mjs validate .agent-workflow/config.json
 ```
 
-These commands never write config, launch models, install external Skills, or change Git state. Structural validation does **not** verify that the named models or client-specific modes are actually available.
-
-### Choose the model and effort profile
-
-Two included **suggested** profiles are available after installation. This only fills out candidate names and recommended effort; it does not configure credentials or launch agents.
-
-| Stage | OpenAI orchestrates (`openai-orchestrator.json`) | Claude orchestrates (`claude-orchestrator.json`) |
-|---|---|---|
-| Orchestrator / plan | GPT-6.1 Sol — high | Claude Opus 5.5 — high |
-| Triage / reconnaissance | GPT-6 Luna — low | Claude Haiku 5.5 — low |
-| Implementation | GPT-6.1 Sol — medium | Claude Sonnet 5.5 — medium (Claude Code) |
-| Complex implementation | GPT-6 Astra — high | Claude Sonnet 5.5 — high |
-| Independent review | Claude Opus 5.5 — high | GPT-6.1 Sol — xhigh |
-| HIGH_RISK review | Claude Opus 5.5 — xhigh | GPT-6.1 Sol — Ultra (requested review mode; API effort max) |
-| Final report | GPT-6 Luna — low | Claude Haiku 5.5 — low |
-
-Select **one** in the destination repo, **only if there is no existing local config you need to preserve**:
+To copy a preset into a **new** local config when there is no existing config to preserve:
 
 ```sh
-# macOS/Linux/Git Bash (choose ONE)
+# macOS/Linux/Git Bash — choose ONE
 cp .agent-workflow/profiles/claude-orchestrator.json .agent-workflow/config.json
-# OR
+# or
 cp .agent-workflow/profiles/openai-orchestrator.json .agent-workflow/config.json
 ```
 
 ```powershell
-# Windows PowerShell (choose ONE)
+# Windows PowerShell — choose ONE
 Copy-Item '.agent-workflow/profiles/claude-orchestrator.json' '.agent-workflow/config.json'
-# OR
+# or
 Copy-Item '.agent-workflow/profiles/openai-orchestrator.json' '.agent-workflow/config.json'
 ```
 
-All sample profiles keep `setup.status = "unconfirmed"`, empty runtime/worker registrations, `automatic_switching = false`, and a single sequential worker. The `stage_preferences` entries are recommendations, not executable dispatch rules; a stage with only `role` inherits that role's preferred candidate. Each actual runtime, model/effort control, access and required external Skill **must be verified in its executing environment** and approved before marking setup confirmed. Cross-provider handoff remains manual and independent review is a separate eligible agent/session, not just another model label.
+Use the interactive Skill for existing configs. A structurally valid file is not proof that a model, requested effort or provider integration is available.
 
-For the Claude-led profile, `critical_review` requests **Ultra** via `requested_mode: "ultra"` and separately specifies **`effort: "max"`** as a valid API reasoning level for GPT-6.1 Sol. Ultra is **not** an OpenAI API `reasoning.effort` value: in supported Codex clients it is a distinct subagent-based mode. This is an explicit **request for runtime selection**, not an active Ultra session; it must be verified and selected by an authorized user. If Ultra is not supported by the actual client, report `SETUP_REQUIRED` and ask for an alternative rather than silently treating Max as Ultra. In particular, the preset still permits **only one sequential worker**, and never dispatches a subagent merely because `requested_mode` is present. Independent review still requires a truly separate agent/session from the work being reviewed.
+### 4. Plan Ledger: execute and review an approved task
 
-Provider model identifiers and effort options should be checked against [Anthropic's models](https://platform.claude.com/docs/en/models/overview), [Anthropic effort levels](https://platform.claude.com/docs/en/build-with-claude/effort) and [OpenAI's models](https://developers.openai.com/api/docs/models). These API IDs may not be directly selectable in every Codex/Claude Code interface. Details: [routing and setup](.agents/skills/agent-workflow-orchestrator/references/setup-routing.md).
-
-Treat `.agent-workflow/config.json` as local configuration. Keep passwords/API keys out of it, and add it to your **destination repository's** `.gitignore` alongside task state.
-
-## Quick start: a complete documentation-only task
-
-Ask your agent:
-
-> Use `agent-workflow-orchestrator`. Show an ordered plan before editing, follow the locked steps only, log anything outside the plan as a Finding, ask before necessary changes, and report the actual checks and Git state.
-
-Once the agreed plan is shown, start a checkpoint. This example assumes permission to edit project documentation; **perform each step before recording it as done**:
+The following example assumes an **approved documentation-only plan**. Actually perform each step and check its evidence before recording a PASS.
 
 ```sh
 node .agent-workflow/bin/plan-ledger.mjs start docs-demo \
@@ -220,15 +116,194 @@ node .agent-workflow/bin/plan-ledger.mjs report docs-demo
 node .agent-workflow/bin/plan-ledger.mjs finish docs-demo
 ```
 
-The CLI requires the **latest check for every acceptance ID** to be `pass`. `fail` or `blocked` results, missing checks, pending essential Findings or incomplete planned steps prevent a successful finish. These results are *recorded claims*, not independently verified test executions. **Legacy checkpoints:** old free-text validation is retained as unverified history and never qualifies as PASS; add fresh structured PASS results for every acceptance ID to finish the original locked task. A legacy HIGH_RISK handoff without a plan stays blocked and requires a separately authorized new locked task, preserving the old checkpoint.
+| Additional command | When to use |
+|---|---|
+| `node .agent-workflow/bin/plan-ledger.mjs finding <task-id> --description "..." --impact "..." --reason "..." --necessary yes\|no` | Log work outside the plan |
+| `node .agent-workflow/bin/plan-ledger.mjs amend <task-id> --finding F1 --step "..." --approvalref "..."` | Amend **only after real user approval** |
+| `node .agent-workflow/bin/plan-ledger.mjs review <task-id> --reviewer "..." --independent yes --result pass --evidence "..."` | Record an actual independent HIGH_RISK review |
+| `node .agent-workflow/bin/manual-handoff.mjs resume` | Continue a unique unfinished authorized task on the current branch |
+| `node .agent-workflow/bin/manual-handoff.mjs start\|checkpoint\|export\|finish <task-id> ...` | Legacy/manual handoff commands; cannot bypass locked-plan gates |
+
+Acceptance IDs begin at `A1`; the latest check for **every** ID must pass. A typed approval or reviewer identity is not independently verified evidence.
+
+### 5. Nested delegation, task scheduling and handoffs
+
+Start the bounded workflow via the **Skill command in section 2**, then validate the proposed tree against an existing locked plan. Adapt the checked-in `.agent-workflow/examples/nested-tree.example.json` first: its root objective must exactly match the next pending step.
+
+```sh
+node .agent-workflow/bin/nested-delegation.mjs plan nested-tree.json --locked-plan .agent-workflow/state/<task-id>/plan.json
+node .agent-workflow/bin/nested-delegation.mjs packet nested-tree.json otp --locked-plan .agent-workflow/state/<task-id>/plan.json
+node .agent-workflow/bin/task-planner.mjs <scheduler-tasks.json> --locked-plan .agent-workflow/state/<task-id>/plan.json
+```
+
+The nested tools are **plan-only**. They never spawn subagents, verify provider authority or enable parallelism. The scheduler graph (`tasks`) differs from the ledger plan (`steps`). On a different machine, transfer state deliberately and without secrets.
+
+### 6. Verify installation, external Skills and tests
+
+After installing files in a **destination** repository, verify Git state, the external source registry and that local task evidence is ignored:
+
+```sh
+git rev-parse --verify HEAD                      # an initial commit exists
+git branch --show-current                       # a nonempty named branch
+node .agent-workflow/bin/external-skills.mjs list
+# external-skills.lock.json registry is required for this command.
+git check-ignore .agent-workflow/state/install-check/plan.json
+# must exit 0: the future local plan file is ignored
+```
+
+The external-skills registry is required for provenance verification. To check upstream references without installing them:
+
+```sh
+node .agent-workflow/bin/external-skills.mjs list
+node .agent-workflow/bin/external-skills.mjs check-updates --source matt
+node .agent-workflow/bin/external-skills.mjs verify-file karpathy-guidelines /path/to/original/SKILL.md
+node .agent-workflow/bin/external-skills.mjs verify-reference writing-for-agents skills/productivity/writing-for-agents/SKILL-MECHANICS.md /path/to/original/SKILL-MECHANICS.md
+```
+
+From the **Orasqill source checkout** (not a minimal destination install), run:
+
+```sh
+npm test
+```
+
+### 7. Manual installation (only when not using `oranit`)
+
+`oranit` is the recommended installer. These platform-specific commands are kept for teams that need an explicit, reviewable copy process. **Do not overwrite existing project files without comparing them first.**
+
+**macOS, Linux or Git Bash**
+
+```sh
+git clone https://github.com/tanyapruckp-pan/orasqill.git /path/to/orasqill
+cd /path/to/your-project
+mkdir -p .agents/skills .agent-workflow
+cp -R /path/to/orasqill/.agents/skills/agent-workflow-orchestrator .agents/skills/
+cp -R /path/to/orasqill/.agents/skills/configure-models .agents/skills/
+cp -R /path/to/orasqill/.agents/skills/oranit .agents/skills/
+cp -R /path/to/orasqill/.agents/skills/delegate-tree .agents/skills/
+cp -R /path/to/orasqill/.agent-workflow/bin .agent-workflow/
+cp /path/to/orasqill/.agent-workflow/external-skills.lock.json .agent-workflow/
+cp /path/to/orasqill/.agent-workflow/config.example.json .agent-workflow/
+cp -R /path/to/orasqill/.agent-workflow/profiles .agent-workflow/
+cp -R /path/to/orasqill/.agent-workflow/examples .agent-workflow/
+```
+
+**Windows PowerShell**
+
+```powershell
+$src = 'C:\path\to\orasqill'
+New-Item -ItemType Directory -Force '.agents\skills', '.agent-workflow' | Out-Null
+Copy-Item -Recurse (Join-Path $src '.agents\skills\agent-workflow-orchestrator') '.agents\skills\'
+Copy-Item -Recurse (Join-Path $src '.agents\skills\configure-models') '.agents\skills\'
+Copy-Item -Recurse (Join-Path $src '.agents\skills\oranit') '.agents\skills\'
+Copy-Item -Recurse (Join-Path $src '.agents\skills\delegate-tree') '.agents\skills\'
+Copy-Item -Recurse (Join-Path $src '.agent-workflow\bin') '.agent-workflow\'
+Copy-Item (Join-Path $src '.agent-workflow\external-skills.lock.json') '.agent-workflow\'
+Copy-Item (Join-Path $src '.agent-workflow\config.example.json') '.agent-workflow\'
+Copy-Item -Recurse (Join-Path $src '.agent-workflow\profiles') '.agent-workflow\'
+Copy-Item -Recurse (Join-Path $src '.agent-workflow\examples') '.agent-workflow\'
+```
+
+For Claude Code, optionally install the [Orchestrator adapter](.claude/skills/agent-workflow-orchestrator/SKILL.md) and command adapters in `.claude/skills/`. To add `/configure-models` manually:
+
+```sh
+mkdir -p .claude/skills
+cp -R /path/to/orasqill/.claude/skills/configure-models .claude/skills/
+cp -R /path/to/orasqill/.claude/skills/oranit .claude/skills/
+cp -R /path/to/orasqill/.claude/skills/delegate-tree .claude/skills/
+```
+
+```powershell
+New-Item -ItemType Directory -Force '.claude\skills' | Out-Null
+Copy-Item -Recurse (Join-Path $src '.claude\skills\configure-models') '.claude\skills\'
+Copy-Item -Recurse (Join-Path $src '.claude\skills\oranit') '.claude\skills\'
+Copy-Item -Recurse (Join-Path $src '.claude\skills\delegate-tree') '.claude\skills\'
+```
+
+Merge these lines into the destination project's `.gitignore` (keep any existing entries):
+
+```gitignore
+.agent-workflow/state/
+.agent-workflow/config.json
+.agent-workflow/index/
+```
+
+## How `oranit` works
+
+The bare `oranit` command prepares **both** a codebase locator and an unconfirmed model-configuration starting point. On first use it installs only missing packaged Skills and helper files. It creates `.agent-workflow/index/codebase-map.json` (paths, symbol hints and hashes) and `.agent-workflow/config.json` (candidate mapping); both are ignored by Git.
+
+**Existing Skills, config and agent instructions are preserved.** Missing ignore rules are appended to the destination `.gitignore`. If `AGENTS.md` already exists, it is not replaced—add the [index-first instructions](.agents/skills/agent-workflow-orchestrator/references/index-navigation.md) manually if needed.
+
+The index is a **locator, not verified code truth**. On missing or stale indexes use the [index commands](#1-set-up-a-workspace), then inspect actual code, imports, callers and tests before editing. Partial coverage requires scoped search. Initialization never activates model runtimes or delegates work.
+
+## Install in another Git repository
+
+**Recommended:** use the one-command [workspace setup](#1-set-up-a-workspace). For a controlled copy without a globally installed CLI, use the [manual macOS/Linux and PowerShell instructions](#7-manual-installation-only-when-not-using-oranit) in the same Command Reference.
+
+**Connect your agent.** Add a short pointer to the canonical `.agents/skills/agent-workflow-orchestrator/SKILL.md` in your `AGENTS.md` without overwriting existing instructions. Claude Code needs its own optional discovery adapters; Codex uses the canonical Skills. External prerequisite Skills such as `karpathy-guidelines` are **not installed** automatically.
+
+**Keep checkpoints private.** Task state can include goals, paths, Findings and approval notes. Keep `.agent-workflow/state/`, `.agent-workflow/config.json` and `.agent-workflow/index/` ignored. Ignored files do not travel with Git pushes.
+
+### Verify the installation
+
+Follow the [verification commands](#6-verify-installation-external-skills-and-tests) in the destination repository. An installed provenance registry does **not** prove an external Skill was loaded into the agent. If any check fails, fix the repository, registry or ignore rules before proceeding.
+
+## Model mapping and effort profiles
+
+### Interactive Model Mapping Skill (recommended)
+
+Use the [agent Skill commands](#2-commands-inside-claude-code-and-codex) to choose Claude-led, OpenAI-led or custom model assignments instead of editing JSON manually.
+
+The Skill reads existing configuration and the two saved profiles, asks one consequential question at a time only where details are missing, then shows **Before → After** for every changed role and effort. It does **not** auto-write: invoking the command only begins the interview. It must ask for explicit confirmation before saving `.agent-workflow/config.json`. The file remains `setup.status = "unconfirmed"` until *actual* runtime/model support, user authorization and required external Skills have been checked. Review independence and HIGH_RISK gates are unchanged.
+
+Use the [read-only profile preview and validation commands](#3-inspect-model-config-read-only). These commands never write config, launch models, install external Skills, or change Git state. Structural validation does **not** verify that the named models or client-specific modes are actually available.
+
+### Choose the model and effort profile
+
+Two included **suggested** profiles are available after installation. This only fills out candidate names and recommended effort; it does not configure credentials or launch agents.
+
+| Stage | OpenAI orchestrates (`openai-orchestrator.json`) | Claude orchestrates (`claude-orchestrator.json`) |
+|---|---|---|
+| Orchestrator / plan | GPT-6.1 Sol — high | Claude Opus 5.5 — high |
+| Triage / reconnaissance | GPT-6 Luna — low | Claude Haiku 5.5 — low |
+| Implementation | GPT-6.1 Sol — medium | Claude Sonnet 5.5 — medium (Claude Code) |
+| Scoped code fixes | GPT-6.1 Terra — high | Claude Sonnet 5.5 — medium (inherits Implementer) |
+| Complex implementation | GPT-6 Astra — high | Claude Sonnet 5.5 — high |
+| Visual QA / computer use | GPT-6.1 Terra — medium | GPT-6.1 Terra — medium (Codex specialist) |
+| Independent review | Claude Opus 5.5 — high | GPT-6.1 Sol — xhigh |
+| HIGH_RISK review | Claude Opus 5.5 — xhigh | GPT-6.1 Sol — Ultra (requested review mode; API effort max) |
+| Final report | GPT-6 Luna — low | Claude Haiku 5.5 — low |
+
+To apply a preset without overwriting an existing config, follow the [profile-selection commands](#3-inspect-model-config-read-only), or use the interactive Skill.
+
+**Why Terra is selective:**
+
+- **OpenAI-led:** Terra handles small, scoped code changes (`scoped_implement`) and visual/computer-use tasks (`computer_use`). Sol remains the main Implementer; Astra keeps complex implementation.
+- **Claude-led:** Claude Sonnet remains the code Implementer. Terra is a Codex specialist for computer-use tasks only, requiring an explicitly authorized cross-provider handoff.
+- **Both:** Luna/Haiku retain inexpensive triage/reporting; independent reviewers are unchanged. Escalate uncertain cross-service, security-sensitive or repeatedly failing tasks rather than silently switching models.
+
+These stages are suggestions, **not an automatic dispatcher**. See the official [Terra model details](https://developers.openai.com/api/docs/models/gpt-6.1-terra) and [model-selection guide](https://developers.openai.com/api/docs/guides/model-selection). API token cost may be lower, but actual cost and quality depend on the task.
+
+All sample profiles keep `setup.status = "unconfirmed"`, empty runtime/worker registrations, `automatic_switching = false`, and a single sequential worker. The `stage_preferences` entries are recommendations, not executable dispatch rules; a stage with only `role` inherits that role's preferred candidate. Each actual runtime, model/effort control, access and required external Skill **must be verified in its executing environment** and approved before marking setup confirmed. Cross-provider handoff remains manual and independent review is a separate eligible agent/session, not just another model label.
+
+**Ultra is not an API effort value.** The Claude-led HIGH_RISK reviewer uses `effort: "max"` and separately records `requested_mode: "ultra"` for supported Codex clients. An authorized user must verify and select that client mode; otherwise report `SETUP_REQUIRED` rather than silently substituting Max. The preset still allows only one sequential worker, launches no subagents, and requires an actually independent reviewer.
+
+Provider model identifiers and effort options should be checked against [Anthropic's models](https://platform.claude.com/docs/en/models/overview), [Anthropic effort levels](https://platform.claude.com/docs/en/build-with-claude/effort) and [OpenAI's models](https://developers.openai.com/api/docs/models). These API IDs may not be directly selectable in every Codex/Claude Code interface. Details: [routing and setup](.agents/skills/agent-workflow-orchestrator/references/setup-routing.md).
+
+Treat `.agent-workflow/config.json` as local configuration. Keep passwords/API keys out of it, and add it to your **destination repository's** `.gitignore` alongside task state.
+
+## Quick start: a complete documentation-only task
+
+Ask your agent to use `agent-workflow-orchestrator`, present a locked plan before editing, record out-of-plan Findings, and report only actual acceptance evidence. The [Plan Ledger command example](#4-plan-ledger-execute-and-review-an-approved-task) shows a complete documentation-only run.
+
+The CLI requires the **latest check for every acceptance ID** to be `pass`. Failed/blocked checks, missing evidence, pending essential Findings and incomplete steps block completion. Old free-text checks remain unverified history and cannot substitute for new acceptance-linked PASS results. An unplanned legacy HIGH_RISK handoff stays blocked until separately authorized.
 
 ### New requirement during execution?
 
-Use `plan-ledger.mjs finding <task-id> --description "..." --impact "..." --reason "..." --necessary yes|no`. Nonessential discoveries are deferred. Essential additions pause the affected work until the user explicitly approves an amendment; the tool's `--approvalref` value is only an audit note, **not authenticated consent**. See [the Plan and Findings contract](.agents/skills/agent-workflow-orchestrator/references/plan-execution.md).
+Use the [Finding command](#4-plan-ledger-execute-and-review-an-approved-task). Nonessential discoveries are deferred. Essential additions pause the affected work until the user explicitly approves an amendment; the tool's `--approvalref` value is only an audit note, **not authenticated consent**. See [the Plan and Findings contract](.agents/skills/agent-workflow-orchestrator/references/plan-execution.md).
 
 ### High-risk change?
 
-Authentication, payments, security, migrations, destructive or production changes require separate protected-action permission and a genuinely **independent eligible reviewer**. After an actual review, its result can be recorded with `plan-ledger.mjs review <task-id> --reviewer "<actual-reviewer>" --independent yes --result pass --evidence "<verifiable-reference>"`. A typed reviewer name does *not* prove independence. Missing or failed review blocks `HIGH_RISK` completion. See [review gates](.agents/skills/agent-workflow-orchestrator/references/review-validation.md).
+Authentication, payments, security, migrations, destructive or production changes require separate protected-action permission and a genuinely **independent eligible reviewer**. Use the [independent-review command](#4-plan-ledger-execute-and-review-an-approved-task) only after an actual review. A typed reviewer name does *not* prove independence. Missing or failed review blocks `HIGH_RISK` completion. See [review gates](.agents/skills/agent-workflow-orchestrator/references/review-validation.md).
 
 ## Nested Orchestration: delegate a task tree
 
@@ -244,21 +319,16 @@ Root (Codex/Claude; Master Locked Plan)
 Root Integration → Acceptance → Independent HIGH_RISK Review → Close
 ```
 
-The checked-in example `.agent-workflow/examples/nested-tree.example.json` is a template; adapt `rootTaskId`, `planStepId`, and the root objective **exactly** to the next pending step in your `plan-ledger` file before running:
-
-```sh
-node .agent-workflow/bin/nested-delegation.mjs plan nested-tree.json --locked-plan .agent-workflow/state/<task-id>/plan.json
-node .agent-workflow/bin/nested-delegation.mjs packet nested-tree.json otp --locked-plan .agent-workflow/state/<task-id>/plan.json
-```
+The checked-in example `.agent-workflow/examples/nested-tree.example.json` is a template; adapt `rootTaskId`, `planStepId`, and the root objective **exactly** to the next pending step in your `plan-ledger` file before using the [read-only nested delegation commands](#5-nested-delegation-task-scheduling-and-handoffs).
 
 Add `--config .agent-workflow/config.json` to compare requested and configured depth/capacity. Both commands are **read-only** and return a proposal with `readyToDispatch:false`, `agentsLaunched:0`, and reasons to stop. They never launch subagents or grant approval. The default profile remains **one sequential worker at delegation depth 1**. Depth 2 and higher global concurrency are **opt-in**: the chosen client must actually support subagents, enforce file ownership/isolation and global caps, load required coding Skills in every worker, and receive explicit user permission. Even a `confirmed` config is not proof those conditions hold in a particular session.
 
-Install the Claude command adapter into the destination workspace's `.claude/skills/delegate-tree/SKILL.md` (using the same optional copy process as `/oranit`) or run `oranit init` for a fresh installation. `AGENTS.md` in Orasqill contains the conditional recommendation trigger for agents; it does **not** silently delegate. External runtime execution, independent eligible reviewers, test evidence, approvals for protected Git/production actions and merging remain separate human/runtime checks.
+Install the Claude command adapter into the destination workspace's `.claude/skills/delegate-tree/SKILL.md` (using the same optional copy process as `/oranit`) or run `oranit` for a fresh installation. `AGENTS.md` in Orasqill contains the conditional recommendation trigger for agents; it does **not** silently delegate. External runtime execution, independent eligible reviewers, test evidence, approvals for protected Git/production actions and merging remain separate human/runtime checks.
 
 ## Agent handoff and optional scheduling
 
-- **Continue an unfinished task:** the previous writer stops; the authorized receiver runs `node .agent-workflow/bin/manual-handoff.mjs resume` on the **same named branch and working tree**, reads the generated `handoff.md` plus locked `plan.md`, and resumes only the next authorized step. Different machines require an explicit, sanitized transfer of local state.
-- **Advisory Task Planner:** read [the separate scheduler schema](.agent-workflow/examples/task-plan.example.json). Run `node .agent-workflow/bin/task-planner.mjs <scheduler-tasks.json> [--locked-plan <plan-ledger-plan.json>]`. A scheduler graph has a `tasks` array with resource and dependency information; it is **not** the ledger's `plan.json`, which has `steps`. With `--locked-plan`, tasks must map to pending, approved steps **in their locked order**: later pending steps cannot bypass earlier ones, and the task graph must express that dependency. Unknown risk flags and malformed worker limits fail closed. The output suggests a sequence; it does not create workers or enforce locks.
+- **Continue an unfinished task:** the previous writer stops; the authorized receiver uses the [manual resume command](#4-plan-ledger-execute-and-review-an-approved-task) on the **same named branch and working tree**, reads the generated `handoff.md` plus locked `plan.md`, and resumes only the next authorized step. Different machines require an explicit, sanitized transfer of local state.
+- **Advisory Task Planner:** read [the separate scheduler schema](.agent-workflow/examples/task-plan.example.json). Use the [advisory task planner command](#5-nested-delegation-task-scheduling-and-handoffs). A scheduler graph has a `tasks` array with resource and dependency information; it is **not** the ledger's `plan.json`, which has `steps`. With `--locked-plan`, tasks must map to pending, approved steps **in their locked order**: later pending steps cannot bypass earlier ones, and the task graph must express that dependency. Unknown risk flags and malformed worker limits fail closed. The output suggests a sequence; it does not create workers or enforce locks.
 
 ## External Skills and update tracking
 
@@ -271,14 +341,7 @@ Install the Claude command adapter into the destination workspace's `.claude/ski
 
 Ponytail's session-wide coding mode is **opt-in only**, not automatically combined with required Karpathy rules. External Skill instructions, licenses, install methods and upgrades remain the responsibility of their respective upstream owners.
 
-```sh
-node .agent-workflow/bin/external-skills.mjs list
-node .agent-workflow/bin/external-skills.mjs check-updates --source matt
-node .agent-workflow/bin/external-skills.mjs verify-file karpathy-guidelines /path/to/original/SKILL.md
-node .agent-workflow/bin/external-skills.mjs verify-reference writing-for-agents skills/productivity/writing-for-agents/SKILL-MECHANICS.md /path/to/original/SKILL-MECHANICS.md
-```
-
-The commands above are read-only: no installs, copying, upgrades or agent launches. The lockfile records upstream repository commits, per-Skill blob SHAs and separately pinned reference-file SHAs **for traceability**, not proof of what a particular agent actually loaded. When authoring agent Skills with Matt's original `writing-for-agents`, load its sibling `SKILL-MECHANICS.md` as well. See [dependency activation and verification](.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md).
+The [external Skill commands](#6-verify-installation-external-skills-and-tests) are read-only: no installs, copying, upgrades or agent launches. The lockfile records upstream repository commits, per-Skill blob SHAs and separately pinned reference-file SHAs **for traceability**, not proof of what a particular agent actually loaded. When authoring agent Skills with Matt's original `writing-for-agents`, load its sibling `SKILL-MECHANICS.md` as well. See [dependency activation and verification](.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md).
 
 ## Troubleshooting
 
@@ -296,11 +359,7 @@ The commands above are read-only: no installs, copying, upgrades or agent launch
 
 ## Tests, limitations and sharing
 
-In the **Orasqill source checkout** (the minimal consumer installation intentionally does not copy test files):
-
-```sh
-npm test
-```
+Run the [test command](#6-verify-installation-external-skills-and-tests) in the **Orasqill source checkout** (a minimal consumer installation does not copy test files).
 
 The test suite exercises Git-backed checkpoints, completion gates, external-source tracking and fresh destination installation. Tests run without model API keys. The package targets Node.js 20+ and Git; Linux/Windows automation is configured but a successful workflow is **not** asserted merely because local tests pass.
 

@@ -2,7 +2,7 @@
 
 **Orchestrated work:** for user-assigned multi-step tasks, scoped delegation, or agent handoff, read `.agents/skills/agent-workflow-orchestrator/SKILL.md`. Any capable, authorized agent can coordinate; the role adds no permissions.
 
-**Index before broad code exploration.** For source tasks use `node .agent-workflow/bin/oranit.mjs status` then `locate "<feature-or-symbol>"`; if absent/stale, `oranit init`/`refresh` on the intended workspace. The generated index is only a map; verify actual source, imports, callers and tests. See `references/index-navigation.md` in the canonical Orchestrator Skill. `$oranit` (Codex) and `/oranit` (Claude Code) initialize the workspace and unconfirmed model config.
+**Index before broad code exploration.** For source tasks use `node .agent-workflow/bin/oranit.mjs status` then `locate "<feature-or-symbol>"`; if absent/stale, `oranit`/`refresh` on the intended workspace. The generated index is only a map; verify actual source, imports, callers and tests. See `references/index-navigation.md` in the canonical Orchestrator Skill. `$oranit` (Codex) and `/oranit` (Claude Code) initialize the workspace and unconfirmed model config.
 
 **Plan before editing or delegating.** Use the canonical Plan Ledger, follow locked steps, record each out-of-plan discovery as a Finding, defer nonessential work and request explicit user approval before essential changes. Close with actual validation and Final Acceptance evidence.
 

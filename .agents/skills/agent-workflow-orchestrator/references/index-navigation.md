@@ -7,14 +7,14 @@ Use this reference only when the task requires locating or editing source. The w
 After installing the Orasqill `oranit` binary (or using the portable Node command):
 
 ```sh
-oranit init --workspace .                           # codebase locator + unconfirmed model config
-oranit init --workspace . --profile claude-led      # explicit optional routing preset
+oranit --workspace .                           # codebase locator + unconfirmed model config
+oranit --workspace . --profile claude-led      # explicit optional routing preset
 oranit status --workspace .                          # verify index freshness
 oranit locate "verifyOTP" --workspace .             # ranked matching symbols and file paths
 oranit refresh --workspace .                         # rebuild index after code changes
 ```
 
-Use `node .agent-workflow/bin/oranit.mjs` instead of `oranit` if no PATH binary is installed. `oranit init --dry-run` previews without writing. Initialization installs only missing, packaged Orasqill Skills/CLI/profiles and creates the local `.agent-workflow/index/codebase-map.json` and `.agent-workflow/config.json`. It preserves existing configs, Skills and agent instructions; model setup is `unconfirmed`, with no runtime enabled. Local index/config/state paths must be in `.gitignore`. Use `$configure-models` (Codex) or `/configure-models` (Claude Code) to review and separately approve personal model mappings.
+Use `node .agent-workflow/bin/oranit.mjs` instead of `oranit` if no PATH binary is installed. `oranit --dry-run` previews without writing. Initialization installs only missing, packaged Orasqill Skills/CLI/profiles and creates the local `.agent-workflow/index/codebase-map.json` and `.agent-workflow/config.json`. It preserves existing configs, Skills and agent instructions; model setup is `unconfirmed`, with no runtime enabled. Local index/config/state paths must be in `.gitignore`. Use `$configure-models` (Codex) or `/configure-models` (Claude Code) to review and separately approve personal model mappings.
 
 ## Before planning source changes
 

@@ -25,7 +25,7 @@ const SOURCES=[
   '.agent-workflow/config.example.json',
   '.agent-workflow/external-skills.lock.json'
 ];
-const AGENT_HINT='# Workspace Agent Instructions\n\nBefore source searches or code edits, load .agents/skills/agent-workflow-orchestrator/SKILL.md and use node .agent-workflow/bin/oranit.mjs locate "<feature or symbol>" to find candidate files. If the index is missing/stale, run oranit init or oranit refresh. The index is an untrusted locator only; inspect live source, imports/callers, diff and tests before editing. Keep plan and independent reviewer gates. For substantial independent workstreams, suggest $delegate-tree (Codex) or /delegate-tree (Claude Code), but require a separate user approval before subagent dispatch. Use $configure-models (Codex) or /configure-models (Claude Code) for model routing and obtain separate approval before changing config.\n';
+const AGENT_HINT='# Workspace Agent Instructions\n\nBefore source searches or code edits, load .agents/skills/agent-workflow-orchestrator/SKILL.md and use node .agent-workflow/bin/oranit.mjs locate "<feature or symbol>" to find candidate files. If the index is missing/stale, run oranit or oranit refresh. The index is an untrusted locator only; inspect live source, imports/callers, diff and tests before editing. Keep plan and independent reviewer gates. For substantial independent workstreams, suggest $delegate-tree (Codex) or /delegate-tree (Claude Code), but require a separate user approval before subagent dispatch. Use $configure-models (Codex) or /configure-models (Claude Code) for model routing and obtain separate approval before changing config.\n';
 
 function fail(msg){throw Error(msg);}
 function dirGuard(root,target,create=false){
@@ -37,7 +37,7 @@ function dirGuard(root,target,create=false){
     current=path.join(current,segment);
     if(!existsSync(current)){
       if(create)mkdirSync(current,{mode:0o700});
-      else continue; // Preflight permits paths that init will create later.
+      else continue; // Preflight permits paths that bootstrap will create later.
     }
     const info=lstatSync(current);
     if(!info.isDirectory()||info.isSymbolicLink())fail('UNSAFE_WORKSPACE_PATH: '+current);
@@ -78,14 +78,17 @@ function bundled(){
 function readIndex(root){
   const file=path.join(root,INDEX);
   dirGuard(root,file);
-  if(!existsSync(file))fail('INDEX_MISSING: run oranit init');
+  if(!existsSync(file))fail('INDEX_MISSING: run oranit');
   const index=JSON.parse(readFileSync(file,'utf8'));
   if(index.version!==1||index.kind!=='codebase-locator'||!Array.isArray(index.files))fail('INDEX_INVALID: run oranit refresh');
   return index;
 }
 function parse(argv){
-  const [action,...items]=argv;
-  if(!['init','refresh','status','locate'].includes(action))fail('Usage: oranit init|refresh|status|locate [keyword] [--workspace <directory>] [--profile claude-led|openai-led|blank] [--dry-run]');
+  const [first,...rest]=argv;
+  // Bare "oranit" bootstraps the workspace; only status/locate/refresh are subcommands.
+  const action=!first||first.startsWith('--')?'bootstrap':first;
+  const items=first?.startsWith('--')?argv:rest;
+  if(!['bootstrap','refresh','status','locate'].includes(action))fail('Usage: oranit [--workspace <directory>] [--profile claude-led|openai-led|blank] [--dry-run] | oranit status|refresh|locate [keyword] [--workspace <directory>]');
   let workspace=process.cwd(),profile='blank',dryRun=false,query;
   for(let i=0;i<items.length;i++){
     if(items[i]==='--workspace'){if(!items[i+1])fail('MISSING_WORKSPACE');workspace=items[++i];}
@@ -94,7 +97,7 @@ function parse(argv){
     else if(action==='locate'&&query===undefined&&!items[i].startsWith('--'))query=items[i];
     else fail('UNKNOWN_OPTION: '+items[i]);
   }
-  if(action!=='init'&&(profile!=='blank'||dryRun))fail('OPTIONS_FOR_INIT_ONLY');
+  if(action!=='bootstrap'&&(profile!=='blank'||dryRun))fail('OPTIONS_FOR_BOOTSTRAP_ONLY');
   if(!['blank','claude-led','openai-led'].includes(profile))fail('PROFILE_REQUIRED: blank|claude-led|openai-led');
   if(action==='locate'&&!query)fail('QUERY_REQUIRED: oranit locate "<symbol or feature>"');
   return {action,workspace,profile,dryRun,query};
@@ -119,7 +122,7 @@ function ensureIgnore(root,dryRun){
 export function execute(argv){
   const {action,workspace,profile,dryRun,query}=parse(argv);
   const root=rootOf(workspace);
-  if(action==='init'){
+  if(action==='bootstrap'){
     const assets=bundled(),created=[],preserved=[];
     // Preflight all paths before the first write.
     for(const rel of [...assets,INDEX,CONFIG,'.gitignore','AGENTS.md'])dirGuard(root,path.join(root,rel));
@@ -152,7 +155,7 @@ export function execute(argv){
       const drift=compareIndex(old,fresh);
       if(drift.stale)indexStatus='stale_preserved_run_oranit_refresh';
     }
-    return {command:'init',workspace:root,dryRun,profile:configExists?'existing_preserved':profile,
+    return {command:'oranit',workspace:root,dryRun,profile:configExists?'existing_preserved':profile,
       config:configExists?'preserved':'created_unconfirmed',index:indexStatus,filesIndexed:fresh.files.length,
       partial:fresh.partial,assetFilesCreated:dryRun?assets.filter(rel=>!existsSync(path.join(root,rel))).length:created.length,
       assetFilesPreserved:dryRun?assets.filter(rel=>existsSync(path.join(root,rel))).length:preserved.length,

@@ -12,7 +12,7 @@ description: >
 
 ## 1. Inspect before asking
 
-If model config is absent in the current workspace, initialize it alongside the code index with the separate user-invoked `oranit init` workflow (or read the neutral template for a preview). Do not assume an initialized workspace means models or providers are active.
+If model config is absent in the current workspace, initialize it alongside the code index with the separate user-invoked `oranit` workflow (or read the neutral template for a preview). Do not assume an initialized workspace means models or providers are active.
 
 - Determine the active repository root and whether `.agent-workflow/config.json`, `.agent-workflow/config.example.json`, `.agent-workflow/profiles/claude-orchestrator.json` and `.agent-workflow/profiles/openai-orchestrator.json` exist. Never assume HoroOne-specific settings.
 - Read current config **if present**; summarize its existing role mappings and `stage_preferences`. Do not print credentials, secrets or arbitrary unrelated config values.
@@ -29,7 +29,7 @@ Reuse choices already provided in this conversation or the existing config. Ask 
 
 1. **Profile**: Claude-led, OpenAI-led or custom; choose whom the user authorizes as Orchestrator. If already named, skip this question.
 2. **Runtime availability**: identify what is actually installed/available (Claude Code, Codex or another user-specified runtime); never claim availability from profile JSON.
-3. **Role mapping**: Orchestrator, Implementer and independent Reviewer; then stage-specific triage, complex implementation, HIGH_RISK review and final report. Inherit normal stages from their role unless the user explicitly wants overrides.
+3. **Role mapping**: Orchestrator, Implementer and independent Reviewer; then stage-specific triage, scoped code fixes (Terra only for OpenAI-led), visual/computer-use (Terra candidate), complex implementation, HIGH_RISK review and final report. Inherit normal stages from their role unless the user explicitly wants overrides.
 4. **Effort**: low / medium / high / xhigh / max, **only if the chosen runtime supports it**. Keep special client `Ultra` separately as `requested_mode: "ultra"`, not `reasoning.effort: "ultra"`. In the Claude-led reference preset, critical review has `effort:"max"` plus `requested_mode:"ultra"` pending runtime support.
 5. **Review independence and protected actions**: a different model label does not prove a different eligible author/session. Reviewer must be independent; HIGH_RISK also requires actual verification, acceptance evidence and protected-operation authorization.
 6. **Operation**: inspect current setup, preview a draft, or prepare a change. Do not force a write just because the command was called.
