@@ -53,17 +53,58 @@ oranit
 
 That's it. Orasqill creates a local code index and starting model candidates. It preserves existing project instructions and model settings.
 
-### Use it with your agent
+### Commands
 
-| I want to… | Claude Code | Codex |
+Use these commands in your project. Slash commands go in the agent chat; `oranit` and `node` commands go in a terminal.
+
+| Task | Claude Code | Codex |
 |---|---|---|
-| Prepare this workspace | `/oranit` | `$oranit` |
-| Choose models and review roles | `/configure-models` | `$configure-models` |
-| Plan work across agents | `/delegate-tree` | `$delegate-tree` |
+| Initialize workspace | `/oranit` | `$oranit` |
+| Configure model routing | `/configure-models` | `$configure-models` |
+| Plan nested delegation | `/delegate-tree` | `$delegate-tree` |
 
-Useful terminal commands: `oranit status` checks the index, `oranit locate "keyword"` finds candidate code, and `oranit refresh` updates the index.
+| Terminal command | What it does |
+|---|---|
+| `oranit` | Initialize shared project state and the two default agent routes |
+| `oranit --profile claude-led` | Create only the missing Claude Code route |
+| `oranit --profile openai-led` | Create only the missing Codex route |
+| `oranit --profile other` | Add an optional, empty Other Model route |
+| `oranit status` / `oranit refresh` | Check or rebuild the code index |
+| `oranit locate "keyword"` | Find candidate files and symbols |
+| `node .agent-workflow/bin/external-skills.mjs list` | List third-party Skill dependencies and their status |
+| `node .agent-workflow/bin/external-skills.mjs check-updates` | Check upstream Skill changes; does not install anything |
 
-**Using another provider?** Run `oranit --profile other` to add an optional, initially empty model route. You choose the provider, runtime, and model; Orasqill does not connect to one automatically.
+See the [Command Reference](docs/command-reference.md) for all advanced commands.
+
+### Model mapping
+
+Orasqill supplies suggested task-specific candidates. **These are not active model connections**; each agent keeps its own local routing configuration.
+
+| Work | OpenAI-led / Codex | Claude-led / Claude Code |
+|---|---|---|
+| Orchestration / planning | GPT-6.1 Sol · High | Claude Opus 5.5 · High |
+| Triage | GPT-6 Luna · Low | Claude Haiku 5.5 · Low |
+| Implementation | GPT-6.1 Sol · Medium | Claude Sonnet 5.5 · Medium |
+| Scoped code changes | GPT-6.1 Terra · High | Claude Sonnet 5.5 · Medium |
+| Complex changes | GPT-6 Astra · High | Claude Sonnet 5.5 · High |
+| Computer use / visual QA | GPT-6.1 Terra · Medium | GPT-6.1 Terra · Medium (Codex specialist) |
+| Independent review | Claude Opus 5.5 · High | GPT-6.1 Sol · XHigh |
+| High-risk review | Claude Opus 5.5 · XHigh | GPT-6.1 Sol · Max (Ultra requested) |
+| Final report | GPT-6 Luna · Low | Claude Haiku 5.5 · Low |
+
+**Other Model** starts blank with `oranit --profile other`. You choose its provider, runtime and models explicitly. See [Model Routing](docs/model-routing.md) for full stage-level settings, approvals and client-specific effort notes.
+
+### Dependencies
+
+| Dependency | Required? | Used for |
+|---|---|---|
+| Git and Node.js 20+ | **Yes** | Workspace setup and local CLI |
+| Claude Code or Codex | **For agent features** | Running Skills; other runtimes require their own compatible integration |
+| [Karpathy guidelines](https://github.com/multica-ai/andrej-karpathy-skills) | **For code-writing tasks** | Guidance for the agent actually editing code |
+| [Matt Pocock's Skills](https://github.com/mattpocock/skills) | Optional | Deep planning, TDD, review, agent documentation |
+| [Ponytail](https://github.com/dietrichgebert/ponytail) | Optional | Focused code review and audits |
+
+Third-party Skills are **not vendored or copied** with Orasqill; install required ones separately from their authors. The [dependency guide](.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md) explains activation and source verification.
 
 ### Dive deeper
 
@@ -72,7 +113,11 @@ Useful terminal commands: `oranit status` checks the index, `oranit locate "keyw
 - **[Developer Notes](docs/developer-notes.md)** — verification, troubleshooting, and external Skills.
 - **[CLI Helper Catalog](.agent-workflow/bin/README.md)** — low-level utilities and their arguments.
 
-Third-party Skills, including [Karpathy guidelines](https://github.com/multica-ai/andrej-karpathy-skills), are **not vendored or copied** with Orasqill. Read the [external dependency guide](.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md) before code-writing tasks.
+### License
+
+Orasqill is available under the [MIT License](LICENSE). You may use, modify and redistribute it, including commercially, as long as you retain the copyright and license notice. External Skills are licensed separately by their authors.
+
+**To let other people clone it from GitHub, the repository must also be made public** (or they must be granted access). It is currently private.
 
 ## AI Guide
 
