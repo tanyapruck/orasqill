@@ -139,6 +139,7 @@ test('resolve selects agent by explicit invoking runtime, independent of global 
   assert.equal(a.source,'bundled-candidate');
   assert.equal(c.executionAuthorized,false);
   assert.throws(()=>run(['resolve','guess','--workspace',dir]),/AGENT_REQUIRED/);
+  assert.throws(()=>run(['resolve','__proto__','--workspace',dir]),/AGENT_REQUIRED/);
   assert.throws(()=>run(['resolve','codex','--workspace','../','unknown']),/Usage:/);
   const child=spawnSync(process.execPath,[cli,'resolve','claude-code','--workspace',dir],{encoding:'utf8'});
   assert.equal(child.status,0,child.stderr);
