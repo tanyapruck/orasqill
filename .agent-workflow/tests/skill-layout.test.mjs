@@ -222,6 +222,7 @@ test('README has three focused guides; deep CLI docs retain all seven command ca
   const headings=landing.split(/\r?\n/).filter(line=>/^## /.test(line));
   assert.deepEqual(headings,['## Customer Guide','## Developer Guide','## AI Guide']);
   assert.ok(landing.length<7500);
+  assert.ok(landing.split(/\r?\n/).length<160);
   assert.equal((landing.match(/^\`\`\`/gm)||[]).length,2);
   assert.equal((commands.match(/^## [1-7]\. /gm)||[]).length,7);
   for(const cmd of ['/oranit','$oranit','/configure-models','$configure-models','/delegate-tree','$delegate-tree','oranit status','oranit refresh']){
