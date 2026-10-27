@@ -85,7 +85,7 @@ function readIndex(root){
 }
 function parse(argv){
   const [first,...rest]=argv;
-  // Bare "oranit" bootstraps the workspace. Explicit "init" is not a command.
+  // Bare "oranit" bootstraps the workspace; only status/locate/refresh are subcommands.
   const action=!first||first.startsWith('--')?'bootstrap':first;
   const items=first?.startsWith('--')?argv:rest;
   if(!['bootstrap','refresh','status','locate'].includes(action))fail('Usage: oranit [--workspace <directory>] [--profile claude-led|openai-led|blank] [--dry-run] | oranit status|refresh|locate [keyword] [--workspace <directory>]');
@@ -97,7 +97,7 @@ function parse(argv){
     else if(action==='locate'&&query===undefined&&!items[i].startsWith('--'))query=items[i];
     else fail('UNKNOWN_OPTION: '+items[i]);
   }
-  if(action!=='bootstrap'&&(profile!=='blank'||dryRun))fail('OPTIONS_FOR_INIT_ONLY');
+  if(action!=='bootstrap'&&(profile!=='blank'||dryRun))fail('OPTIONS_FOR_BOOTSTRAP_ONLY');
   if(!['blank','claude-led','openai-led'].includes(profile))fail('PROFILE_REQUIRED: blank|claude-led|openai-led');
   if(action==='locate'&&!query)fail('QUERY_REQUIRED: oranit locate "<symbol or feature>"');
   return {action,workspace,profile,dryRun,query};
