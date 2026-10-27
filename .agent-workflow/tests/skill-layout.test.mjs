@@ -249,7 +249,7 @@ test('public README exposes model choices, dependency commands and the MIT licen
   assert.match(readme,/Karpathy guidelines/);
   assert.match(readme,/\[MIT License\]\(LICENSE\)/);
   assert.match(readme,/repository must also be made public/);
-  assert.match(license,/^MIT License\nCopyright \(c\) 2026 tanyapruckp-pan/m);
+  assert.match(license,/^MIT License\n+Copyright \(c\) 2026 tanyapruckp-pan/m);
   assert.match(license,/Permission is hereby granted, free of charge/);
   assert.match(license,/The above copyright notice and this permission notice shall be included/);
   assert.equal(packageInfo.license,'MIT');
