@@ -101,7 +101,7 @@ test('root and install docs expose prerequisite rules without granting authority
   assert.match(entry,/grill-with-docs/);
   assert.match(setup,/per executing worker/);
   assert.match(setup,/not proof of Skill loadability/);
-  assert.match(guide,/External Skills and update tracking/);
+  assert.match(read('docs/developer-notes.md'),/External Skills and update tracking/);
   assert.match(guide,/not vendored or copied/);
 });
 
@@ -131,18 +131,20 @@ test('core is progressively disclosed but never hides plan, approval or high-ris
   assert.match(skill,/references\/DEPENDENCIES\.md/);
 });
 
-test('README uses one authoritative provenance pointer and describes complete install smoke',()=>{
-  // The README is human-facing distribution documentation, not always-loaded model context.
-  for(const section of ['## Customer Guide','## Developer Guide','## AI Guide','### Install in another Git repository','### Quick start','### Tests, limitations and sharing']) assert.ok(guide.includes(section));
+test('README is human-friendly and points to complete technical documentation',()=>{
+  const commandGuide=read('docs/command-reference.md');
+  assert.ok(guide.length<7500,'landing README must be concise');
+  assert.equal((guide.match(/^\`\`\`/gm)||[]).length,2,'show just one installation example');
+  for(const section of ['## Customer Guide','## Developer Guide','## AI Guide']) assert.ok(guide.includes(section));
+  for(const link of ['docs/command-reference.md','docs/model-routing.md','docs/developer-notes.md']) assert.ok(guide.includes(link));
   assert.equal((guide.match(/not vendored or copied/gi)||[]).length,1);
-  assert.match(guide,/external-skills\.lock\.json registry is required/);
-  assert.match(guide,/git check-ignore \.agent-workflow\/state\/install-check\/plan\.json/);
-  assert.match(guide,/Verify the installation/);
+  assert.match(commandGuide,/external-skills\.lock\.json registry is required/);
+  assert.match(commandGuide,/git check-ignore \.agent-workflow\/state\/install-check\/plan\.json/);
+  assert.match(read('docs/developer-notes.md'),/Verify the installation/);
   const entry=read('AGENTS.md');
   assert.match(entry,/\.agents\/skills\/agent-workflow-orchestrator\/SKILL\.md/);
   assert.match(entry,/\.agent-workflow\/external-skills\.lock\.json/);
 });
-
 
 test('Claude discovery description leads with the actual orchestration invocation branches',()=>{
   const adapter=read('.claude/skills/agent-workflow-orchestrator/SKILL.md');
@@ -198,7 +200,7 @@ test('configure-models is a real, explicit slash Skill with a portable Codex ent
   assert.match(setup,/\/configure-models/);
   assert.match(core,/explicit approval/);
   assert.match(core,/no models were launched/i);
-  assert.match(read('README.md'),/cp -R .*\.agents\/skills\/configure-models/);
+  assert.match(read('docs/command-reference.md'),/cp -R .*\.agents\/skills\/configure-models/);
   assert.ok(existsSync(path.join(root,'.agent-workflow/bin/model-config.mjs')));
 });
 
@@ -215,16 +217,17 @@ test('routing separation is explicit in workspace agents and model configuration
   assert.match(read('.gitignore'),/^\.agent-workflow\/routing\/$/m);
 });
 
-test('README is reader-oriented with exactly three guides and one command reference',()=>{
-  const readme=read('README.md');
-  const headings=readme.split(/\r?\n/).filter(line=>/^## /.test(line));
+test('README has three focused guides; deep CLI docs retain all seven command categories',()=>{
+  const landing=read('README.md'),commands=read('docs/command-reference.md');
+  const headings=landing.split(/\r?\n/).filter(line=>/^## /.test(line));
   assert.deepEqual(headings,['## Customer Guide','## Developer Guide','## AI Guide']);
-  const commands=readme.slice(readme.indexOf('### Command Reference'),readme.indexOf('### Model mapping'));
-  assert.equal((commands.match(/^#### [1-7]\. /gm)||[]).length,7);
+  assert.ok(landing.length<7500);
+  assert.equal((landing.match(/^\`\`\`/gm)||[]).length,2);
+  assert.equal((commands.match(/^## [1-7]\. /gm)||[]).length,7);
   for(const cmd of ['/oranit','$oranit','/configure-models','$configure-models','/delegate-tree','$delegate-tree','oranit status','oranit refresh']){
     assert.ok(commands.includes(cmd),cmd);
   }
-  assert.doesNotMatch(readme,/oranit(?:\.mjs)? init\b/);
-  assert.match(readme,/\[AGENTS\.md\]\(AGENTS\.md\)/);
-  assert.match(readme,/\[Orchestrator Skill\]\(\.agents\/skills\/agent-workflow-orchestrator\/SKILL\.md\)/);
+  assert.doesNotMatch(landing,/oranit(?:\.mjs)? init\b/);
+  assert.match(landing,/\[AGENTS\.md\]\(AGENTS\.md\)/);
+  assert.match(landing,/\[Orchestrator Skill\]\(\.agents\/skills\/agent-workflow-orchestrator\/SKILL\.md\)/);
 });
