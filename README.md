@@ -71,6 +71,7 @@ Use these commands in your project. Slash commands go in the agent chat; `oranit
 | `oranit --profile other` | Add an optional, empty Other Model route |
 | `oranit status` / `oranit refresh` | Check or rebuild the code index |
 | `oranit locate "keyword"` | Find candidate files and symbols |
+| `node .agent-workflow/bin/model-config.mjs resolve other` | Preview the optional Other Model route without launching a model |
 | `node .agent-workflow/bin/external-skills.mjs list` | List third-party Skill dependencies and their status |
 | `node .agent-workflow/bin/external-skills.mjs check-updates` | Check upstream Skill changes; does not install anything |
 
@@ -92,7 +93,7 @@ Orasqill supplies suggested task-specific candidates. **These are not active mod
 | High-risk review | Claude Opus 5.5 · XHigh | GPT-6.1 Sol · Max (Ultra requested) |
 | Final report | GPT-6 Luna · Low | Claude Haiku 5.5 · Low |
 
-**Other Model** starts blank with `oranit --profile other`. You choose its provider, runtime and models explicitly. See [Model Routing](docs/model-routing.md) for full stage-level settings, approvals and client-specific effort notes.
+**Other Model** starts blank in `.agent-workflow/routing/other.json` after `oranit --profile other`. You choose its provider, runtime and models explicitly. See [Model Routing](docs/model-routing.md) for full stage-level settings, approvals and client-specific effort notes.
 
 ### Dependencies
 
