@@ -63,6 +63,22 @@ test('cannot silently enable parallel workers',()=>{
   assert.throws(()=>validateConfiguration(p),/PARALLEL_SETUP_REQUIRED/);
 });
 
+test('optional nested candidate setup can carry explicit global parallel limit but never proves real runtime support',()=>{
+  const p=structuredClone(loadPreset('openai-orchestrator'));
+  p.setup.status='confirmed';
+  p.delegation.max_depth=2;
+  p.delegation.max_parallel_workers=3;
+  assert.throws(()=>validateConfiguration(p),/PARALLEL_SETUP_REQUIRED/);
+  p.delegation.runtime_capabilities={
+    supportsConcurrentWorkers:true,enforcesOwnership:true,enforcesIsolation:true
+  };
+  p.task_execution={mode:'bounded_parallel',max_active_child_tasks:3};
+  assert.equal(validateConfiguration(p).valid,true);
+  assert.match(validateConfiguration(p).warning,/Structural validation only/);
+  p.delegation.runtime_capabilities.enforcesIsolation=false;
+  assert.throws(()=>validateConfiguration(p),/PARALLEL_SETUP_REQUIRED/);
+});
+
 test('fails closed on unknown profiles, malformed candidates and stage routing',()=>{
   assert.throws(()=>loadPreset('../config'),/PROFILE_REQUIRED/);
   assert.throws(()=>run(['preview','../../config.json']),/PROFILE_REQUIRED/);
