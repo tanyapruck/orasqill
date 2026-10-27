@@ -84,7 +84,7 @@ See the [Command Reference](docs/command-reference.md) for all advanced commands
 
 ### Model mapping
 
-Orasqill supplies suggested task-specific candidates. **These are not active model connections**; each agent keeps its own local routing configuration.
+Orasqill supplies suggested task-specific candidates. **These are not active model connections and are not activated automatically**; each agent keeps its own local routing configuration.
 
 | Work | OpenAI-led / Codex | Claude-led / Claude Code |
 |---|---|---|
