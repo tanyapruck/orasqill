@@ -23,7 +23,7 @@ A toolkit for developers and teams who work with AI coding agents. Orasqill help
 
 1. Have **Git**, **Node.js 20+**, and access to the Orasqill repository.
 2. Open your coding project.
-3. Follow the [workspace setup commands](#1-set-up-a-workspace). The setup command is simply **`oranit`**—not `oranit init`.
+3. Follow the [workspace setup commands](#1-set-up-a-workspace). The setup command is simply **`oranit`**.
 4. Use the [agent command table](#2-commands-inside-claude-code-and-codex) to configure models or request nested delegation.
 
 On a new workspace, Orasqill prepares a code index and starting model configuration. Existing model settings and agent instructions are preserved.
@@ -276,6 +276,10 @@ Details: [Model routing and setup](.agents/skills/agent-workflow-orchestrator/re
 ### Install in another Git repository
 
 Use the [workspace setup](#1-set-up-a-workspace) commands above, or choose [manual installation](#7-manual-installation-only-when-not-using-oranit). Add Orasqill to existing project instructions without overwriting your own `AGENTS.md`.
+
+### Verify the installation
+
+After setup, use the [installation checks](#6-verify-installation-external-skills-and-tests) to confirm that Git, the local CLI and the external Skill registry are accessible.
 
 ### External Skills and update tracking
 
