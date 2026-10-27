@@ -19,7 +19,7 @@ function workspace(t){
   return dir;
 }
 
-test('oranit init bootstraps fresh workspace, code index, ignored config and all agent skills',t=>{
+test('bare oranit bootstraps fresh workspace, code index, ignored config and all agent skills',t=>{
   const dir=workspace(t);
   const r=execute(['--workspace',dir,'--profile','claude-led']);
   assert.equal(r.config,'created_unconfirmed');
@@ -55,7 +55,7 @@ test('oranit init bootstraps fresh workspace, code index, ignored config and all
   assert.equal(result.matches[0].matchedSymbols[0].line,1);
 });
 
-test('safe repeat init preserves manually edited config and index until refresh',t=>{
+test('repeated oranit preserves manually edited config and index until refresh',t=>{
   const dir=workspace(t);
   execute(['--workspace',dir,'--profile','openai-led']);
   const cfg=path.join(dir,'.agent-workflow/config.json');
@@ -149,7 +149,7 @@ test('rejects path traversal, unknown modes, and attempts to write through works
   assert.equal(existsSync(path.join(external,'config.json')),false);
 });
 
-test('bare oranit with optional flags initializes, no forced init subcommand',t=>{
+test('bare oranit with optional flags bootstraps without any required subcommand',t=>{
   const dir=workspace(t);
   const dry=spawnSync(process.execPath,[cli,'--workspace',dir,'--dry-run'],{cwd:dir,encoding:'utf8'});
   assert.equal(dry.status,0,dry.stderr);
@@ -157,7 +157,7 @@ test('bare oranit with optional flags initializes, no forced init subcommand',t=
   assert.equal(existsSync(path.join(dir,'.agent-workflow/config.json')),false);
   const result=spawnSync(process.execPath,[cli,'--workspace',dir,'--profile','openai-led'],{cwd:dir,encoding:'utf8'});
   assert.equal(result.status,0,result.stderr);
-  assert.equal(JSON.parse(result.stdout).command,'init');
+  assert.equal(JSON.parse(result.stdout).command,'oranit');
   assert.equal(JSON.parse(readFileSync(path.join(dir,'.agent-workflow/config.json'),'utf8')).setup.profile,'openai-orchestrator');
   assert.equal(execute(['status','--workspace',dir]).stale,false);
   assert.equal(execute(['locate','verifyOTP','--workspace',dir]).matches[0].path,'src/auth/otp.ts');
@@ -172,12 +172,13 @@ test('CLI entrypoint and package bin expose the literal oranit command',t=>{
   assert.equal(bin.oranit,'./.agent-workflow/bin/oranit.mjs');
   const init=spawnSync(process.execPath,[cli],{encoding:'utf8',cwd:dir});
   assert.equal(init.status,0,init.stderr);
-  assert.equal(JSON.parse(init.stdout).command,'init');
-  // Backwards compatibility: former subcommand still works without overwriting data.
-  const legacy=spawnSync(process.execPath,[cli,'init','--workspace',dir],{encoding:'utf8'});
-  assert.equal(legacy.status,0,legacy.stderr);
-  assert.equal(JSON.parse(legacy.stdout).config,'preserved');
-  assert.equal(init.status,0,init.stderr);
+  assert.equal(JSON.parse(init.stdout).command,'oranit');
+  // Explicit init is intentionally no longer a valid subcommand.
+  const rejected=spawnSync(process.execPath,[cli,'init','--workspace',dir],{encoding:'utf8'});
+  assert.equal(rejected.status,2);
+  assert.match(rejected.stderr,/Usage: oranit/);
+  assert.doesNotMatch(rejected.stderr,/Error: ENOENT/);
+  assert.equal(execute(['--workspace',dir]).config,'preserved');
   const status=spawnSync(process.execPath,[cli,'status','--workspace',dir],{encoding:'utf8'});
   assert.equal(status.status,0,status.stderr);
   assert.equal(JSON.parse(status.stdout).stale,false);
