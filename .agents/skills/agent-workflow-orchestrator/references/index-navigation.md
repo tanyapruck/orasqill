@@ -9,20 +9,20 @@ After installing the Orasqill `oranit` binary (or using the portable Node comman
 ```sh
 oranit --workspace .                           # codebase locator + unconfirmed model config
 oranit --workspace . --profile claude-led      # explicit optional routing preset
-oranit status --workspace .                          # verify index freshness
-oranit locate "verifyOTP" --workspace .             # ranked matching symbols and file paths
-oranit refresh --workspace .                         # rebuild index after code changes
+orasqill status --workspace .                          # verify index freshness
+orasqill locate "verifyOTP" --workspace .             # ranked matching symbols and file paths
+orasqill refresh --workspace .                         # rebuild index after code changes
 ```
 
-Use `node .agent-workflow/bin/oranit.mjs` instead of `oranit` if no PATH binary is installed. `oranit --dry-run` previews without writing. Initialization installs only missing, packaged Orasqill Skills/CLI/profiles and creates the local `.agent-workflow/index/codebase-map.json` and `.agent-workflow/config.json`. It preserves existing configs, Skills and agent instructions; model setup is `unconfirmed`, with no runtime enabled. Local index/config/state paths must be in `.gitignore`. Use `$configure-models` (Codex) or `/configure-models` (Claude Code) to review and separately approve personal model mappings.
+Use `node .agent-workflow/bin/oranit.mjs` only for initialization. Without a PATH binary, invoke navigation via `node .agent-workflow/bin/orasqill.mjs`. `oranit --dry-run` previews without writing. Initialization installs only missing, packaged Orasqill Skills/CLI/profiles and creates the local `.agent-workflow/index/codebase-map.json` and `.agent-workflow/config.json`. It preserves existing configs, Skills and agent instructions; model setup is `unconfirmed`, with no runtime enabled. Local index/config/state paths must be in `.gitignore`. Use `$configure-models` (Codex) or `/configure-models` (Claude Code) to review and separately approve personal model mappings.
 
 ## Before planning source changes
 
-1. Check that the requested workspace is the real intended root, then run `oranit status`. If there is no index, initialize it. If `INDEX_STALE`, run `oranit refresh`; do not trust outdated line numbers. A partial index or skipped oversized file requires a scoped fallback search.
-2. `oranit locate "<symbol or feature>"` returns a **small ranked list** of relative paths, declared symbols and approximate line numbers. It may miss dynamic calls, re-exports, generated code and routes; this indexer is intentionally heuristic, not a compiler, language server or vector database.
+1. Check that the requested workspace is the real intended root, then run `orasqill status`. If there is no index, initialize it. If `INDEX_STALE`, run `orasqill refresh`; do not trust outdated line numbers. A partial index or skipped oversized file requires a scoped fallback search.
+2. `orasqill locate "<symbol or feature>"` returns a **small ranked list** of relative paths, declared symbols and approximate line numbers. It may miss dynamic calls, re-exports, generated code and routes; this indexer is intentionally heuristic, not a compiler, language server or vector database.
 3. Read **the actual relevant files** and enough surrounding context to make a safe change (including imports, callers, related tests, dependent interfaces and configuration). Read a whole target file when necessary; do not dump unrelated directories into the model. Search locally by symbol/path if index has no match.
 4. Lock the plan as required by the canonical Orchestrator Skill. Source index data does **not** authorize scope expansion, task delegation, file edits or extra permissions. Keep the Karpathy external Skill coding prerequisite unchanged.
-5. After source changes, run relevant focused/regression tests, inspect the diff and refresh the index. Check with `oranit status`; only report it fresh if verified.
+5. After source changes, run relevant focused/regression tests, inspect the diff and refresh the index. Check with `orasqill status`; only report it fresh if verified.
 
 ## Safety and limitations
 
