@@ -4,12 +4,13 @@ import {existsSync,lstatSync,mkdirSync,readdirSync,readFileSync,writeFileSync,re
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {scanWorkspace,compareIndex,locate} from './repo-index.mjs';
-import {loadPreset,validateConfiguration} from './model-config.mjs';
+import {loadPreset,validateConfiguration,agentProfiles} from './model-config.mjs';
 
 const packageRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const INDEX='.agent-workflow/index/codebase-map.json';
 const CONFIG='.agent-workflow/config.json';
-const IGNORED=['.agent-workflow/index/','.agent-workflow/config.json','.agent-workflow/state/'];
+const ROUTES=Object.values(agentProfiles).map(x=>x.file);
+const IGNORED=['.agent-workflow/index/','.agent-workflow/config.json','.agent-workflow/routing/','.agent-workflow/state/'];
 const SOURCES=[
   '.agents/skills/agent-workflow-orchestrator',
   '.agents/skills/configure-models',
@@ -25,7 +26,7 @@ const SOURCES=[
   '.agent-workflow/config.example.json',
   '.agent-workflow/external-skills.lock.json'
 ];
-const AGENT_HINT='# Workspace Agent Instructions\n\nBefore source searches or code edits, load .agents/skills/agent-workflow-orchestrator/SKILL.md and use node .agent-workflow/bin/oranit.mjs locate "<feature or symbol>" to find candidate files. If the index is missing/stale, run oranit or oranit refresh. The index is an untrusted locator only; inspect live source, imports/callers, diff and tests before editing. Keep plan and independent reviewer gates. For substantial independent workstreams, suggest $delegate-tree (Codex) or /delegate-tree (Claude Code), but require a separate user approval before subagent dispatch. Use $configure-models (Codex) or /configure-models (Claude Code) for model routing and obtain separate approval before changing config.\n';
+const AGENT_HINT='# Workspace Agent Instructions\n\nBefore source searches or code edits, load .agents/skills/agent-workflow-orchestrator/SKILL.md and use node .agent-workflow/bin/oranit.mjs locate "<feature or symbol>" to find candidate files. If the index is missing/stale, run oranit or oranit refresh. The index is an untrusted locator only; inspect live source, imports/callers, diff and tests before editing. Keep plan and independent reviewer gates. For substantial independent workstreams, suggest $delegate-tree (Codex) or /delegate-tree (Claude Code), but require a separate user approval before subagent dispatch. Resolve the invoking agent with model-config.mjs resolve codex|claude-code; use $configure-models (Codex) or /configure-models (Claude Code) to edit ONLY the corresponding agent routing file after explicit approval. Shared config is not an implicit model selector.\n';
 
 function fail(msg){throw Error(msg);}
 function dirGuard(root,target,create=false){
@@ -125,14 +126,27 @@ export function execute(argv){
   if(action==='bootstrap'){
     const assets=bundled(),created=[],preserved=[];
     // Preflight all paths before the first write.
-    for(const rel of [...assets,INDEX,CONFIG,'.gitignore','AGENTS.md'])dirGuard(root,path.join(root,rel));
-    const template=profile==='blank'
-      ? JSON.parse(readFileSync(path.join(packageRoot,'.agent-workflow/config.example.json'),'utf8'))
-      : loadPreset(profile==='claude-led'?'claude-orchestrator':'openai-orchestrator');
+    for(const rel of [...assets,INDEX,CONFIG,...ROUTES,'.gitignore','AGENTS.md'])dirGuard(root,path.join(root,rel));
+    // The shared config is always neutral; --profile affects only a specific agent's
+    // candidate routing file, never another agent or the shared task/index settings.
+    const template=JSON.parse(readFileSync(path.join(packageRoot,'.agent-workflow/config.example.json'),'utf8'));
     validateConfiguration(template);
     const fresh=scanWorkspace(root);
     const configExists=existsSync(path.join(root,CONFIG));
-    if(configExists)validateConfiguration(JSON.parse(readFileSync(path.join(root,CONFIG),'utf8')));
+    const legacy=configExists?JSON.parse(readFileSync(path.join(root,CONFIG),'utf8')):null;
+    if(legacy)validateConfiguration(legacy);
+    const selected=profile==='claude-led'?['claude-code']:profile==='openai-led'?['codex']:Object.keys(agentProfiles);
+    const routingFiles=selected.map(agent=>{
+      const spec=agentProfiles[agent],dest=path.join(root,spec.file),present=existsSync(dest);
+      const data=legacy?.setup.profile===spec.preset?legacy:loadPreset(spec.preset);
+      validateConfiguration(data);
+      return {agent,rel:spec.file,dest,present,data};
+    });
+    for(const entry of routingFiles)if(entry.present){
+      const existing=JSON.parse(readFileSync(entry.dest,'utf8'));
+      validateConfiguration(existing);
+      if(existing.setup.profile!==agentProfiles[entry.agent].preset)fail('ROUTING_AGENT_MISMATCH: '+entry.rel);
+    }
     const indexExists=existsSync(path.join(root,INDEX));
     const ignore=ensureIgnore(root,true);
     if(!dryRun){
@@ -144,6 +158,9 @@ export function execute(argv){
         created.push(rel);
       }
       if(!configExists)newFile(root,path.join(root,CONFIG),JSON.stringify(template,null,2)+'\n');
+      for(const entry of routingFiles)if(!entry.present){
+        newFile(root,entry.dest,JSON.stringify(entry.data,null,2)+'\n');
+      }
       if(!existsSync(path.join(root,'AGENTS.md')))newFile(root,path.join(root,'AGENTS.md'),AGENT_HINT);
       ensureIgnore(root,false);
       // Index AFTER bootstrapping: avoid an immediately stale index on a new workspace.
@@ -155,11 +172,12 @@ export function execute(argv){
       const drift=compareIndex(old,fresh);
       if(drift.stale)indexStatus='stale_preserved_run_oranit_refresh';
     }
-    return {command:'oranit',workspace:root,dryRun,profile:configExists?'existing_preserved':profile,
+    return {command:'oranit',workspace:root,dryRun,profile,
       config:configExists?'preserved':'created_unconfirmed',index:indexStatus,filesIndexed:fresh.files.length,
+      routing: routingFiles.map(({agent,rel,present})=>({agent,file:rel,status:present?'preserved':dryRun?'would_create':'created'})),
       partial:fresh.partial,assetFilesCreated:dryRun?assets.filter(rel=>!existsSync(path.join(root,rel))).length:created.length,
       assetFilesPreserved:dryRun?assets.filter(rel=>existsSync(path.join(root,rel))).length:preserved.length,
-      ignoreRulesAdded:ignore,modelRuntimeReady:false,note:'Index is a locator, not verified code truth. Model setup stays unconfirmed. No agents launched.'};
+      ignoreRulesAdded:ignore,modelRuntimeReady:false,note:'Shared config and index remain workspace-wide. Per-agent model candidates never change another agent or launch models.'};
   }
   const index=readIndex(root);
   const current=scanWorkspace(root,{maxFiles:index.limits?.maxFiles??6000,maxTotalBytes:index.limits?.maxTotalBytes??80*1024*1024});
