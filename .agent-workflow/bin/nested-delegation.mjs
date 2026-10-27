@@ -48,7 +48,7 @@ export function validateNestedTree(tree,lockedPlan,platform=process.platform){
       requireOk(n.resources[key].length<=40,'SCOPE_REQUIRED: resources limit exceeded');
       for(const v of n.resources[key])resource(v);
     }
-    requireOk(Array.isArray(n.dependsOn??[])&&n.dependsOn.every(validName),
+    requireOk(Array.isArray(n.dependsOn??[])&&(n.dependsOn??[]).every(validName),
       'DEPENDENCY_REQUIRED: valid dependency IDs');
     map.set(n.id,n);
   }
