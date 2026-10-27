@@ -118,8 +118,12 @@ cp -n .agent-workflow/profiles/openai-orchestrator.json .agent-workflow/routing/
 ```powershell
 # Windows PowerShell
 New-Item -ItemType Directory -Force '.agent-workflow/routing' | Out-Null
-Copy-Item '.agent-workflow/profiles/claude-orchestrator.json' '.agent-workflow/routing/claude-code.json' -ErrorAction SilentlyContinue
-Copy-Item '.agent-workflow/profiles/openai-orchestrator.json' '.agent-workflow/routing/codex.json' -ErrorAction SilentlyContinue
+if (-not (Test-Path '.agent-workflow/routing/claude-code.json')) {
+  Copy-Item '.agent-workflow/profiles/claude-orchestrator.json' '.agent-workflow/routing/claude-code.json'
+}
+if (-not (Test-Path '.agent-workflow/routing/codex.json')) {
+  Copy-Item '.agent-workflow/profiles/openai-orchestrator.json' '.agent-workflow/routing/codex.json'
+}
 ```
 
 For an existing workspace, use the model configuration Skill in the **invoking agent**. Claude Code edits only `routing/claude-code.json`; Codex edits only `routing/codex.json` with user approval. The shared `.agent-workflow/config.json` is not a model selector. `resolve` shows candidates without activating or switching agents.
