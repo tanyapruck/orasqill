@@ -170,6 +170,20 @@ test('core lifecycle commands include mandatory task IDs',()=>{
   assert.match(read('.agent-workflow/bin/README.md'),/verify-reference <id>/);
 });
 
+test('nested delegation is independently invokable and optionally suggested without auto-dispatch',()=>{
+  const canonical=read('.agents/skills/delegate-tree/SKILL.md');
+  const claude=read('.claude/skills/delegate-tree/SKILL.md');
+  const ref=read('.agents/skills/agent-workflow-orchestrator/references/delegation.md');
+  const entry=read('AGENTS.md');
+  assert.match(canonical,/^---\nname: delegate-tree/m);
+  assert.match(claude,/^---\nname: delegate-tree/m);
+  assert.match(canonical,/Recommend bounded nested orchestration/);
+  assert.match(ref,/Root.*Child Orchestrator.*Worker/);
+  assert.match(entry,/suggest.*\$delegate-tree/);
+  assert.match(guide,/\/delegate-tree/);
+  assert.ok(existsSync(path.join(root,'.agent-workflow/bin/nested-delegation.mjs')));
+});
+
 test('configure-models is a real, explicit slash Skill with a portable Codex entry',()=>{
   const core=read('.agents/skills/configure-models/SKILL.md');
   const shim=read('.claude/skills/configure-models/SKILL.md');
