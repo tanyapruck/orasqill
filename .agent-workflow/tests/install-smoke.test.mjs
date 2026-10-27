@@ -36,6 +36,8 @@ function destination(t) {
     path.join(dir, '.agent-workflow/bin'), { recursive: true });
   cpSync(path.join(source, '.agent-workflow/external-skills.lock.json'),
     path.join(dir, '.agent-workflow/external-skills.lock.json'));
+  cpSync(path.join(source, '.agent-workflow/LICENSE.orasqill.txt'),
+    path.join(dir, '.agent-workflow/LICENSE.orasqill.txt'));
   cpSync(path.join(source, '.agent-workflow/config.example.json'),
     path.join(dir, '.agent-workflow/config.example.json'));
   cpSync(path.join(source, '.agent-workflow/profiles'),
@@ -54,6 +56,8 @@ test('developer command reference documents manual install, helpers, registry an
   assert.match(commandGuide, /\.claude\/skills\/configure-models/);
   assert.match(commandGuide, /cp -R .*\.agent-workflow\/bin/);
   assert.match(commandGuide, /cp .*\.agent-workflow\/external-skills\.lock\.json/);
+  assert.match(commandGuide, /cp -n .*\.agent-workflow\/LICENSE\.orasqill\.txt/);
+  assert.match(commandGuide, /Copy-Item .*\.agent-workflow\\LICENSE\.orasqill\.txt/);
   assert.match(commandGuide, /cp .*\.agent-workflow\/config\.example\.json/);
   assert.match(commandGuide, /cp -R .*\.agent-workflow\/profiles/);
   assert.match(commandGuide, /\.agent-workflow\/state\//);
@@ -83,6 +87,10 @@ test('fresh destination can list source-pinned third-party skills without applic
   assert.ok(existsSync(path.join(dest, '.agent-workflow/examples/nested-tree.example.json')));
   assert.ok(existsSync(path.join(dest, '.claude/skills/oranit/SKILL.md')));
   assert.ok(existsSync(path.join(dest, '.agent-workflow/bin/oranit.mjs')));
+  assert.equal(
+    readFileSync(path.join(dest,'.agent-workflow/LICENSE.orasqill.txt'),'utf8'),
+    readFileSync(path.join(source,'LICENSE'),'utf8')
+  );
   assert.ok(existsSync(path.join(dest, '.claude/skills/configure-models/SKILL.md')));
   const presetResult=JSON.parse(execFileSync(process.execPath,['.agent-workflow/bin/model-config.mjs','preview','claude-orchestrator'],{cwd:dest,encoding:'utf8'}));
   assert.equal(presetResult.validation.valid,true);
