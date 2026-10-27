@@ -33,5 +33,5 @@ You can customize model/effort assignments per agent. Bundled profiles are sugge
 
 The agent-local profiles default to `setup.status = "unconfirmed"` until you configure each runtime. If an existing workspace has a legacy Claude-led (or OpenAI-led) shared config, `oranit` preserves it; the corresponding agent can retain its matching mapping without changing the other agent. Terra is a specialist for scoped implementation in OpenAI-led mode and for computer-use tasks in either mode. In the Claude-led high-risk reviewer profile, Ultra is a *requested client mode*, not an API effort level.
 
-Details: [Model routing and setup](skills/agent-workflow-orchestrator/references/setup-routing.md).
+Details: [Model routing and setup](../.agents/skills/agent-workflow-orchestrator/references/setup-routing.md).
 
