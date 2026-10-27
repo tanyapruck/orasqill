@@ -52,6 +52,10 @@ test('oranit executable refuses navigation while orasqill navigates the index',a
   const removedConfigure=spawnSync(process.execPath,[orasqill,'--configure','--workspace',dir],{encoding:'utf8'});
   assert.equal(removedConfigure.status,2);
   assert.match(removedConfigure.stderr,/UNKNOWN_COMMAND/);
+  const help=spawnSync(process.execPath,[orasqill,'help'],{encoding:'utf8'});
+  assert.equal(help.status,0,help.stderr);
+  assert.match(help.stdout,/orasqill configure/);
+  assert.doesNotMatch(help.stdout,/orasqill init|orasqill --configure/);
   const setup=spawnSync(process.execPath,[oranit,'--workspace',dir],{encoding:'utf8'});
   assert.equal(setup.status,0,setup.stderr);
   for(const subcommand of ['status','refresh','locate']){
@@ -86,8 +90,9 @@ test('configure preview, explicit confirmation and agent-isolation',async t=>{
   });
   assert.equal(denied.written,false);
   assert.equal(readFileSync(target,'utf8'),original);
-  const accepted=await configureRouting(['--workspace',dir,'--agent','codex'],{
-    ask:scripted(['orchestrator','','gpt-6.1-sol-alternative','high','done','yes'])
+  const accepted=await run(['configure','--workspace',dir,'--agent','codex'],{
+    ask:scripted(['orchestrator','','gpt-6.1-sol-alternative','high','done','yes']),
+    print:()=>{}
   });
   assert.equal(accepted.written,true);
   const changed=JSON.parse(readFileSync(target,'utf8'));
