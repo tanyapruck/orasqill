@@ -16,7 +16,7 @@ export function parseConfigureArgs(argv){
   for(let i=0;i<argv.length;i++){
     if(argv[i]==='--workspace'){ensure(safeText(argv[i+1]),'WORKSPACE_REQUIRED: supply a workspace directory');workspace=argv[++i];}
     else if(argv[i]==='--agent'){ensure(Object.hasOwn(agentProfiles,argv[i+1]),'AGENT_REQUIRED: claude-code|codex|other');agent=argv[++i];}
-    else throw Error('Usage: orasqill oranit --configure [--agent claude-code|codex|other] [--workspace <directory>]');
+    else throw Error('Usage: orasqill --configure [--agent claude-code|codex|other] [--workspace <directory>]');
   }
   return {workspace,agent};
 }
