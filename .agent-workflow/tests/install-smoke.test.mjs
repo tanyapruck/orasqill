@@ -62,8 +62,8 @@ test('developer command reference documents manual install, helpers, registry an
   assert.match(commandGuide, /cp -R .*\.agent-workflow\/profiles/);
   assert.match(commandGuide, /\.agent-workflow\/state\//);
   assert.match(commandGuide, /\.agent-workflow\/routing\//);
-  assert.match(commandGuide, /model-config\.mjs resolve claude-code/);
-  assert.match(commandGuide, /model-config\.mjs resolve codex/);
+  assert.match(commandGuide, /orasqill models resolve claude-code/);
+  assert.match(commandGuide, /orasqill models resolve codex/);
   assert.match(commandGuide, /git check-ignore \.agent-workflow\/state\/install-check\/plan\.json/);
   assert.match(commandGuide, /merge.*\.gitignore|add.*\.gitignore/i);
 });
