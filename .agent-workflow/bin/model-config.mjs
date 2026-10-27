@@ -89,8 +89,8 @@ function readConfig(file){
  * Missing routes use the matching legacy profile only, otherwise the built-in unconfirmed preset.
  * Source files and candidate values remain read-only; this never switches the actual model. */
 export function resolveAgentRouting(agent, workspace=process.cwd()){
+  requireValid(Object.hasOwn(agentProfiles,agent),'AGENT_REQUIRED: explicit claude-code or codex identity required');
   const spec=agentProfiles[agent];
-  requireValid(spec,'AGENT_REQUIRED: explicit claude-code or codex identity required');
   const rootDir=path.resolve(workspace);
   requireValid(existsSync(rootDir)&&lstatSync(rootDir).isDirectory()&&!lstatSync(rootDir).isSymbolicLink(),
     'WORKSPACE_REQUIRED: real directory required');
