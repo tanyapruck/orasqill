@@ -99,7 +99,8 @@ test('OpenAI-led profile uses Codex for planning and Claude for independent revi
 
 test('portable install documentation copies both profiles without enabling runtime access',()=>{
   const read=p=>readFileSync(path.join(root,p),'utf8');
-  const guide=read('README.md');
+  const guide=read('docs/command-reference.md');
+  const summary=read('docs/model-routing.md');
   const setup=read('.agents/skills/agent-workflow-orchestrator/references/setup-routing.md');
   const ignore=read('.gitignore');
   for(const name of profiles){
@@ -108,7 +109,7 @@ test('portable install documentation copies both profiles without enabling runti
   }
   assert.match(guide,/cp -R .*\.agent-workflow\/profiles/);
   assert.match(guide,/Copy-Item -Recurse .*\.agent-workflow\\profiles/);
-  assert.match(guide,/setup\.status = "unconfirmed"/);
+  assert.match(summary,/setup\.status = "unconfirmed"/);
   assert.match(setup,/never.*launch|not a runtime dispatcher/i);
   assert.match(ignore,/^\.agent-workflow\/config\.json$/m);
   assert.match(ignore,/^\.agent-workflow\/routing\/$/m);
