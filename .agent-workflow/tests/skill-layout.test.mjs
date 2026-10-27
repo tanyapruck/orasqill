@@ -201,3 +201,17 @@ test('configure-models is a real, explicit slash Skill with a portable Codex ent
   assert.match(read('README.md'),/cp -R .*\.agents\/skills\/configure-models/);
   assert.ok(existsSync(path.join(root,'.agent-workflow/bin/model-config.mjs')));
 });
+
+test('README is reader-oriented with exactly three guides and one command reference',()=>{
+  const readme=read('README.md');
+  const headings=readme.split(/\r?\n/).filter(line=>/^## /.test(line));
+  assert.deepEqual(headings,['## Customer Guide','## Developer Guide','## AI Guide']);
+  const commands=readme.slice(readme.indexOf('### Command Reference'),readme.indexOf('### Model mapping'));
+  assert.equal((commands.match(/^#### [1-7]\. /gm)||[]).length,7);
+  for(const cmd of ['/oranit','$oranit','/configure-models','$configure-models','/delegate-tree','$delegate-tree','oranit status','oranit refresh']){
+    assert.ok(commands.includes(cmd),cmd);
+  }
+  assert.doesNotMatch(readme,/oranit(?:\.mjs)? init\b/);
+  assert.match(readme,/\[AGENTS\.md\]\(AGENTS\.md\)/);
+  assert.match(readme,/\[Orchestrator Skill\]\(\.agents\/skills\/agent-workflow-orchestrator\/SKILL\.md\)/);
+});
