@@ -8,7 +8,7 @@ description: >
 
 # Configure Models — interactive routing interview
 
-**This is an opt-in configuration assistant, not an agent launcher.** Run only after the user invokes this Skill or explicitly asks to configure mapping. A Slash/Skill call **starts an interview**, not permission to write config, enable workers, change accounts, switch runtimes, or merge code.
+**This is an opt-in configuration assistant, not an agent launcher.** The terminal equivalent is `orasqill oranit --configure`, with explicit approval before any routing file write. Run only after the user invokes this Skill or explicitly asks to configure mapping. A Slash/Skill call **starts an interview**, not permission to write config, enable workers, change accounts, switch runtimes, or merge code.
 
 ## 1. Inspect before asking
 
@@ -18,10 +18,10 @@ If model config is absent in the current workspace, initialize it alongside the 
 - Read the invoking agent's resolved route (prefer the agent-local file, otherwise a matching legacy config or matching bundled preset). Do not take the other agent's route as the default. Summarize relevant role mappings and `stage_preferences`, not credentials or unrelated settings.
 - Read `.agents/skills/agent-workflow-orchestrator/references/setup-routing.md` when available, especially the Ultra vs API effort distinction.
 - Optional read-only commands:
-  - `node .agent-workflow/bin/model-config.mjs preview claude-orchestrator`
-  - `node .agent-workflow/bin/model-config.mjs preview openai-orchestrator`
-  - `node .agent-workflow/bin/model-config.mjs validate .agent-workflow/config.json`
-  - `node .agent-workflow/bin/model-config.mjs resolve claude-code|codex|other --workspace .` (choose exactly one; `other` requires explicit user selection)
+  - `orasqill models preview claude-orchestrator`
+  - `orasqill models preview openai-orchestrator`
+  - `orasqill models validate .agent-workflow/config.json`
+  - `orasqill models resolve claude-code|codex|other --workspace .` (choose exactly one; `other` requires explicit user selection)
 - Missing prerequisites: explain `SETUP_REQUIRED` and the install instructions; do not guess file contents or write into an unknown repo.
 
 ## 2. Interview, one decision at a time
@@ -49,7 +49,7 @@ Do not grill for already-known facts, ask unrelated preferences, or invent a mod
 ## 4. Apply only after approval; verify honestly
 
 - Write only the **approved agent-local** `.agent-workflow/routing/claude-code.json`, `.agent-workflow/routing/codex.json`, or `.agent-workflow/routing/other.json` in the verified workspace. Do not edit the other agent's mapping, shared config or checked-in example/presets.
-- Validate with `node .agent-workflow/bin/model-config.mjs validate .agent-workflow/routing/<agent>.json`; then preview the **same agent** using `model-config.mjs resolve <agent> --workspace .`. If invalid, stop. Validation is structural only; independently check model access, effort and Skill readiness.
+- Validate with `orasqill models validate .agent-workflow/routing/<agent>.json`; then preview the **same agent** using `orasqill models resolve <agent> --workspace .`. If invalid, stop. Validation is structural only; independently check model access, effort and Skill readiness.
 - Provide a final mapping summary, the file path (or no-write state), remaining `SETUP_REQUIRED` items, and explicit fact that **no models were launched and no runtime mapping was activated** merely by creating JSON.
 - Configuration edits are not permission to commit, push, merge, deploy, or start workers.
 
