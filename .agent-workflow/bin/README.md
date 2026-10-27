@@ -14,11 +14,11 @@ All helpers use built-in Node.js modules and Git. They operate on the **current 
 - `manual-handoff.mjs export|finish|checkpoint|start <task-id> ...` — legacy/manual checkpoint commands; direct finish cannot bypass a locked plan.
 - `task-planner.mjs <scheduler-tasks.json> [--locked-plan <.agent-workflow/state/task-id/plan.json>]` — output an **advisory** schedule; the scheduler `tasks` graph is NOT the locked ledger’s `steps` schema. Use `--locked-plan` to reject tasks not mapped to distinct pending Plan step IDs and exact objectives, to block skipped pending steps, and to require explicit dependencies matching the locked step order. Task risk flags must be recognized; unknown flags fail closed. See `.agent-workflow/examples/task-plan.example.json`. Does not run workers or enforce ownership.
 
-- `node .agent-workflow/bin/model-config.mjs preview claude-orchestrator|openai-orchestrator` — **read-only** inspect a proposed profile; no model launched or file written.
-- `node .agent-workflow/bin/model-config.mjs resolve claude-code|codex [--workspace <dir>]` — read-only, selects **only the verified invoking agent's** local route (with matching legacy or bundled fallback); does not switch models.
+- `node .agent-workflow/bin/model-config.mjs preview claude-orchestrator|openai-orchestrator|other-orchestrator` — **read-only** inspect a proposed profile; no model launched or file written.
+- `node .agent-workflow/bin/model-config.mjs resolve claude-code|codex|other [--workspace <dir>]` — read-only, selects **only the verified invoking agent's** local route (with matching legacy or bundled fallback); does not switch models.
 - `node .agent-workflow/bin/model-config.mjs validate .agent-workflow/config.json` — **read-only** structural check for a user-approved local model mapping; not proof of available models, permissions or runtime setup. The separate `$configure-models` / `/configure-models` Skill conducts an opt-in interview and requires explicit approval before writing.
 
-- `oranit [--workspace <dir>] [--profile blank|claude-led|openai-led] [--dry-run]` — safe workspace bootstrap: shared neutral config and code index, plus two independent agent-local routes by default; `--profile` creates only that agent's missing route. Node alternative: `node .agent-workflow/bin/oranit.mjs`.
+- `oranit [--workspace <dir>] [--profile blank|claude-led|openai-led|other] [--dry-run]` — safe workspace bootstrap: shared neutral config and code index, plus two independent agent-local routes by default; `--profile other` optionally creates a third empty custom-model route without changing Claude or Codex. Node alternative: `node .agent-workflow/bin/oranit.mjs`.
 - `oranit status|refresh [--workspace <dir>]` — detect code/index drift and refresh generated locator, never model config.
 - `oranit locate "<symbol-or-feature>" [--workspace <dir>]` — ranked path/line hints only, stale index blocks navigation; inspect live source.
 
