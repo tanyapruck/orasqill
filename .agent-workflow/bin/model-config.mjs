@@ -39,7 +39,8 @@ export function validateConfiguration(config) {
   }
   if(config.delegation){
     const d=config.delegation;
-    requireValid(object(d)&&Number.isSafeInteger(d.max_depth)&&d.max_depth>=1&&d.max_depth<=6&&
+    const depth=d.max_depth??1; // Historical user configs without this optional field remain valid.
+    requireValid(object(d)&&Number.isSafeInteger(depth)&&depth>=1&&depth<=6&&
       Number.isSafeInteger(d.max_parallel_workers)&&d.max_parallel_workers>=1&&d.max_parallel_workers<=16,
       'DELEGATION_REQUIRED: depth 1-6 and workers 1-16 required');
     if(d.max_parallel_workers>1){
