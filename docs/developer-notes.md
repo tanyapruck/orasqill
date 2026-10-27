@@ -28,7 +28,7 @@ After creating an agreed plan, see the [Plan Ledger example](command-reference.m
 
 | Problem | Check |
 |---|---|
-| Command not found | Link `oranit` or use the Node.js entrypoint |
+| Command not found | Re-run `npm link` in the Orasqill source checkout; initialize using `oranit`, and use `orasqill` for utilities |
 | Index is out of date | Refresh the code index |
 | Model cannot be selected | Check actual provider support |
 | Task cannot be closed | Review outstanding steps and acceptance checks |
