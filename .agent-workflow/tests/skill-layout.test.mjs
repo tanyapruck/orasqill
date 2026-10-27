@@ -229,6 +229,12 @@ test('README has three focused guides; deep CLI docs retain all seven command ca
     assert.ok(commands.includes(cmd),cmd);
   }
   assert.doesNotMatch(landing,/oranit(?:\.mjs)? init\b/);
+  assert.match(landing,/orasqill configure/);
+  assert.doesNotMatch(landing,/orasqill init|orasqill --configure/);
+  for(const guide of ['docs/command-reference.md','docs/model-routing.md']){
+    assert.match(read(guide),/orasqill configure/);
+    assert.doesNotMatch(read(guide),/orasqill init|orasqill --configure/);
+  }
   assert.match(landing,/\[AGENTS\.md\]\(AGENTS\.md\)/);
   assert.match(landing,/\[Orchestrator Skill\]\(\.agents\/skills\/agent-workflow-orchestrator\/SKILL\.md\)/);
 });
