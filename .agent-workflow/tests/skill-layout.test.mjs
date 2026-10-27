@@ -232,3 +232,26 @@ test('README has three focused guides; deep CLI docs retain all seven command ca
   assert.match(landing,/\[AGENTS\.md\]\(AGENTS\.md\)/);
   assert.match(landing,/\[Orchestrator Skill\]\(\.agents\/skills\/agent-workflow-orchestrator\/SKILL\.md\)/);
 });
+
+test('public README exposes model choices, dependency commands and the MIT license',()=>{
+  const readme=read('README.md');
+  const license=read('LICENSE');
+  const packageInfo=JSON.parse(read('package.json'));
+  assert.match(readme,/### Model mapping/);
+  for(const model of ['GPT-6.1 Sol','GPT-6.1 Terra','GPT-6 Astra','Claude Opus 5.5','Claude Sonnet 5.5']){
+    assert.ok(readme.includes(model),model);
+  }
+  for(const command of ['oranit status','oranit refresh','oranit locate "keyword"',
+    'external-skills.mjs list','external-skills.mjs check-updates']){
+    assert.ok(readme.includes(command),command);
+  }
+  assert.match(readme,/### Dependencies/);
+  assert.match(readme,/Karpathy guidelines/);
+  assert.match(readme,/\[MIT License\]\(LICENSE\)/);
+  assert.match(readme,/repository must also be made public/);
+  assert.match(license,/^MIT License\nCopyright \(c\) 2026 tanyapruckp-pan/m);
+  assert.match(license,/Permission is hereby granted, free of charge/);
+  assert.match(license,/The above copyright notice and this permission notice shall be included/);
+  assert.equal(packageInfo.license,'MIT');
+  assert.equal(packageInfo.private,true);
+});
