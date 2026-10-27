@@ -16,9 +16,9 @@ const commands=Object.freeze({
   schedule:'task-planner.mjs'
 });
 const usage=`Orasqill commands:
-  oranit [--profile blank|claude-led|openai-led|other] [--workspace <dir>] [--dry-run]  Initialize only (short for orasqill init)
+  oranit [--profile blank|claude-led|openai-led|other] [--workspace <dir>] [--dry-run]  Initialize workspace
   orasqill status|locate "keyword"|refresh [--workspace <dir>]
-  orasqill --configure [--agent claude-code|codex|other] [--workspace <dir>]
+  orasqill configure [--agent claude-code|codex|other] [--workspace <dir>]
   orasqill models preview|resolve|validate ...
   orasqill deps list|check-updates|verify-file|verify-reference ...
   orasqill plan|handoff|delegate|schedule <helper-arguments>
@@ -32,13 +32,8 @@ export function parseCommand(argv){
     if(args.length)throw Error('UNKNOWN_OPTION: help has no options');
     return {command:'help',args:[]};
   }
-  if(command==='init'){
-    if(args.includes('--configure')||(args[0]&&!args[0].startsWith('--')))
-      throw Error('INIT_ONLY: orasqill init (or oranit) only initializes workspaces');
-    return {command:'init',args};
-  }
   if(['status','locate','refresh'].includes(command))return {command:'navigation',args:[command,...args]};
-  if(command==='--configure')return {command:'configure',args};
+  if(command==='configure')return {command:'configure',args};
   if(command==='oranit')throw Error('INIT_ONLY: use the standalone oranit command for workspace initialization');
   if(Object.hasOwn(commands,command))return {command:'helper',tool:commands[command],args};
   throw Error('UNKNOWN_COMMAND: '+command+'\n'+usage);
@@ -47,7 +42,7 @@ export function parseCommand(argv){
 export async function run(argv,options={}){
   const parsed=parseCommand(argv);
   if(parsed.command==='help')return {help:usage};
-  if(parsed.command==='init'||parsed.command==='navigation')return execute(parsed.args);
+  if(parsed.command==='navigation')return execute(parsed.args);
   if(parsed.command==='configure')return await configureRouting(parsed.args,options);
   // No shell, no string evaluation; only allowlisted bundled helpers.
   if(options.spawn){
