@@ -247,18 +247,15 @@ The index is a **locator, not verified code truth**. On missing or stale indexes
 
 Follow the [verification commands](#6-verify-installation-external-skills-and-tests) in the destination repository. An installed provenance registry does **not** prove an external Skill was loaded into the agent. If any check fails, fix the repository, registry or ignore rules before proceeding.
 
+## Model mapping and effort profiles
+
 ### Interactive Model Mapping Skill (recommended)
 
-Instead of manually editing JSON, invoke the opt-in, user-controlled setup interview **after installing the Skill**:
-
-See the [agent command table](#2-commands-inside-claude-code-and-codex) for both runtimes.
+Use the [agent Skill commands](#2-commands-inside-claude-code-and-codex) to choose Claude-led, OpenAI-led or custom model assignments instead of editing JSON manually.
 
 The Skill reads existing configuration and the two saved profiles, asks one consequential question at a time only where details are missing, then shows **Before → After** for every changed role and effort. It does **not** auto-write: invoking the command only begins the interview. It must ask for explicit confirmation before saving `.agent-workflow/config.json`. The file remains `setup.status = "unconfirmed"` until *actual* runtime/model support, user authorization and required external Skills have been checked. Review independence and HIGH_RISK gates are unchanged.
 
-[Read-only profile preview and validation commands](#3-inspect-model-config-read-only):
-
-
-The preview and validation commands never write config, launch models, install external Skills, or change Git state. Structural validation does **not** verify that the named models or client-specific modes are actually available.
+Use the [read-only profile preview and validation commands](#3-inspect-model-config-read-only). These commands never write config, launch models, install external Skills, or change Git state. Structural validation does **not** verify that the named models or client-specific modes are actually available.
 
 ### Choose the model and effort profile
 
@@ -276,15 +273,19 @@ Two included **suggested** profiles are available after installation. This only 
 | HIGH_RISK review | Claude Opus 5.5 — xhigh | GPT-6.1 Sol — Ultra (requested review mode; API effort max) |
 | Final report | GPT-6 Luna — low | Claude Haiku 5.5 — low |
 
-To apply a preset without overwriting an existing user config, follow the [profile-selection commands](#3-inspect-model-config-read-only), or use the interactive Skill.
+To apply a preset without overwriting an existing config, follow the [profile-selection commands](#3-inspect-model-config-read-only), or use the interactive Skill.
 
+**Why Terra is selective:**
 
+- **OpenAI-led:** Terra handles small, scoped code changes (`scoped_implement`) and visual/computer-use tasks (`computer_use`). Sol remains the main Implementer; Astra keeps complex implementation.
+- **Claude-led:** Claude Sonnet remains the code Implementer. Terra is a Codex specialist for computer-use tasks only, requiring an explicitly authorized cross-provider handoff.
+- **Both:** Luna/Haiku retain inexpensive triage/reporting; independent reviewers are unchanged. Escalate uncertain cross-service, security-sensitive or repeatedly failing tasks rather than silently switching models.
 
-**Terra routing decision:** GPT-6.1 Terra (`gpt-6.1-terra`) is used selectively for **small, scoped, testable code changes** in OpenAI-led workflows and **screen-based UI / computer-use tasks** in either profile. The main Implementer remains Sol (OpenAI-led) or Claude Sonnet (Claude-led); architecture/complex implementation and independent review stay with the more capable assigned models. Luna remains assigned to fast, inexpensive triage and reporting. Escalate a Terra assignment back to the authorized Implementer when changes span services or involve unknown dependencies, security-sensitive logic or repeated failed validations—do not silently switch models. A dedicated `scoped_implement` stage and `computer_use` stage are optional suggested routes and do **not** automatically dispatch agents or override the plan. On the Claude-led preset, choosing the Codex-based `computer_use` stage is a **cross-provider handoff** and needs explicit approval and verified access; it is not the Claude code Implementer. Official model docs: [Terra](https://developers.openai.com/api/docs/models/gpt-6.1-terra), [model-selection guide](https://developers.openai.com/api/docs/guides/model-selection). Its standard API token price is lower than Sol's, but end-to-end costs and coding quality depend on the task.
+These stages are suggestions, **not an automatic dispatcher**. See the official [Terra model details](https://developers.openai.com/api/docs/models/gpt-6.1-terra) and [model-selection guide](https://developers.openai.com/api/docs/guides/model-selection). API token cost may be lower, but actual cost and quality depend on the task.
 
 All sample profiles keep `setup.status = "unconfirmed"`, empty runtime/worker registrations, `automatic_switching = false`, and a single sequential worker. The `stage_preferences` entries are recommendations, not executable dispatch rules; a stage with only `role` inherits that role's preferred candidate. Each actual runtime, model/effort control, access and required external Skill **must be verified in its executing environment** and approved before marking setup confirmed. Cross-provider handoff remains manual and independent review is a separate eligible agent/session, not just another model label.
 
-For the Claude-led profile, `critical_review` requests **Ultra** via `requested_mode: "ultra"` and separately specifies **`effort: "max"`** as a valid API reasoning level for GPT-6.1 Sol. Ultra is **not** an OpenAI API `reasoning.effort` value: in supported Codex clients it is a distinct subagent-based mode. This is an explicit **request for runtime selection**, not an active Ultra session; it must be verified and selected by an authorized user. If Ultra is not supported by the actual client, report `SETUP_REQUIRED` and ask for an alternative rather than silently treating Max as Ultra. In particular, the preset still permits **only one sequential worker**, and never dispatches a subagent merely because `requested_mode` is present. Independent review still requires a truly separate agent/session from the work being reviewed.
+**Ultra is not an API effort value.** The Claude-led HIGH_RISK reviewer uses `effort: "max"` and separately records `requested_mode: "ultra"` for supported Codex clients. An authorized user must verify and select that client mode; otherwise report `SETUP_REQUIRED` rather than silently substituting Max. The preset still allows only one sequential worker, launches no subagents, and requires an actually independent reviewer.
 
 Provider model identifiers and effort options should be checked against [Anthropic's models](https://platform.claude.com/docs/en/models/overview), [Anthropic effort levels](https://platform.claude.com/docs/en/build-with-claude/effort) and [OpenAI's models](https://developers.openai.com/api/docs/models). These API IDs may not be directly selectable in every Codex/Claude Code interface. Details: [routing and setup](.agents/skills/agent-workflow-orchestrator/references/setup-routing.md).
 
@@ -304,7 +305,6 @@ Use the [Finding command](#4-plan-ledger-execute-and-review-an-approved-task). N
 
 Authentication, payments, security, migrations, destructive or production changes require separate protected-action permission and a genuinely **independent eligible reviewer**. Use the [independent-review command](#4-plan-ledger-execute-and-review-an-approved-task) only after an actual review. A typed reviewer name does *not* prove independence. Missing or failed review blocks `HIGH_RISK` completion. See [review gates](.agents/skills/agent-workflow-orchestrator/references/review-validation.md).
 
-
 ## Nested Orchestration: delegate a task tree
 
 **`$delegate-tree`** (Codex) or **`/delegate-tree`** (Claude Code) starts an opt-in hierarchical delegation workflow. The agent may also **recommend it** for an approved large task containing substantial independent components; it must show the scope/benefit and request approval before any real worker is spawned. For small or tightly coupled changes, use the ordinary single-agent path.
@@ -320,7 +320,6 @@ Root Integration → Acceptance → Independent HIGH_RISK Review → Close
 ```
 
 The checked-in example `.agent-workflow/examples/nested-tree.example.json` is a template; adapt `rootTaskId`, `planStepId`, and the root objective **exactly** to the next pending step in your `plan-ledger` file before using the [read-only nested delegation commands](#5-nested-delegation-task-scheduling-and-handoffs).
-
 
 Add `--config .agent-workflow/config.json` to compare requested and configured depth/capacity. Both commands are **read-only** and return a proposal with `readyToDispatch:false`, `agentsLaunched:0`, and reasons to stop. They never launch subagents or grant approval. The default profile remains **one sequential worker at delegation depth 1**. Depth 2 and higher global concurrency are **opt-in**: the chosen client must actually support subagents, enforce file ownership/isolation and global caps, load required coding Skills in every worker, and receive explicit user permission. Even a `confirmed` config is not proof those conditions hold in a particular session.
 
@@ -342,7 +341,6 @@ Install the Claude command adapter into the destination workspace's `.claude/ski
 
 Ponytail's session-wide coding mode is **opt-in only**, not automatically combined with required Karpathy rules. External Skill instructions, licenses, install methods and upgrades remain the responsibility of their respective upstream owners.
 
-
 The [external Skill commands](#6-verify-installation-external-skills-and-tests) are read-only: no installs, copying, upgrades or agent launches. The lockfile records upstream repository commits, per-Skill blob SHAs and separately pinned reference-file SHAs **for traceability**, not proof of what a particular agent actually loaded. When authoring agent Skills with Matt's original `writing-for-agents`, load its sibling `SKILL-MECHANICS.md` as well. See [dependency activation and verification](.agents/skills/agent-workflow-orchestrator/references/DEPENDENCIES.md).
 
 ## Troubleshooting
@@ -362,7 +360,6 @@ The [external Skill commands](#6-verify-installation-external-skills-and-tests) 
 ## Tests, limitations and sharing
 
 Run the [test command](#6-verify-installation-external-skills-and-tests) in the **Orasqill source checkout** (a minimal consumer installation does not copy test files).
-
 
 The test suite exercises Git-backed checkpoints, completion gates, external-source tracking and fresh destination installation. Tests run without model API keys. The package targets Node.js 20+ and Git; Linux/Windows automation is configured but a successful workflow is **not** asserted merely because local tests pass.
 
