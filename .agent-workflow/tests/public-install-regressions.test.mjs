@@ -29,7 +29,7 @@ test('deps command works through the facade and its direct entrypoint',()=>{
   ]){
     const result=spawnSync(process.execPath,argv,{cwd:repo,encoding:'utf8'});
     assert.equal(result.status,0,result.stderr);
-    assert.match(result.stdout,/[a-z-]+\\t/, 'expected dependency metadata');
+    assert.match(result.stdout,/karpathy-guidelines\t/, 'expected dependency metadata');
   }
 });
 test('global plan command writes only to the current initialized project',t=>{
