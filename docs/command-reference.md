@@ -25,6 +25,9 @@ oranit
 | `oranit --profile other` | Create an **optional Other Model** route with no model selected |
 | `oranit --workspace /path/to/project` | Target a particular workspace |
 | `oranit --dry-run` | Preview initialization without writing files |
+| `orasqill install-commands` | Install user-level Claude/Codex invokable Skills; existing different files remain unchanged |
+| `orasqill install-commands --dry-run` | Preview without changing user files |
+| `orasqill install-commands --refresh` | Explicitly update existing installed user Skills |
 | `orasqill configure` | Interactive mapping interview with preview, explicit approval and per-agent write |
 | `orasqill --help` | List supported commands |
 | `orasqill status` | Check whether the index matches current source |
