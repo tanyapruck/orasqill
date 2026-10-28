@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 export function projectRepo(cwd=process.cwd()){
   const root=realpathSync.native(git(cwd,['rev-parse','--show-toplevel']));
   const base=path.join(root,'.agent-workflow');
+  if(!existsSync(base))throw Error('WORKSPACE_NOT_INITIALIZED: run oranit in this repository');
   const st=lstatSync(base);
   if(!st.isDirectory()||st.isSymbolicLink())throw Error('WORKSPACE_NOT_INITIALIZED: run oranit in this repository');
   return root;
