@@ -55,7 +55,7 @@ cd /path/to/your-project
 oranit
 ```
 
-That's it. Orasqill creates a local code index and starting model candidates. It preserves existing project instructions and model settings.
+That's it. Orasqill creates a local code index and starting model candidates. To make `/oranit` and `/configure-models` available in new agent sessions *before* project setup, run `orasqill install-commands` once from your terminal, then restart the agent session. `/orasqill` is not a slash command. This installs only explicitly user-invoked Skills globally; the orchestrator remains project-specific. It preserves existing project instructions and model settings.
 
 ### Commands
 
@@ -75,6 +75,7 @@ Use slash commands in your agent chat; run `oranit` **only to initialize** a wor
 | `oranit --profile other` | Add an optional, empty Other Model route |
 | `orasqill status` / `orasqill refresh` | Check or rebuild the code index |
 | `orasqill locate "keyword"` | Find candidate files and symbols |
+| `orasqill install-commands` | Install user-invoked `/oranit` and `/configure-models` skills globally (not the orchestrator) |
 | `orasqill configure` | Interactively edit an agent's model mapping with a separate approval step |
 | `orasqill models resolve other` | Preview Other Model routing without launching a model |
 | `orasqill deps list` | List third-party Skill dependencies and their status |
