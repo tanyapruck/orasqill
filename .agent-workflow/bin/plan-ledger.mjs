@@ -1,5 +1,6 @@
 /** Plan-locked local ledger. State is untrusted evidence, not approval authority. */
 import { readFileSync } from 'node:fs';
+import {isDirectRun} from './cli-entry.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_REPO, options, one, gitFacts, taskDir, readJSON, assertSafeFile, atomic, saveJSON, clean, bullets } from './common.mjs';
@@ -140,6 +141,6 @@ export function runPlan(argv,repo=DEFAULT_REPO) {
   } else throw Error('Usage: plan-ledger start|step|finding|amend|check|review|report|finish <task-id>');
   return persist(repo,id,plan);
 }
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+if(isDirectRun(import.meta.url)){
   try{console.log(runPlan(process.argv.slice(2)));}catch(e){console.error(`PLAN BLOCKED: ${e.message}`);process.exitCode=2;}
 }
