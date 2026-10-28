@@ -167,7 +167,7 @@ test('agent document editing has an explicit upstream writing guidance route',()
 
 test('core lifecycle commands include mandatory task IDs',()=>{
   for(const cmd of ['check','review','report','finish']){
-    assert.match(skill,new RegExp('plan-ledger\\.mjs '+cmd+' <task-id>'));
+    assert.match(skill,new RegExp('orasqill plan '+cmd+' <task-id>'));
   }
   assert.match(read('.agent-workflow/bin/README.md'),/verify-reference <id>/);
 });
