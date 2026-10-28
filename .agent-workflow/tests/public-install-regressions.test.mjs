@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,mkdirSync,readFileSync,rmSync,symlinkSync,writeFileSync,existsSync} from 'node:fs';
+import {mkdtempSync,mkdirSync,readFileSync,rmSync,symlinkSync,writeFileSync,existsSync,realpathSync} from 'node:fs';
 import path from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
@@ -48,13 +48,13 @@ test('global plan command writes only to the current initialized project',t=>{
   assert.ok(existsSync(task),'state must be in invoking project');
   const plan=JSON.parse(readFileSync(task,'utf8'));
   assert.equal(plan.taskId,'my-test');
-  assert.equal(path.resolve(plan.repo),path.resolve(project));
+  assert.equal(realpathSync.native(plan.repo).toLowerCase(),realpathSync.native(project).toLowerCase());
   const handoff=spawnSync(process.execPath,[path.join(bin,'orasqill.mjs'),'handoff','start','handoff-test','--goal','G'],{cwd:project,encoding:'utf8'});
   assert.equal(handoff.status,0,handoff.stderr);
   const handoffState=path.join(project,'.agent-workflow/state/handoff-test/task.json');
   assert.ok(existsSync(handoffState),'Handoff state must belong to the invoking project');
   const state=JSON.parse(readFileSync(handoffState,'utf8'));
-  assert.equal(path.resolve(state.repo),path.resolve(project));
+  assert.equal(realpathSync.native(state.repo).toLowerCase(),realpathSync.native(project).toLowerCase());
   assert.equal(state.startHead,execFileSync('git',['-C',project,'rev-parse','HEAD'],{encoding:'utf8'}).trim());
 });
 test('global plan command refuses an uninitialized project instead of modifying checkout',t=>{
