@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import {isDirectRun} from './cli-entry.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_REPO, options, one, gitFacts, taskDir, readJSON, assertSafeFile, atomic, saveJSON, clean, bullets } from './common.mjs';
+import { DEFAULT_REPO, projectRepo, options, one, gitFacts, taskDir, readJSON, assertSafeFile, atomic, saveJSON, clean, bullets } from './common.mjs';
 import { run as handoff, assertPlanCompletion } from './manual-handoff.mjs';
 const START=['--goal','--step','--accept','--allowed','--forbidden','--owner','--risk'];
 const ALL=[...START,'--evidence','--description','--impact','--reason','--necessary','--finding','--approvalref','--before','--result','--status','--reviewer','--independent'];
@@ -142,5 +142,5 @@ export function runPlan(argv,repo=DEFAULT_REPO) {
   return persist(repo,id,plan);
 }
 if(isDirectRun(import.meta.url)){
-  try{console.log(runPlan(process.argv.slice(2)));}catch(e){console.error(`PLAN BLOCKED: ${e.message}`);process.exitCode=2;}
+  try{console.log(runPlan(process.argv.slice(2),projectRepo()));}catch(e){console.error(`PLAN BLOCKED: ${e.message}`);process.exitCode=2;}
 }
