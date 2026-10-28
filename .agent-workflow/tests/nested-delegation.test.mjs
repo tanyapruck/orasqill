@@ -59,7 +59,8 @@ test('fails closed on child scope escalation, path traversal and case-alias over
   bad(t=>{node(t,'otp').resources.read=['src/other'];},/SCOPE_EXCEEDED/);
   bad(t=>{node(t,'otp').resources.write=['../secrets'];},/unsafe resource path/);
   bad(t=>{node(t,'payment').resources.write=['SRC/AUTH'];},/RESOURCE_CONFLICT|SCOPE_EXCEEDED/);
-  bad(t=>{node(t,'payment').resources.write=['src/auth'];},/RESOURCE_CONFLICT/);
+  bad(t=>{node(t,'payment').resources.write=['src/auth'];},/SCOPE_EXCEEDED/);
+  bad(t=>{node(t,'auth').resources.write=['src'];},/RESOURCE_CONFLICT/);
 });
 
 test('budget is additive across siblings and depth cannot exceed parent entitlement',()=>{
