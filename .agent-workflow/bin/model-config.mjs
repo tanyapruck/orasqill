@@ -1,3 +1,4 @@
+import {isDirectRun} from './cli-entry.mjs';
 /** Read-only validation and preview for Orasqill's interactive model mapping Skill. */
 import {readFileSync, lstatSync, existsSync} from 'node:fs';
 import path from 'node:path';
@@ -156,7 +157,7 @@ export function run(argv){
   throw Error('Usage: model-config.mjs preview <profile> | validate <path> | resolve claude-code|codex|other [--workspace <directory>]');
 }
 
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+if(isDirectRun(import.meta.url)){
   try{console.log(run(process.argv.slice(2)));}
   catch(e){console.error('MODEL CONFIG BLOCKED: '+e.message);process.exitCode=2;}
 }

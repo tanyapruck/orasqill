@@ -157,7 +157,7 @@ test('registry and README document independent review and no permission expansio
   assert.match(skill,/DEPENDENCIES.md/);
   assert.match(deps,/external-skills.lock.json/);
   assert.match(deps,/No external skill is bundled, copied, vendored/);
-  assert.match(guide,/external-skills\.mjs check-updates/);
+  assert.match(guide,/orasqill deps check-updates/);
   assert.ok(lock.skills.some(s=>s.id==='ponytail-review'&&s.source==='ponytail'));
   assert.match(deps,/Ponytail review\/audit\/debt/);
 });

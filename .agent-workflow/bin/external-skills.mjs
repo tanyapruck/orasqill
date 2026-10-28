@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {isDirectRun} from './cli-entry.mjs';
 /**
  * Read-only external skill provenance inspector.
  * No installing, vendoring, auto-updating, writing, or agent spawning.
@@ -151,6 +152,6 @@ export async function main(argv = process.argv.slice(2), { fetchImpl = fetch, ou
   throw Error('Usage: external-skills.mjs list | verify-file <skill-id> <installed-SKILL.md> | verify-reference <skill-id> <upstream-path> <installed-reference.md> | check-updates [--source karpathy|matt|ponytail]');
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isDirectRun(import.meta.url)) {
   main().then(code => { process.exitCode = code; }).catch(error => { console.error(`EXTERNAL_SKILL_ERROR: ${error.message}`); process.exitCode = 1; });
 }

@@ -4,6 +4,15 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSyn
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Resolve the *invoking project's* Git root, never the bundled tool checkout.
+export function projectRepo(cwd=process.cwd()){
+  const root=realpathSync.native(git(cwd,['rev-parse','--show-toplevel']));
+  const base=path.join(root,'.agent-workflow');
+  if(!existsSync(base))throw Error('WORKSPACE_NOT_INITIALIZED: run oranit in this repository');
+  const st=lstatSync(base);
+  if(!st.isDirectory()||st.isSymbolicLink())throw Error('WORKSPACE_NOT_INITIALIZED: run oranit in this repository');
+  return root;
+}
 export const DEFAULT_REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export const ID = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 const TEXT_LIMIT = 4000;

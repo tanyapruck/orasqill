@@ -25,6 +25,8 @@ All helpers use built-in Node.js modules and Git. They operate on the **current 
 - `orasqill delegate plan <tree.json> --locked-plan <plan.json> [--config <config.json>]` — read-only validate Root→Child→Grandchild packets against the next locked step; no agent launch.
 - `orasqill delegate packet <tree.json> <node-id> --locked-plan <plan.json> [--config <config.json>]` — read-only bounded handoff packet; capability blockers remain visible.
 
+- `orasqill install-commands [--dry-run] [--refresh]` — optional user-level installation of only `oranit` and `configure-models` Skill adapters (no global orchestrator); preserves existing differing files unless refresh is requested.
+
 **Oranit only initializes**: `oranit [--workspace <dir>] [--profile blank|claude-led|openai-led|other] [--dry-run]`. To change the mapping after init, run `orasqill configure [--agent claude-code|codex|other]` and explicitly approve the preview. Use `orasqill plan|handoff|delegate|schedule` for workflow helpers.
 
 Tests: `node --test .agent-workflow/tests/*.test.mjs`.

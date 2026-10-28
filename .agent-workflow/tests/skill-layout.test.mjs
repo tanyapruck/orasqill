@@ -35,7 +35,7 @@ test('no project HoroOne runtime mappings or domain source leak',()=>{
 test('tool catalog points to actual scripts and tests',()=>{
   const cat=read('.agent-workflow/bin/README.md');
   for(const name of ['plan-ledger','manual-handoff','task-planner']){
-    assert.match(cat,new RegExp(name));
+    assert.match(cat,new RegExp('orasqill (?:plan|handoff|schedule)|'+name));
     assert.ok(existsSync(path.join(root,'.agent-workflow/bin',name+'.mjs')));
   }
   assert.ok(existsSync(path.join(root,'.agent-workflow/tests/plan-ledger.test.mjs')));
@@ -167,7 +167,7 @@ test('agent document editing has an explicit upstream writing guidance route',()
 
 test('core lifecycle commands include mandatory task IDs',()=>{
   for(const cmd of ['check','review','report','finish']){
-    assert.match(skill,new RegExp('plan-ledger\\.mjs '+cmd+' <task-id>'));
+    assert.match(skill,new RegExp('orasqill plan '+cmd+' <task-id>'));
   }
   assert.match(read('.agent-workflow/bin/README.md'),/verify-reference <id>/);
 });

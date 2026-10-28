@@ -1,8 +1,9 @@
 /** Human-authorized handoff checkpoint. Never launches an agent or switches providers. */
 import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
+import {isDirectRun} from './cli-entry.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_REPO, ID, options, one, gitFacts, taskDir, readJSON, assertSafeFile, saveJSON, atomic, clean, bullets } from './common.mjs';
+import { DEFAULT_REPO, projectRepo, ID, options, one, gitFacts, taskDir, readJSON, assertSafeFile, saveJSON, atomic, clean, bullets } from './common.mjs';
 
 const START = ['--goal','--accept','--allowed','--forbidden','--risk','--next','--owner'];
 const FIELDS = {'--done':'done','--next':'next','--check':'checks','--blocker':'blockers','--note':'notes'};
@@ -147,6 +148,6 @@ export function run(argv, repo=DEFAULT_REPO) {
   } else if(arguments_.length) throw Error('export takes no options');
   return exportTask(repo,id);
 }
-if (process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
-  try {console.log(run(process.argv.slice(2)));}catch(e){console.error(`HANDOFF BLOCKED: ${e.message}`);process.exitCode=2;}
+if (isDirectRun(import.meta.url)) {
+  try {console.log(run(process.argv.slice(2),projectRepo()));}catch(e){console.error(`HANDOFF BLOCKED: ${e.message}`);process.exitCode=2;}
 }

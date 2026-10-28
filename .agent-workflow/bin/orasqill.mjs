@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /** Orasqill command facade: Oranit initializes; all workspace utilities run here. */
 import {spawnSync} from 'node:child_process';
+import {isDirectRun} from './cli-entry.mjs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execute} from './oranit.mjs';
 import {configureRouting} from './configure-routing.mjs';
+import {run as installUserCommands} from './user-commands.mjs';
 
 const binDir=path.dirname(fileURLToPath(import.meta.url));
 const commands=Object.freeze({
@@ -19,6 +21,7 @@ const usage=`Orasqill commands:
   oranit [--profile blank|claude-led|openai-led|other] [--workspace <dir>] [--dry-run]  Initialize workspace
   orasqill status|locate "keyword"|refresh [--workspace <dir>]
   orasqill configure [--agent claude-code|codex|other] [--workspace <dir>]
+  orasqill install-commands [--dry-run] [--refresh]
   orasqill models preview|resolve|validate ...
   orasqill deps list|check-updates|verify-file|verify-reference ...
   orasqill plan|handoff|delegate|schedule <helper-arguments>
@@ -34,6 +37,7 @@ export function parseCommand(argv){
   }
   if(['status','locate','refresh'].includes(command))return {command:'navigation',args:[command,...args]};
   if(command==='configure')return {command:'configure',args};
+  if(command==='install-commands')return {command:'install-commands',args};
   if(command==='oranit')throw Error('INIT_ONLY: use the standalone oranit command for workspace initialization');
   if(Object.hasOwn(commands,command))return {command:'helper',tool:commands[command],args};
   throw Error('UNKNOWN_COMMAND: '+command+'\n'+usage);
@@ -44,6 +48,7 @@ export async function run(argv,options={}){
   if(parsed.command==='help')return {help:usage};
   if(parsed.command==='navigation')return execute(parsed.args);
   if(parsed.command==='configure')return await configureRouting(parsed.args,options);
+  if(parsed.command==='install-commands')return installUserCommands(parsed.args);
   // No shell, no string evaluation; only allowlisted bundled helpers.
   if(options.spawn){
     const result=options.spawn(parsed.tool,parsed.args);
@@ -55,7 +60,7 @@ export async function run(argv,options={}){
   return {exitCode:proc.status??1};
 }
 
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+if(isDirectRun(import.meta.url)){
   try{
     const result=await run(process.argv.slice(2));
     if(result.help)process.stdout.write(result.help);
