@@ -1,3 +1,4 @@
+import {isDirectRun} from './cli-entry.mjs';
 /** Nested delegation packet validator and read-only plan preview. Never launches agents. */
 import {readFileSync,lstatSync} from 'node:fs';
 import path from 'node:path';
@@ -171,7 +172,7 @@ export function run(args){
   }
   return proposal;
 }
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+if(isDirectRun(import.meta.url)){
   try{console.log(JSON.stringify(run(process.argv.slice(2)),null,2));}
   catch(e){console.error('NESTED DELEGATION BLOCKED: '+e.message);process.exitCode=2;}
 }
