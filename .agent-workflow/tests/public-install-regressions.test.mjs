@@ -22,6 +22,16 @@ test('symlinked npm-style bin entrypoints execute instead of exiting silently',t
   assert.equal(help.status,0,help.stderr);
   assert.match(help.stdout,/orasqill configure/);
 });
+test('deps command works through the facade and its direct entrypoint',()=>{
+  for(const argv of [
+    [path.join(bin,'orasqill.mjs'),'deps','list'],
+    [path.join(bin,'external-skills.mjs'),'list']
+  ]){
+    const result=spawnSync(process.execPath,argv,{cwd:repo,encoding:'utf8'});
+    assert.equal(result.status,0,result.stderr);
+    assert.match(result.stdout,/[a-z-]+\\t/, 'expected dependency metadata');
+  }
+});
 test('global plan command writes only to the current initialized project',t=>{
   const project=temp(t);
   execFileSync('git',['init','-q',project]);
@@ -38,6 +48,14 @@ test('global plan command writes only to the current initialized project',t=>{
   assert.ok(existsSync(task),'state must be in invoking project');
   const plan=JSON.parse(readFileSync(task,'utf8'));
   assert.equal(plan.taskId,'my-test');
+  assert.equal(path.resolve(plan.repo),path.resolve(project));
+  const handoff=spawnSync(process.execPath,[path.join(bin,'orasqill.mjs'),'handoff','start','handoff-test','--goal','G'],{cwd:project,encoding:'utf8'});
+  assert.equal(handoff.status,0,handoff.stderr);
+  const handoffState=path.join(project,'.agent-workflow/state/handoff-test/task.json');
+  assert.ok(existsSync(handoffState),'Handoff state must belong to the invoking project');
+  const state=JSON.parse(readFileSync(handoffState,'utf8'));
+  assert.equal(path.resolve(state.repo),path.resolve(project));
+  assert.equal(state.startHead,execFileSync('git',['-C',project,'rev-parse','HEAD'],{encoding:'utf8'}).trim());
 });
 test('global plan command refuses an uninitialized project instead of modifying checkout',t=>{
   const project=temp(t);
