@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /** Orasqill command facade: Oranit initializes; all workspace utilities run here. */
 import {spawnSync} from 'node:child_process';
+import {isDirectRun} from './cli-entry.mjs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execute} from './oranit.mjs';
@@ -55,7 +56,7 @@ export async function run(argv,options={}){
   return {exitCode:proc.status??1};
 }
 
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+if(isDirectRun(import.meta.url)){
   try{
     const result=await run(process.argv.slice(2));
     if(result.help)process.stdout.write(result.help);
