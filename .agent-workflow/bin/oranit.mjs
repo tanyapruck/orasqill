@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /** Orasqill workspace bootstrap: code locator + model routing, local and permission-bounded. */
 import {existsSync,lstatSync,mkdirSync,readdirSync,readFileSync,writeFileSync,renameSync,unlinkSync,copyFileSync,realpathSync} from 'node:fs';
+import {isDirectRun} from './cli-entry.mjs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {scanWorkspace,compareIndex,locate} from './repo-index.mjs';
@@ -193,7 +194,7 @@ export function execute(argv){
     return {command:'refresh',workspace:root,filesIndexed:current.files.length,partial:current.partial,previousDrift:drift,modelConfigUntouched:true};
   }
 }
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+if(isDirectRun(import.meta.url)){
   try{
     const args=process.argv.slice(2);
     if(['status','locate','refresh'].includes(args[0])||args.includes('--configure'))
