@@ -1,5 +1,5 @@
-import {isDirectRun} from './cli-entry.mjs';
 #!/usr/bin/env node
+import {isDirectRun} from './cli-entry.mjs';
 /**
  * Read-only external skill provenance inspector.
  * No installing, vendoring, auto-updating, writing, or agent spawning.
