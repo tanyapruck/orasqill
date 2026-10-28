@@ -1,3 +1,4 @@
+import {isDirectRun} from './cli-entry.mjs';
 /** Pure advisory scheduler. It cannot launch workers, verify ownership, or grant permissions. */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -92,7 +93,7 @@ export function makeSchedule(plan,limits={},platform=process.platform) {
   }
   return {mode:plan.tasks.length===1?'SURGICAL':canParallel?'ADAPTIVE_PARALLEL':'SEQUENTIAL',workerCount,waves,requiresIndependentReview:highRisk,requiresPreActionAuthority:highRisk,finalValidation:'ONCE_AFTER_INTEGRATION',integrationReady:false,enforcesOwnership:false,enforcesIsolation:false};
 }
-const isCLI=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);
+const isCLI=isDirectRun(import.meta.url);
 if(isCLI){
   try {
     const [input,flag,lockedPath,...extras]=process.argv.slice(2);
