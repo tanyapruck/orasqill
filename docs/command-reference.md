@@ -7,7 +7,7 @@ Start workspace setup with **`oranit`**; enter Skill commands inside Claude Code
 
 ## 1. Set up a workspace
 
-From an accessible Orasqill checkout (the repository is currently private):
+From the public Orasqill repository:
 
 ```sh
 git clone https://github.com/tanyapruck/orasqill.git /path/to/orasqill
@@ -16,6 +16,8 @@ npm link
 cd /path/to/your-workspace
 oranit
 ```
+
+To make user-invoked `/oranit` and `/configure-models` (Claude Code), or `$oranit` and `$configure-models` (Codex), available **before** project initialization, run `orasqill install-commands` after `npm link` and restart the agent session. It installs only those explicit commands at user level; the orchestrator and delegation Skills remain project-local. Check proposed changes with `--dry-run`; existing different files are preserved unless `--refresh` is requested.
 
 | CLI command | Purpose |
 |---|---|
@@ -33,6 +35,8 @@ oranit
 | `orasqill status` | Check whether the index matches current source |
 | `orasqill locate "keyword"` | Find candidate files, symbols and approximate line numbers |
 | `orasqill refresh` | Rebuild the index after source changes, leaving model config untouched |
+
+When using `orasqill plan` or `orasqill handoff` through the linked CLI, start from the **intended initialized Git project**. Checkpoint files are written under that project's `.agent-workflow/state/`, not the shared Orasqill installation; an uninitialized project is rejected.
 
 Without `npm link`, initialize with the source CLI directly. The `orasqill` command also has a Node entrypoint:
 

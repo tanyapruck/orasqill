@@ -1,14 +1,14 @@
-# Orasqill - A OrchestRAtor skill
+# Orasqill — An OrchestRAtor Skill
 
 **Give your coding agents a map, a plan, and a clean handoff.**
 
-Working with AI coding agents is fast—until they search the same files again, lose track of a decision, or pick up a task without knowing what the previous agent finished.
+Coding agents are fast—until they search the same files, repeat decisions, or lose track of unfinished work.
 
 Orasqill adds a lightweight workflow to your existing project. It works with **Claude Code**, **Codex**, and an optional **Other Model** configuration. You keep control of the code and the decisions.
 
 **No more rethinking the same decisions. No more chasing new issues and forgetting the original task.**
 
-Orasqill keeps your agents focused on the agreed plan, tracks new findings without losing sight of the original goal, and helps every handoff pick up where the last agent left off.
+Orasqill keeps agents on plan, records new findings, and preserves context across handoffs.
 
 ## Customer Guide
 
@@ -43,19 +43,21 @@ Orasqill is a toolkit, **not a hosted model service**. Connecting models and run
 
 ### Get started
 
-You need **Git**, **Node.js 20+**, and access to this repository (currently private).
-
-Run once to install the CLI, then initialize any project you want to use:
+Requires **Git** and **Node.js 20+**. The repository is public. Install the CLI, then initialize an existing Git project:
 
 ```bash
 git clone https://github.com/tanyapruck/orasqill.git
 cd orasqill
 npm link
+# Optional: make agent commands available before project setup
+orasqill install-commands --dry-run
+orasqill install-commands
 cd /path/to/your-project
 oranit
+orasqill status
 ```
 
-That's it. Orasqill creates a local code index and starting model candidates. To make `/oranit` and `/configure-models` available in new agent sessions *before* project setup, run `orasqill install-commands` once from your terminal, then restart the agent session. `/orasqill` is not a slash command. This installs only explicitly user-invoked Skills globally; the orchestrator remains project-specific. It preserves existing project instructions and model settings.
+`oranit` **only initializes** project Skills, the index, and separate model routes without overwriting settings. All other terminal commands use `orasqill`. Optional `install-commands` exposes `/oranit` and `/configure-models` (Claude Code), or `$oranit` and `$configure-models` (Codex), at user level. **Restart the agent session** afterwards. It never installs the orchestrator or Delegate Tree globally; modified user Skills are preserved unless `--refresh`. There is no `/orasqill` slash command.
 
 ### Commands
 
@@ -75,11 +77,14 @@ Use slash commands in your agent chat; run `oranit` **only to initialize** a wor
 | `oranit --profile other` | Add an optional, empty Other Model route |
 | `orasqill status` / `orasqill refresh` | Check or rebuild the code index |
 | `orasqill locate "keyword"` | Find candidate files and symbols |
-| `orasqill install-commands` | Install user-invoked `/oranit` and `/configure-models` skills globally (not the orchestrator) |
+| `orasqill install-commands [--dry-run] [--refresh]` | Preview, install, or explicitly refresh user-invoked commands (never the global orchestrator) |
 | `orasqill configure` | Interactively edit an agent's model mapping with a separate approval step |
 | `orasqill models resolve other` | Preview Other Model routing without launching a model |
 | `orasqill deps list` | List third-party Skill dependencies and their status |
 | `orasqill deps check-updates` | Check upstream Skill changes; does not install anything |
+| `orasqill plan ...` / `orasqill handoff ...` | Record locked plans and handoffs in the **current initialized Git project**, not the Orasqill CLI checkout |
+
+Linked `orasqill plan` / `handoff` save state in the current initialized Git project, never the Orasqill checkout.
 
 See the [Command Reference](docs/command-reference.md) for all advanced commands.
 
@@ -124,7 +129,7 @@ Third-party Skills are **not vendored or copied** with Orasqill; install require
 
 Orasqill is available under the [MIT License](LICENSE). You may use, modify and redistribute it, including commercially, as long as you retain the copyright and license notice. External Skills are licensed separately by their authors.
 
-**To let other people clone it from GitHub, the repository must also be made public** (or they must be granted access). It is currently private.
+**The repository is public:** anyone can clone or fork it on GitHub. Changes to the original repository still require appropriate write access.
 
 ## AI Guide
 
