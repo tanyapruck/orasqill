@@ -1,4 +1,4 @@
-# Orasqill - A OrchestRAtor skill
+# Orasqill — An OrchestRAtor Skill
 
 **Give your coding agents a map, a plan, and a clean handoff.**
 
@@ -43,19 +43,34 @@ Orasqill is a toolkit, **not a hosted model service**. Connecting models and run
 
 ### Get started
 
-You need **Git**, **Node.js 20+**, and access to this repository (currently private).
+You need **Git** and **Node.js 20+**. Orasqill is public and can be cloned directly.
 
-Run once to install the CLI, then initialize any project you want to use:
+**1. Install the terminal CLI once:**
 
 ```bash
 git clone https://github.com/tanyapruck/orasqill.git
 cd orasqill
 npm link
-cd /path/to/your-project
-oranit
 ```
 
-That's it. Orasqill creates a local code index and starting model candidates. To make `/oranit` and `/configure-models` available in new agent sessions *before* project setup, run `orasqill install-commands` once from your terminal, then restart the agent session. `/orasqill` is not a slash command. This installs only explicitly user-invoked Skills globally; the orchestrator remains project-specific. It preserves existing project instructions and model settings.
+**2. Initialize an existing Git project:**
+
+```bash
+cd /path/to/your-project
+oranit
+orasqill status
+```
+
+`oranit` is the standalone **initialization-only** command; `orasqill` handles all other terminal operations. Initialization creates a project-local code index, Skills, and separate starting model candidates. Existing project instructions and model settings are preserved.
+
+**Optional: use agent-chat commands before project initialization.** After installing the CLI, run the following in a terminal, then **restart your Claude Code or Codex session** so the new Skills are discovered:
+
+```bash
+orasqill install-commands --dry-run
+orasqill install-commands
+```
+
+This installs only the user-invoked `/oranit` and `/configure-models` (Claude Code) / `$oranit` and `$configure-models` (Codex) Skills at the user level. It does **not** install the automatic orchestrator or Delegate Tree globally. Existing different files are preserved unless you explicitly use `orasqill install-commands --refresh`. `orasqill` is a **terminal CLI**, not a `/orasqill` slash command.
 
 ### Commands
 
@@ -75,11 +90,14 @@ Use slash commands in your agent chat; run `oranit` **only to initialize** a wor
 | `oranit --profile other` | Add an optional, empty Other Model route |
 | `orasqill status` / `orasqill refresh` | Check or rebuild the code index |
 | `orasqill locate "keyword"` | Find candidate files and symbols |
-| `orasqill install-commands` | Install user-invoked `/oranit` and `/configure-models` skills globally (not the orchestrator) |
+| `orasqill install-commands [--dry-run] [--refresh]` | Preview, install, or explicitly refresh user-invoked commands (never the global orchestrator) |
 | `orasqill configure` | Interactively edit an agent's model mapping with a separate approval step |
 | `orasqill models resolve other` | Preview Other Model routing without launching a model |
 | `orasqill deps list` | List third-party Skill dependencies and their status |
 | `orasqill deps check-updates` | Check upstream Skill changes; does not install anything |
+| `orasqill plan ...` / `orasqill handoff ...` | Record locked plans and handoffs in the **current initialized Git project**, not the Orasqill CLI checkout |
+
+Run `orasqill plan` and `orasqill handoff` from your target project's Git working tree. When using the globally linked CLI, they write to that project's `.agent-workflow/state/` and reject uninitialized projects instead of changing the Orasqill checkout.
 
 See the [Command Reference](docs/command-reference.md) for all advanced commands.
 
@@ -124,7 +142,7 @@ Third-party Skills are **not vendored or copied** with Orasqill; install require
 
 Orasqill is available under the [MIT License](LICENSE). You may use, modify and redistribute it, including commercially, as long as you retain the copyright and license notice. External Skills are licensed separately by their authors.
 
-**To let other people clone it from GitHub, the repository must also be made public** (or they must be granted access). It is currently private.
+**The repository is public:** anyone can clone or fork it on GitHub. Changes to the original repository still require appropriate write access.
 
 ## AI Guide
 
