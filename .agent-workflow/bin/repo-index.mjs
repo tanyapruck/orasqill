@@ -1,6 +1,7 @@
 /** Token-efficient repository locator: paths and symbol hints, never source snippets or runtime authority. */
 import {createHash} from 'node:crypto';
-import {readdirSync,readFileSync,lstatSync} from 'node:fs';
+import {readdirSync,readFileSync,lstatSync,realpathSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
 import path from 'node:path';
 
 const SKIP_DIR=new Set(['.git','.agent-workflow','.next','.nuxt','.venv','venv','node_modules','vendor','dist','build','out','coverage','target','__pycache__','.pytest_cache','.turbo','.cache','.idea','.vscode']);
@@ -29,36 +30,64 @@ function symbolsOf(source,ext){
   return result;
 }
 
-export function scanWorkspace(root,{maxFiles=MAX_FILES,maxTotalBytes=MAX_TOTAL_BYTES}={}){
-  const files=[],skipped={large:0,excluded:0},folderCounts=new Map(),stack=[''];
-  let consumed=0,partial=false;
+const skippedDir=name=>SKIP_DIR.has(name)||name.startsWith('.');
+
+/** Directory walk used outside Git (or when Git is unavailable): every non-hidden, non-vendor file. */
+function walkCandidates(root){
+  const out=[],stack=[''];
   while(stack.length){
     const dir=stack.pop(),absolute=path.join(root,dir);
     if(!isSafeStat(absolute,true))continue;
     for(const entry of readdirSync(absolute,{withFileTypes:true}).sort((a,b)=>a.name.localeCompare(b.name)).reverse()){
-      if(partial)break;
-      const relative=cleanPath(path.join(dir,entry.name)),full=path.join(absolute,entry.name);
+      const relative=cleanPath(path.join(dir,entry.name));
       if(entry.isSymbolicLink())continue;
-      if(entry.isDirectory()){
-        if(SKIP_DIR.has(entry.name)||entry.name.startsWith('.'))continue;
-        stack.push(relative);continue;
-      }
-      if(!entry.isFile()||SECRET.test(entry.name)) {skipped.excluded++;continue;}
-      const ext=path.extname(entry.name).toLowerCase();
-      if(!EXT.has(ext))continue;
-      const stat=lstatSync(full);
-      if(!stat.isFile()||stat.isSymbolicLink())continue;
-      if(stat.size>MAX_FILE_BYTES){skipped.large++;continue;}
-      if(files.length>=maxFiles||consumed+stat.size>maxTotalBytes){partial=true;break;}
-      const content=readFileSync(full);
-      if(content.includes(0))continue; // binary content, no OCR or guessing
-      consumed+=content.length;
-      const source=content.toString('utf8');
-      const record={path:relative,language:language(ext),bytes:content.length,lines:source.split(/\r?\n/).length,sha256:sha(content),symbols:symbolsOf(source,ext)};
-      files.push(record);
-      const group=relative.includes('/')?relative.split('/').slice(0,2).join('/'):'.';
-      folderCounts.set(group,(folderCounts.get(group)??0)+1);
+      if(entry.isDirectory()){if(!skippedDir(entry.name))stack.push(relative);continue;}
+      out.push({relative,regular:entry.isFile()});
     }
+  }
+  return out;
+}
+
+/** In a Git work tree, index tracked files plus untracked, non-ignored files that sit beside tracked ones.
+ * Ignored paths, nested repositories/worktrees and untracked-only trees (build outputs, stores) are never walked.
+ * Returns null when root is not the top of a Git work tree, so callers fall back to the directory walk. */
+function gitCandidates(root){
+  const run=args=>execFileSync('git',['-C',root,...args],{encoding:'utf8',stdio:['ignore','pipe','ignore'],maxBuffer:256*1024*1024});
+  let top,tracked,untracked;
+  try{
+    top=run(['rev-parse','--show-toplevel']).trim();
+    if(path.resolve(realpathSync.native(top))!==path.resolve(realpathSync.native(root)))return null;
+    tracked=run(['ls-files','-z','--cached']).split('\0').filter(Boolean);
+    untracked=run(['ls-files','-z','--others','--exclude-standard']).split('\0').filter(Boolean);
+  }catch{return null;}
+  const trackedDirs=new Set(tracked.map(p=>path.posix.dirname(p)));
+  const chosen=[...new Set([...tracked,...untracked.filter(p=>!p.endsWith('/')&&trackedDirs.has(path.posix.dirname(p)))])];
+  return chosen.filter(p=>!p.split('/').slice(0,-1).some(skippedDir)).sort((a,b)=>a.localeCompare(b))
+    .map(relative=>({relative,regular:true}));
+}
+
+export function scanWorkspace(root,{maxFiles=MAX_FILES,maxTotalBytes=MAX_TOTAL_BYTES}={}){
+  const files=[],skipped={large:0,excluded:0},folderCounts=new Map();
+  let consumed=0,partial=false;
+  const git=gitCandidates(root);
+  for(const {relative,regular} of git??walkCandidates(root)){
+    const name=path.posix.basename(relative),full=path.join(root,relative);
+    if(!regular||SECRET.test(name)){skipped.excluded++;continue;}
+    const ext=path.extname(name).toLowerCase();
+    if(!EXT.has(ext))continue;
+    let stat;
+    try{stat=lstatSync(full);}catch{continue;} // tracked but deleted in the work tree
+    if(!stat.isFile()||stat.isSymbolicLink())continue;
+    if(stat.size>MAX_FILE_BYTES){skipped.large++;continue;}
+    if(files.length>=maxFiles||consumed+stat.size>maxTotalBytes){partial=true;break;}
+    const content=readFileSync(full);
+    if(content.includes(0))continue; // binary content, no OCR or guessing
+    consumed+=content.length;
+    const source=content.toString('utf8');
+    const record={path:relative,language:language(ext),bytes:content.length,lines:source.split(/\r?\n/).length,sha256:sha(content),symbols:symbolsOf(source,ext)};
+    files.push(record);
+    const group=relative.includes('/')?relative.split('/').slice(0,2).join('/'):'.';
+    folderCounts.set(group,(folderCounts.get(group)??0)+1);
   }
   files.sort((a,b)=>a.path.localeCompare(b.path));
   return {version:1,kind:'codebase-locator',notice:'Hints only; validate live source, imports, callers and tests before editing. No snippets or secrets stored.',limits:{maxFiles,maxTotalBytes},partial,skipped,features:[...folderCounts].sort((a,b)=>a[0].localeCompare(b[0])).map(([folder,count])=>({folder,count})),files};

@@ -323,3 +323,34 @@ test('user configured other model is validated, preserved and never executed by 
   assert.equal(resolveAgentRouting('claude-code',dir).source,'bundled-candidate');
   assert.equal(resolveAgentRouting('codex',dir).source,'bundled-candidate');
 });
+
+function git(dir,...args){
+  const r=spawnSync('git',['-C',dir,'-c','user.name=Orasqill Test','-c','user.email=test@example.invalid',...args],{encoding:'utf8'});
+  assert.equal(r.status,0,r.stderr);
+  return r.stdout;
+}
+
+test('git work trees index tracked files and new files beside them, never ignored, untracked-only or nested-repo trees',t=>{
+  const dir=workspace(t);
+  writeFileSync(path.join(dir,'.gitignore'),'ignored/\n');
+  mkdirSync(path.join(dir,'ignored'));
+  writeFileSync(path.join(dir,'ignored/skip.ts'),'export function ignoredFn() {}\n');
+  writeFileSync(path.join(dir,'src/auth/gone.ts'),'export function removedLater() {}\n');
+  git(dir,'init','-q');
+  git(dir,'add','.');
+  git(dir,'commit','-qm','init');
+  rmSync(path.join(dir,'src/auth/gone.ts'));
+  writeFileSync(path.join(dir,'src/auth/draft.ts'),'export function freshDraft() {}\n');
+  mkdirSync(path.join(dir,'outputs/run'),{recursive:true});
+  writeFileSync(path.join(dir,'outputs/run/result.ts'),'export function generatedOutput() {}\n');
+  mkdirSync(path.join(dir,'nested'));
+  git(path.join(dir,'nested'),'init','-q');
+  writeFileSync(path.join(dir,'nested/inner.ts'),'export function nestedRepoFn() {}\n');
+  const idx=scanWorkspace(dir);
+  assert.deepEqual(idx.files.map(f=>f.path),['src/auth/draft.ts','src/auth/otp.ts']);
+  assert.equal(idx.partial,false);
+  assert.deepEqual(locate(idx,'freshDraft')[0].path,'src/auth/draft.ts');
+  assert.equal(compareIndex(idx,scanWorkspace(dir)).stale,false);
+  // A workspace below the Git top level keeps the plain directory walk.
+  assert.deepEqual(scanWorkspace(path.join(dir,'outputs')).files.map(f=>f.path),['run/result.ts']);
+});
