@@ -2,13 +2,13 @@
 
 **Give your coding agents a map, a plan, and a clean handoff.**
 
-Working with AI coding agents is fast—until they search the same files again, lose track of a decision, or pick up a task without knowing what the previous agent finished.
+Coding agents are fast—until they search the same files, repeat decisions, or lose track of unfinished work.
 
 Orasqill adds a lightweight workflow to your existing project. It works with **Claude Code**, **Codex**, and an optional **Other Model** configuration. You keep control of the code and the decisions.
 
 **No more rethinking the same decisions. No more chasing new issues and forgetting the original task.**
 
-Orasqill keeps your agents focused on the agreed plan, tracks new findings without losing sight of the original goal, and helps every handoff pick up where the last agent left off.
+Orasqill keeps agents on plan, records new findings, and preserves context across handoffs.
 
 ## Customer Guide
 
@@ -43,34 +43,21 @@ Orasqill is a toolkit, **not a hosted model service**. Connecting models and run
 
 ### Get started
 
-You need **Git** and **Node.js 20+**. Orasqill is public and can be cloned directly.
-
-**1. Install the terminal CLI once:**
+Requires **Git** and **Node.js 20+**. The repository is public. Install the CLI, then initialize an existing Git project:
 
 ```bash
 git clone https://github.com/tanyapruck/orasqill.git
 cd orasqill
 npm link
-```
-
-**2. Initialize an existing Git project:**
-
-```bash
+# Optional: make agent commands available before project setup
+orasqill install-commands --dry-run
+orasqill install-commands
 cd /path/to/your-project
 oranit
 orasqill status
 ```
 
-`oranit` is the standalone **initialization-only** command; `orasqill` handles all other terminal operations. Initialization creates a project-local code index, Skills, and separate starting model candidates. Existing project instructions and model settings are preserved.
-
-**Optional: use agent-chat commands before project initialization.** After installing the CLI, run the following in a terminal, then **restart your Claude Code or Codex session** so the new Skills are discovered:
-
-```bash
-orasqill install-commands --dry-run
-orasqill install-commands
-```
-
-This installs only the user-invoked `/oranit` and `/configure-models` (Claude Code) / `$oranit` and `$configure-models` (Codex) Skills at the user level. It does **not** install the automatic orchestrator or Delegate Tree globally. Existing different files are preserved unless you explicitly use `orasqill install-commands --refresh`. `orasqill` is a **terminal CLI**, not a `/orasqill` slash command.
+`oranit` **only initializes** project Skills, the index, and separate model routes without overwriting settings. All other terminal commands use `orasqill`. Optional `install-commands` exposes `/oranit` and `/configure-models` (Claude Code), or `$oranit` and `$configure-models` (Codex), at user level. **Restart the agent session** afterwards. It never installs the orchestrator or Delegate Tree globally; modified user Skills are preserved unless `--refresh`. There is no `/orasqill` slash command.
 
 ### Commands
 
@@ -97,7 +84,7 @@ Use slash commands in your agent chat; run `oranit` **only to initialize** a wor
 | `orasqill deps check-updates` | Check upstream Skill changes; does not install anything |
 | `orasqill plan ...` / `orasqill handoff ...` | Record locked plans and handoffs in the **current initialized Git project**, not the Orasqill CLI checkout |
 
-Run `orasqill plan` and `orasqill handoff` from your target project's Git working tree. When using the globally linked CLI, they write to that project's `.agent-workflow/state/` and reject uninitialized projects instead of changing the Orasqill checkout.
+Linked `orasqill plan` / `handoff` save state in the current initialized Git project, never the Orasqill checkout.
 
 See the [Command Reference](docs/command-reference.md) for all advanced commands.
 
