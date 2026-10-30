@@ -4,6 +4,8 @@
 
 **Index before broad code exploration.** For source tasks use `orasqill status` then `orasqill locate "keyword"`; if absent/stale, `oranit`/`orasqill refresh` on the intended workspace. The generated index is only a map; verify actual source, imports, callers and tests. See `references/index-navigation.md` in the canonical Orchestrator Skill. `$oranit` (Codex) and `/oranit` (Claude Code) initialize the workspace and unconfirmed model config.
 
+**Owner decisions:** Before changing product behavior, UI, layout or copy, read the applicable Accepted decisions indexed in `docs/decisions/README.md`. A conflict needs an owner-approved Finding; record lasting owner decisions in the same PR as implementation. Never infer decisions from private agent memory.
+
 **Plan before editing or delegating.** Use the canonical Plan Ledger, follow locked steps, record each out-of-plan discovery as a Finding, defer nonessential work and request explicit user approval before essential changes. Close with actual validation and Final Acceptance evidence.
 
 **Coding gate:** the actual executing agent loads `karpathy-guidelines` before coding, SURGICAL edits, bug fixes or refactors; if unavailable report `SETUP_REQUIRED: dependency_unavailable` and pause that code-writing stage. Original source/versions and readiness: `references/DEPENDENCIES.md` under the canonical Skill, plus `.agent-workflow/external-skills.lock.json`.
