@@ -36,6 +36,8 @@ To make user-invoked `/oranit` and `/configure-models` (Claude Code), or `$orani
 | `orasqill locate "keyword"` | Find candidate files, symbols and approximate line numbers |
 | `orasqill refresh` | Rebuild the index after source changes, leaving model config untouched |
 
+New `oranit` installations scaffold `docs/decisions/README.md` and `docs/decisions/TEMPLATE.md` without overwriting existing files. Dry-run reports the files and the `AGENTS.md` owner-decision pointer; an existing `AGENTS.md` remains untouched and receives a suggested section for manual, owner-approved insertion. Before UI/copy/product changes, read the Accepted decisions for that area. See [Owner decisions](../docs/decisions/README.md).
+
 When using `orasqill plan` or `orasqill handoff` through the linked CLI, start from the **intended initialized Git project**. Checkpoint files are written under that project's `.agent-workflow/state/`, not the shared Orasqill installation; an uninitialized project is rejected.
 
 Without `npm link`, initialize with the source CLI directly. The `orasqill` command also has a Node entrypoint:
@@ -180,6 +182,9 @@ cp -n /path/to/orasqill/.agent-workflow/LICENSE.orasqill.txt .agent-workflow/
 cp /path/to/orasqill/.agent-workflow/config.example.json .agent-workflow/
 cp -R /path/to/orasqill/.agent-workflow/profiles .agent-workflow/
 cp -R /path/to/orasqill/.agent-workflow/examples .agent-workflow/
+mkdir -p docs/decisions
+cp -n /path/to/orasqill/docs/decisions/README.md docs/decisions/
+cp -n /path/to/orasqill/docs/decisions/TEMPLATE.md docs/decisions/
 ```
 
 **Windows PowerShell**
@@ -199,6 +204,13 @@ if (-not (Test-Path '.agent-workflow\LICENSE.orasqill.txt')) {
 Copy-Item (Join-Path $src '.agent-workflow\config.example.json') '.agent-workflow\'
 Copy-Item -Recurse (Join-Path $src '.agent-workflow\profiles') '.agent-workflow\'
 Copy-Item -Recurse (Join-Path $src '.agent-workflow\examples') '.agent-workflow\'
+New-Item -ItemType Directory -Force 'docs\decisions' | Out-Null
+foreach ($name in @('README.md', 'TEMPLATE.md')) {
+  $destination = Join-Path 'docs\decisions' $name
+  if (-not (Test-Path $destination)) {
+    Copy-Item (Join-Path $src ('docs\decisions\' + $name)) $destination
+  }
+}
 ```
 
 To install Claude Code commands manually, copy the [Orchestrator adapter](../.agents/skills/agent-workflow-orchestrator/SKILL.md) and the command adapters into `.claude/skills/`:
