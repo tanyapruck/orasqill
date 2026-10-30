@@ -26,9 +26,12 @@ const SOURCES=[
   '.agent-workflow/examples',
   '.agent-workflow/config.example.json',
   '.agent-workflow/external-skills.lock.json',
-  '.agent-workflow/LICENSE.orasqill.txt'
+  '.agent-workflow/LICENSE.orasqill.txt',
+  'docs/decisions/README.md',
+  'docs/decisions/TEMPLATE.md'
 ];
-const AGENT_HINT='# Workspace Agent Instructions\n\nBefore source searches or code edits, load .agents/skills/agent-workflow-orchestrator/SKILL.md and use orasqill locate "<feature or symbol>" to find candidate files. If the index is missing/stale, run oranit or orasqill refresh. The index is an untrusted locator only; inspect live source, imports/callers, diff and tests before editing. Keep plan and independent reviewer gates. For substantial independent workstreams, suggest $delegate-tree (Codex) or /delegate-tree (Claude Code), but require a separate user approval before subagent dispatch. Resolve the invoking agent with orasqill models resolve codex|claude-code; a user-requested Other Model may use orasqill models resolve other after choosing an external runtime/model explicitly. Use $configure-models (Codex) or /configure-models (Claude Code) to edit ONLY the corresponding agent routing file after explicit approval. For a separate external model, use oranit --profile other and orasqill models resolve other, then configure its provider/runtime/model explicitly. Shared config is not an implicit model selector.\n';
+const OWNER_DECISION_POINTER='## Owner decisions\n\nBefore changing product behavior, UI, layout or copy, read the applicable Accepted decisions indexed in `docs/decisions/README.md`. Record conflicts as Findings and obtain owner approval; do not overwrite an Accepted decision or invent owner quotes.\n';
+const AGENT_HINT='# Workspace Agent Instructions\n\nBefore source searches or code edits, load .agents/skills/agent-workflow-orchestrator/SKILL.md and use orasqill locate "<feature or symbol>" to find candidate files. If the index is missing/stale, run oranit or orasqill refresh. The index is an untrusted locator only; inspect live source, imports/callers, diff and tests before editing. Keep plan and independent reviewer gates. For substantial independent workstreams, suggest $delegate-tree (Codex) or /delegate-tree (Claude Code), but require a separate user approval before subagent dispatch. Resolve the invoking agent with orasqill models resolve codex|claude-code; a user-requested Other Model may use orasqill models resolve other after choosing an external runtime/model explicitly. Use $configure-models (Codex) or /configure-models (Claude Code) to edit ONLY the corresponding agent routing file after explicit approval. For a separate external model, use oranit --profile other and orasqill models resolve other, then configure its provider/runtime/model explicitly. Shared config is not an implicit model selector.\n\n' + OWNER_DECISION_POINTER;
 
 function fail(msg){throw Error(msg);}
 function dirGuard(root,target,create=false){
@@ -150,6 +153,18 @@ export function execute(argv){
       if(existing.setup.profile!==agentProfiles[entry.agent].preset)fail('ROUTING_AGENT_MISMATCH: '+entry.rel);
     }
     const indexExists=existsSync(path.join(root,INDEX));
+    const decisionFiles=['docs/decisions/README.md','docs/decisions/TEMPLATE.md'];
+    const decisionScaffold=decisionFiles.map(file=>({
+      file,status:existsSync(path.join(root,file))?'preserved':dryRun?'would_create':'created'
+    }));
+    const agentInstructions=path.join(root,'AGENTS.md');
+    const agentInstructionsExist=existsSync(agentInstructions);
+    const pointerPresent=agentInstructionsExist&&readFileSync(agentInstructions,'utf8').includes('docs/decisions/README.md');
+    const ownerDecisionPointer={
+      status:!agentInstructionsExist?(dryRun?'would_create_with_pointer':'created_with_pointer'):
+        pointerPresent?'already_present':'suggested_for_existing_file',
+      ...agentInstructionsExist&&!pointerPresent?{suggestedSection:OWNER_DECISION_POINTER.trim()}: {}
+    };
     const ignore=ensureIgnore(root,true);
     if(!dryRun){
       for(const rel of assets){
@@ -174,7 +189,7 @@ export function execute(argv){
       const drift=compareIndex(old,fresh);
       if(drift.stale)indexStatus='stale_preserved_run_oranit_refresh';
     }
-    return {command:'oranit',workspace:root,dryRun,profile,
+    return {command:'oranit',workspace:root,dryRun,profile,decisionScaffold,ownerDecisionPointer,
       config:configExists?'preserved':'created_unconfirmed',index:indexStatus,filesIndexed:fresh.files.length,
       routing: routingFiles.map(({agent,rel,present})=>({agent,file:rel,status:present?'preserved':dryRun?'would_create':'created'})),
       partial:fresh.partial,assetFilesCreated:dryRun?assets.filter(rel=>!existsSync(path.join(root,rel))).length:created.length,
