@@ -8,7 +8,7 @@ Orasqill adds a lightweight workflow to your existing project. It works with **C
 
 **No more rethinking the same decisions. No more chasing new issues and forgetting the original task.**
 
-Orasqill keeps agents on plan, records new findings, and preserves context across handoffs.
+Orasqill keeps agents on plan and preserves owner decisions across handoffs.
 
 ## Customer Guide
 
@@ -36,6 +36,7 @@ The Delegate Tree Skill helps plan smaller, independently owned workstreams. It 
 - **Configure Models** — choose which models handle planning, implementation, and review.
 - **Delegate Tree** — propose a breakdown for complex work.
 - **Task checkpoints** — keep progress and review evidence with the project.
+- **Owner decisions** — record durable UI/copy/product rules in `docs/decisions/` for every agent to read.
 
 Orasqill is a toolkit, **not a hosted model service**. Connecting models and running subagents still depends on your coding-agent environment.
 
