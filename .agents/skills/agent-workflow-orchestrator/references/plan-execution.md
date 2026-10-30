@@ -4,6 +4,8 @@ Load this reference for substantive orchestrated work in a Git-backed repository
 
 ## Before implementation
 
+For product behavior, UI, layout, interaction or copy tasks, inspect `docs/decisions/README.md` and the relevant **Accepted** files by `Applies to` path. Include their concrete Rules and paths in the proposed locked plan as constraints. They outrank old prototypes or agent preferences within the owner's authorization, but never override policy or a newer explicit owner instruction. If decision files are missing or ambiguous, record the limitation; do not fabricate prior owner choices.
+
 Show the ordered plan to the user: goal, exclusions, scope, step sequence, acceptance, specific tests, risk and any operations requiring separate consent. The task must have a named Git branch and an initial commit so HEAD can be identified. Then:
 
 ```sh
@@ -22,7 +24,7 @@ The CLI rejects out-of-order IDs, skips and completion while any essential out-o
 
 ## What to do with out-of-plan discoveries
 
-**Record FIRST; do not silently implement.** Assess if the change is indispensable to finish the approved goal now.
+**Record FIRST; do not silently implement.** If a planned change conflicts with an Accepted decision, record the specific decision ID, Rule and affected paths as a Finding; seek the owner's approval before changing it or superseding the decision file. Supersede only by adding a new numbered decision and updating the old status/history in the **same PR** as the implementation; never replace the old owner words. Assess if the change is indispensable to finish the approved goal now.
 
 ```sh
 orasqill plan finding task-1 --description "Unrelated footer bug" --impact "Visual" --reason "Not required for goal" --necessary no
@@ -56,7 +58,7 @@ Do not claim a command passed if it was not run. `check` now records structured 
 
 ## Final Acceptance Contract
 
-User-facing report must cover the original authorized objective and scope, status `COMPLETE` / `PARTIAL` / `BLOCKED`, each step ID and its actual outcome, source diff/files, exact test names/results, deferred findings, pending findings needing user approval, evidence of already-approved amendments, branch/HEAD/PR or deployment state **only where verified**, remaining risks and next action. A generated `final-report.md` is a **draft based on local progress evidence**, not external approval or confirmed CI status. Historical checkpoints with string-only `checks` fail closed with `VALIDATION_MIGRATION_REQUIRED` **until fresh structured validation is recorded for every acceptance ID**. Old strings remain visible as *unverified historical evidence*; they never count as PASS. Record fresh `check --status pass --accept A1 --result "..."` entries for each A1..An. Missing or latest FAIL/BLOCKED acceptance still prevents `finish`. Malformed non-string check objects remain blocked for investigation.
+User-facing report must cover the original authorized objective and scope, status `COMPLETE` / `PARTIAL` / `BLOCKED`, each step ID and its actual outcome, source diff/files, exact test names/results, deferred findings, pending findings needing user approval, evidence of already-approved amendments, branch/HEAD/PR or deployment state **only where verified**, remaining risks, **decision files added or superseded** with their IDs/PR references (or none), and next action. A generated `final-report.md` is a **draft based on local progress evidence**, not external approval or confirmed CI status. Historical checkpoints with string-only `checks` fail closed with `VALIDATION_MIGRATION_REQUIRED` **until fresh structured validation is recorded for every acceptance ID**. Old strings remain visible as *unverified historical evidence*; they never count as PASS. Record fresh `check --status pass --accept A1 --result "..."` entries for each A1..An. Missing or latest FAIL/BLOCKED acceptance still prevents `finish`. Malformed non-string check objects remain blocked for investigation.
 
 ## Manual successor
 
