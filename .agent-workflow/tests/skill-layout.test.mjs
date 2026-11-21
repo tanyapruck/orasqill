@@ -165,6 +165,17 @@ test('agent document editing has an explicit upstream writing guidance route',()
   assert.match(read('.agent-workflow/external-skills.lock.json'),/SKILL-MECHANICS\.md/);
 });
 
+test('shared pre-edit checkpoint gate is specified for built-in agent plans and non-Git workspaces',()=>{
+  const source=read('.agent-workflow/bin/oranit.mjs');
+  const handoff=read('.agents/skills/agent-workflow-orchestrator/references/manual-handoff.md');
+  assert.match(source,/built-in\/private Plan Mode/);
+  assert.match(source,/orasqill plan active/);
+  assert.match(skill,/Built-in\/private Plan Mode/);
+  assert.match(skill,/git_backed: false/);
+  assert.match(handoff,/AMBIGUOUS_HANDOFF/);
+  assert.match(handoff,/non-Git workspace/i);
+});
+
 test('core lifecycle commands include mandatory task IDs',()=>{
   for(const cmd of ['check','review','report','finish']){
     assert.match(skill,new RegExp('orasqill plan '+cmd+' <task-id>'));
