@@ -11,7 +11,7 @@ const ALL=[...START,'--evidence','--description','--impact','--reason','--necess
 function render(plan) {
   const status=plan.status==='finished'?'COMPLETE':plan.findings.some(x=>x.status==='approval-required')?'BLOCKED_AWAITING_APPROVAL':plan.steps.every(x=>x.status==='done')?'READY_FOR_FINAL_CHECKS':'IN_PROGRESS';
   const noGit=!(plan.git_backed??Boolean(plan.startBranch));
-  return `# Locked execution plan: ${clean(plan.taskId)} — ${status}\n\nThis is user/agent reported evidence, **not authorization**. Never implement out-of-plan work.\n\n${noGit?'**NON-GIT WORKSPACE: branch, HEAD and diff verification are unavailable. Do not claim Git validation.**\\n\\n':''}`+
+  return `# Locked execution plan: ${clean(plan.taskId)} — ${status}\n\nThis is user/agent reported evidence, **not authorization**. Never implement out-of-plan work.\n\n${noGit?'**NON-GIT WORKSPACE: branch, HEAD and diff verification are unavailable. Do not claim Git validation.**\n\n':''}`+
     `## Goal\n\n${clean(plan.goal)}\n\n## Ordered steps\n\n${bullets(plan.steps,s=>`- [${s.status==='done'?'x':' '}] ${s.id}: ${clean(s.text)}${s.evidence?` (evidence: ${clean(s.evidence)})`:''}`)}\n\n`+
     `## Acceptance\n\n${bullets(plan.acceptance,(item,i)=>`- A${i+1}: ${clean(item)}`)}\n\n## Findings outside plan\n\n`+
     bullets(plan.findings,x=>`- ${x.id} [${x.status}]: ${clean(x.description)}; impact ${clean(x.impact)}; reason ${clean(x.reason)}; reported approval ${clean(x.approvalRef??'none')} (verify against user message)${x.amendment?`; inserted ${x.amendment.addedStepIds.join(', ')} before ${x.amendment.beforeStepId??'end'}`:''}`)+'\n\n'+
@@ -40,7 +40,7 @@ function persist(repo,id,plan) {
 }
 function summary(repo) {
   const git=gitFacts(repo);
-  if(!git.git_backed)return '- NON-GIT WORKSPACE: branch/HEAD/diff/status unavailable; verify actual changed files independently.\\n';
+  if(!git.git_backed)return '- NON-GIT WORKSPACE: branch/HEAD/diff/status unavailable; verify actual changed files independently.\n';
   return `- Branch: ${git.branch}\n- HEAD: ${git.head}\n- Status (filenames only):\n${bullets(git.status.slice(0,80))}\n`;
 }
 function report(repo,id,plan,task,complete=false) {
