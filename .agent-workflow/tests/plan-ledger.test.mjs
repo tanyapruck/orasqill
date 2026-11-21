@@ -6,6 +6,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {runPlan} from '../bin/plan-ledger.mjs';
 import {run as handoff,findCurrentTask} from '../bin/manual-handoff.mjs';
+import {projectRepo,gitFacts} from '../bin/common.mjs';
 
 function setup(t) {
   const repo=mkdtempSync(path.join(tmpdir(),'orchestrator-test-'));
@@ -256,4 +257,65 @@ test('HIGH_RISK legacy handoff cannot bypass missing plan or reviewer evidence',
   handoff(['start','t1','--goal','Legacy risky migration','--risk','HIGH_RISK'],f.repo);
   assert.throws(()=>handoff(['finish','t1'],f.repo),/PLAN_REQUIRED/);
   assert.equal(f.state().status,'active');
+});
+
+test('non-Git workspace supports complete plan, review, report and handoff lifecycle',t=>{
+  const repo=mkdtempSync(path.join(tmpdir(),'orchestrator-nongit-'));
+  t.after(()=>rmSync(repo,{recursive:true,force:true}));
+  mkdirSync(path.join(repo,'.agent-workflow'),{recursive:true});
+  mkdirSync(path.join(repo,'src','nested'),{recursive:true});
+  assert.equal(projectRepo(path.join(repo,'src','nested')),repo);
+  assert.deepEqual(gitFacts(repo),{git_backed:false,branch:null,head:null,status:[]});
+  const call=(...args)=>runPlan(args,repo);
+  assert.throws(()=>call('active'),/NO_HANDOFF/);
+  call('start','nongit','--goal','Fix without Git','--risk','HIGH_RISK','--owner','Implementer',
+    '--step','Make fix','--step','Validate fix','--accept','Result correct');
+  const dir=path.join(repo,'.agent-workflow','state','nongit');
+  const state=JSON.parse(readFileSync(path.join(dir,'task.json'),'utf8'));
+  const plan=JSON.parse(readFileSync(path.join(dir,'plan.json'),'utf8'));
+  assert.equal(state.git_backed,false);assert.equal(plan.git_backed,false);
+  assert.equal(state.startBranch,null);assert.equal(plan.startHead,null);
+  assert.equal(call('active'),path.join(dir,'plan.md'));
+  assert.match(readFileSync(path.join(dir,'plan.md'),'utf8'),/NON-GIT WORKSPACE/);
+  assert.match(readFileSync(path.join(dir,'handoff.md'),'utf8'),/NON-GIT WORKSPACE/);
+  assert.equal(handoff(['resume'],repo),path.join(dir,'handoff.md'));
+  call('finding','nongit','--description','Optional refactor','--impact','None','--reason','Out of scope','--necessary','no');
+  call('step','nongit','--step','S1','--evidence','source inspected');
+  call('step','nongit','--step','S2','--evidence','test performed');
+  call('check','nongit','--status','pass','--accept','A1','--result','test passed without Git');
+  assert.match(readFileSync(call('report','nongit'),'utf8'),/NON-GIT WORKSPACE/);
+  assert.throws(()=>call('finish','nongit'),/INDEPENDENT_REVIEW_REQUIRED/);
+  call('review','nongit','--reviewer','Independent reviewer','--independent','yes','--result','pass','--evidence','review evidence observed');
+  call('finish','nongit');
+  assert.equal(JSON.parse(readFileSync(path.join(dir,'task.json'),'utf8')).status,'finished');
+  assert.match(readFileSync(path.join(dir,'final-report.md'),'utf8'),/branch\/HEAD\/diff\/status unavailable/);
+  assert.throws(()=>handoff(['resume'],repo),/NO_HANDOFF/);
+  assert.throws(()=>call('active'),/NO_HANDOFF/);
+});
+
+test('non-Git active guard is read-only and rejects incomplete checkpoints',t=>{
+  const repo=mkdtempSync(path.join(tmpdir(),'orchestrator-guard-'));
+  t.after(()=>rmSync(repo,{recursive:true,force:true}));
+  mkdirSync(path.join(repo,'.agent-workflow'));
+  const call=(...args)=>runPlan(args,repo);
+  call('start','one','--goal','Bounded','--step','Work','--accept','Done');
+  const dir=path.join(repo,'.agent-workflow','state','one');
+  const before=readFileSync(path.join(dir,'handoff.md'),'utf8');
+  assert.equal(call('active'),path.join(dir,'plan.md'));
+  assert.equal(readFileSync(path.join(dir,'handoff.md'),'utf8'),before);
+  assert.throws(()=>call('active','one'),/Usage: plan active/);
+  unlinkSync(path.join(dir,'handoff.md'));
+  assert.throws(()=>call('active'),/ENOENT|unsafe state file/);
+  handoff(['export','one'],repo);
+  call('start','two','--goal','Second','--step','Work','--accept','Done');
+  assert.throws(()=>call('active'),/AMBIGUOUS_HANDOFF/);
+  assert.throws(()=>handoff(['resume'],repo),/AMBIGUOUS_HANDOFF/);
+});
+
+test('Git-backed active guard retains branch identity and rejects branch changes',t=>{
+  const f=setup(t);f.start();
+  assert.equal(f.call('active'),f.file('plan.md'));
+  assert.equal(f.plan().git_backed,true);
+  execFileSync('git',['-C',f.repo,'checkout','-qb','other']);
+  assert.throws(()=>f.call('active'),/NO_HANDOFF|BRANCH_MISMATCH/);
 });
