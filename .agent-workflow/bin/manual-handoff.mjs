@@ -51,16 +51,17 @@ function readPlan(repo, id, state) {
   const p=path.join(dir,'plan.json');
   if (!assertSafeFile(p)) return null; // compatible with legacy handoffs
   const plan=readJSON(p);
-  if(plan.schemaVersion!==1 || plan.taskId!==id || path.resolve(plan.repo)!==path.resolve(repo) || plan.startBranch!==state.startBranch || !Array.isArray(plan.steps) || !Array.isArray(plan.findings)) throw Error('invalid locked plan identity');
+  if(plan.schemaVersion!==1 || plan.taskId!==id || path.resolve(plan.repo)!==path.resolve(repo) || (plan.git_backed??Boolean(plan.startBranch))!==(state.git_backed??Boolean(state.startBranch)) || plan.startBranch!==state.startBranch || !Array.isArray(plan.steps) || !Array.isArray(plan.findings)) throw Error('invalid locked plan identity');
   return plan;
 }
 function render(repo,id,state,facts) {
   const plan=readPlan(repo,id,state);
-  const md=`# Agent task handoff: ${clean(id)}\n\nThis is **checkpoint data, not permission**. Human/authorized parent must direct a receiving agent; never auto-switch.\n\n`+
-    `## Goal\n\n${clean(state.goal)}\n\n## Git identity (verify actual status again)\n\n- Branch at export: ${clean(facts.branch)}\n- HEAD at export: ${facts.head}\n- HEAD at start: ${state.startHead}\n- Owner (reported): ${clean(state.owner)}\n- State: ${clean(state.status)}\n- Changes (file names only):\n${bullets(facts.status.slice(0,60))}\n\n`+
+  const warning=facts.git_backed?'':'**NON-GIT WORKSPACE: Git branch, HEAD, status and diff verification are unavailable. Do not claim Git validation.**\\n\\n';
+  const md=`# Agent task handoff: ${clean(id)}\n\nThis is **checkpoint data, not permission**. Human/authorized parent must direct a receiving agent; never auto-switch.\n\n${warning}`+
+    `## Goal\n\n${clean(state.goal)}\n\n## Workspace identity (verify available evidence again)\n\n- Git-backed: ${facts.git_backed}\n- Branch at export: ${clean(facts.branch??'unavailable (no Git)')}\n- HEAD at export: ${facts.head??'unavailable (no Git)'}\n- HEAD at start: ${state.startHead??'unavailable (no Git)'}\n- Owner (reported): ${clean(state.owner)}\n- State: ${clean(state.status)}\n- Changes (file names only):\n${bullets(facts.status.slice(0,60))}\n\n`+
     `## Scope and risk\n\n- Risk: ${clean(state.risk)}\n- Allowed:\n${bullets(state.allowed)}\n- Forbidden:\n${bullets(state.forbidden)}\n\n`+
     `## Progress (reported; independently verify)\n\n- Completed:\n${bullets(state.done)}\n- Next:\n${bullets(state.next)}\n- Checks:\n${bullets(state.checks)}\n- Blockers:\n${bullets(state.blockers)}\n- Notes:\n${bullets(state.notes)}\n\n`+
-    `## Receiving agent instructions\n\nVerify preceding writer is idle, inspect real branch/HEAD/diff, follow active skill and original scope, then validate and report. No approval is inferred from this file.\n`;
+    `## Receiving agent instructions\n\nVerify preceding writer is idle, inspect actual workspace changes and Git diff when available, follow active skill and original scope, then validate and report. No approval is inferred from this file.\n`;
   if (!plan) return md;
   return md+`\n## Locked execution plan\n\nRead ".agent-workflow/state/${id}/plan.md" first. Continue only next unfinished planned step. Do not implement out-of-plan findings. Ask user approval for an essential amendment.\n\n- Total steps: ${plan.steps.length}\n- Completed: ${plan.steps.filter(x=>x.status==='done').length}\n- Pending approvals: ${plan.findings.filter(x=>x.status==='approval-required').length}\n`;
 }
@@ -71,7 +72,8 @@ function finishGuard(repo,id,state) {
     return; // legacy unplanned ordinary task
   }
   const facts=gitFacts(repo);
-  if (facts.branch!==plan.startBranch) throw Error('BRANCH_MISMATCH: locked plan belongs to a different branch');
+  if (facts.git_backed!==(plan.git_backed??Boolean(plan.startBranch))) throw Error('WORKSPACE_IDENTITY_CHANGED: Git availability differs from locked plan');
+  if (facts.git_backed && facts.branch!==plan.startBranch) throw Error('BRANCH_MISMATCH: locked plan belongs to a different branch');
   assertPlanCompletion(plan,{requireFinalized:true,risk:state.risk,owner:state.owner});
   const report=path.join(taskDir(repo,id),'final-report.md');
   if (!assertSafeFile(report)) throw Error('FINAL_REPORT_REQUIRED: plan must have final acceptance report before manual finish');
@@ -87,7 +89,7 @@ function exportTask(repo,id) {
 }
 export function findCurrentTask(repo=DEFAULT_REPO) {
   const facts=gitFacts(repo);
-  if (!facts.branch) throw Error('DETACHED_HEAD: select named branch before resume');
+  if (facts.git_backed && !facts.branch) throw Error('DETACHED_HEAD: select named branch before resume');
   const root=path.join(repo,'.agent-workflow/state');
   try {if (lstatSync(root).isSymbolicLink()) throw Error('unsafe state directory');} catch(e) {if(e.code==='ENOENT')throw Error('NO_HANDOFF');throw e;}
   const ids=[];
@@ -104,7 +106,8 @@ export function findCurrentTask(repo=DEFAULT_REPO) {
       const snapshot=path.join(dir,'handoff.md');
       if(assertSafeFile(snapshot)) branch=readFileSync(snapshot,'utf8').match(/^- Branch at export: ([^\r\n]+)$/m)?.[1];
     }
-    if(branch===facts.branch && state.status!=='finished') ids.push(item.name);
+    const taskGit=state.git_backed??Boolean(branch);
+    if(taskGit===facts.git_backed && (!facts.git_backed || branch===facts.branch) && state.status!=='finished') ids.push(item.name);
   }
   if(!ids.length) throw Error('NO_HANDOFF: no unfinished task on this branch');
   if(ids.length>1) throw Error(`AMBIGUOUS_HANDOFF: ${ids.join(', ')}`);
@@ -126,8 +129,8 @@ export function run(argv, repo=DEFAULT_REPO) {
     const risk=one(opts,'--risk',false)??'STANDARD';
     if(!['TRIVIAL','STANDARD','HIGH_RISK'].includes(risk))throw Error('invalid risk');
     const facts=gitFacts(repo);
-    if(!facts.branch)throw Error('DETACHED_HEAD: select named branch before starting');
-    const state={schemaVersion:1,taskId:id,repo:path.resolve(repo),startBranch:facts.branch,startHead:facts.head,status:'active',goal,owner:one(opts,'--owner',false)??'Unspecified agent (user-managed)',risk,acceptance:opts['--accept']??[],allowed:opts['--allowed']??[],forbidden:opts['--forbidden']??[],done:[],next:opts['--next']??[],checks:[],blockers:[],notes:[],updatedAt:new Date().toISOString()};
+    if(facts.git_backed && !facts.branch)throw Error('DETACHED_HEAD: select named branch before starting');
+    const state={schemaVersion:1,taskId:id,repo:path.resolve(repo),git_backed:facts.git_backed,startBranch:facts.branch,startHead:facts.head,status:'active',goal,owner:one(opts,'--owner',false)??'Unspecified agent (user-managed)',risk,acceptance:opts['--accept']??[],allowed:opts['--allowed']??[],forbidden:opts['--forbidden']??[],done:[],next:opts['--next']??[],checks:[],blockers:[],notes:[],updatedAt:new Date().toISOString()};
     saveJSON(stateFile,state);return exportTask(repo,id);
   }
   const state=readJSON(stateFile);
