@@ -4,13 +4,27 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSyn
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Resolve the *invoking project's* Git root, never the bundled tool checkout.
+// Resolve the invoking project's root, not the shared Orasqill installation.
+// In a non-Git workspace, locate the nearest initialized .agent-workflow ancestor.
 export function projectRepo(cwd=process.cwd()){
-  const root=realpathSync.native(git(cwd,['rev-parse','--show-toplevel']));
+  const start=realpathSync.native(cwd);
+  let root;
+  try { root=realpathSync.native(git(start,['rev-parse','--show-toplevel'])); }
+  catch {
+    let cursor=start;
+    while(true) {
+      if(existsSync(path.join(cursor,'.git')))throw Error('GIT_UNAVAILABLE: existing Git metadata cannot be read');
+      if(existsSync(path.join(cursor,'.agent-workflow'))){root=cursor;break;}
+      const parent=path.dirname(cursor);
+      if(parent===cursor)break;
+      cursor=parent;
+    }
+  }
+  if(!root)throw Error('WORKSPACE_NOT_INITIALIZED: run oranit in this workspace');
   const base=path.join(root,'.agent-workflow');
-  if(!existsSync(base))throw Error('WORKSPACE_NOT_INITIALIZED: run oranit in this repository');
+  if(!existsSync(base))throw Error('WORKSPACE_NOT_INITIALIZED: run oranit in this workspace');
   const st=lstatSync(base);
-  if(!st.isDirectory()||st.isSymbolicLink())throw Error('WORKSPACE_NOT_INITIALIZED: run oranit in this repository');
+  if(!st.isDirectory()||st.isSymbolicLink())throw Error('WORKSPACE_NOT_INITIALIZED: unsafe or missing .agent-workflow');
   return root;
 }
 export const DEFAULT_REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -37,10 +51,15 @@ export function git(repo, argv) {
   return execFileSync('git', argv, {cwd:repo, encoding:'utf8', timeout:6000, maxBuffer:1024*1024}).trim();
 }
 export function gitFacts(repo) {
-  const actual=realpathSync.native(git(repo,['rev-parse','--show-toplevel']));
   const expected=realpathSync.native(repo);
+  let actual;
+  try { actual=realpathSync.native(git(repo,['rev-parse','--show-toplevel'])); }
+  catch {
+    if(existsSync(path.join(repo,'.git')))throw Error('GIT_UNAVAILABLE: existing Git metadata cannot be read');
+    return {git_backed:false,branch:null,head:null,status:[]};
+  }
   if (process.platform === 'win32' ? actual.toLowerCase() !== expected.toLowerCase() : actual !== expected) throw Error('repository root required');
-  return {branch:git(repo,['branch','--show-current']), head:git(repo,['rev-parse','HEAD']), status:git(repo,['status','--short','--untracked-files=normal']).split('\n').filter(Boolean)};
+  return {git_backed:true,branch:git(repo,['branch','--show-current']), head:git(repo,['rev-parse','HEAD']), status:git(repo,['status','--short','--untracked-files=normal']).split('\n').filter(Boolean)};
 }
 export function assertSafeFile(file, required = false) {
   try {
