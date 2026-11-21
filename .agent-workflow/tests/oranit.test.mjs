@@ -52,6 +52,10 @@ test('bare oranit bootstraps fresh workspace, code index, ignored config and all
     readFileSync(path.join(dir,'.agent-workflow/LICENSE.orasqill.txt'),'utf8'),
     readFileSync(path.join(root,'LICENSE'),'utf8')
   );
+  const instructions=readFileSync(path.join(dir,'AGENTS.md'),'utf8');
+  assert.match(instructions,/built-in\/private Plan Mode/);
+  assert.match(instructions,/orasqill plan active/);
+  assert.match(instructions,/plan\.md and handoff\.md/);
   const ignore=readFileSync(path.join(dir,'.gitignore'),'utf8');
   assert.match(ignore,/\.agent-workflow\/index\//);
   assert.match(ignore,/\.agent-workflow\/config\.json/);
