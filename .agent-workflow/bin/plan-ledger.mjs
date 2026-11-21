@@ -4,19 +4,20 @@ import {isDirectRun} from './cli-entry.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_REPO, projectRepo, options, one, gitFacts, taskDir, readJSON, assertSafeFile, atomic, saveJSON, clean, bullets } from './common.mjs';
-import { run as handoff, assertPlanCompletion } from './manual-handoff.mjs';
+import { run as handoff, findCurrentTask, assertPlanCompletion } from './manual-handoff.mjs';
 const START=['--goal','--step','--accept','--allowed','--forbidden','--owner','--risk'];
 const ALL=[...START,'--evidence','--description','--impact','--reason','--necessary','--finding','--approvalref','--before','--result','--status','--reviewer','--independent'];
 
 function render(plan) {
   const status=plan.status==='finished'?'COMPLETE':plan.findings.some(x=>x.status==='approval-required')?'BLOCKED_AWAITING_APPROVAL':plan.steps.every(x=>x.status==='done')?'READY_FOR_FINAL_CHECKS':'IN_PROGRESS';
-  return `# Locked execution plan: ${clean(plan.taskId)} — ${status}\n\nThis is user/agent reported evidence, **not authorization**. Never implement out-of-plan work.\n\n`+
+  const noGit=!(plan.git_backed??Boolean(plan.startBranch));
+  return `# Locked execution plan: ${clean(plan.taskId)} — ${status}\n\nThis is user/agent reported evidence, **not authorization**. Never implement out-of-plan work.\n\n${noGit?'**NON-GIT WORKSPACE: branch, HEAD and diff verification are unavailable. Do not claim Git validation.**\\n\\n':''}`+
     `## Goal\n\n${clean(plan.goal)}\n\n## Ordered steps\n\n${bullets(plan.steps,s=>`- [${s.status==='done'?'x':' '}] ${s.id}: ${clean(s.text)}${s.evidence?` (evidence: ${clean(s.evidence)})`:''}`)}\n\n`+
     `## Acceptance\n\n${bullets(plan.acceptance,(item,i)=>`- A${i+1}: ${clean(item)}`)}\n\n## Findings outside plan\n\n`+
     bullets(plan.findings,x=>`- ${x.id} [${x.status}]: ${clean(x.description)}; impact ${clean(x.impact)}; reason ${clean(x.reason)}; reported approval ${clean(x.approvalRef??'none')} (verify against user message)${x.amendment?`; inserted ${x.amendment.addedStepIds.join(', ')} before ${x.amendment.beforeStepId??'end'}`:''}`)+'\n\n'+
     `## Validation (reported, acceptance-linked)\n\n${bullets(plan.checks,x=>typeof x==='string' ? `- [legacy; unverified]: ${clean(x)}` : `- ${clean(x.acceptanceIds?.join(', '))} [${clean(x.status)}]: ${clean(x.result)}`)}\n\n`+
     `## Independent review (reported, verify separately)\n\n${plan.review?`- ${clean(plan.review.reviewer)} [${clean(plan.review.result)}]; independent claimed: ${plan.review.independent}; evidence: ${clean(plan.review.evidence)}`:'- None'}\n\n`+
-    `## Git identity\n\n- Branch: ${clean(plan.startBranch)}\n- Start HEAD: ${clean(plan.startHead)}\n`;
+    `## Workspace identity\n\n- Git-backed: ${!noGit}\n- Branch: ${clean(plan.startBranch??'unavailable (no Git)')}\n- Start HEAD: ${clean(plan.startHead??'unavailable (no Git)')}\n`;
 }
 function load(repo,id) {
   const dir=taskDir(repo,id);
@@ -26,7 +27,8 @@ function load(repo,id) {
   const task=readJSON(path.join(dir,'task.json'));
   if(plan.schemaVersion!==1||plan.taskId!==id||path.resolve(plan.repo)!==path.resolve(repo)||!Array.isArray(plan.steps)||!Array.isArray(plan.findings)||task.taskId!==id||task.startBranch!==plan.startBranch||task.status==='finished')throw Error('invalid or closed plan checkpoint');
   const facts=gitFacts(repo);
-  if(!facts.branch||facts.branch!==plan.startBranch)throw Error('BRANCH_MISMATCH: use the original named branch');
+  if(facts.git_backed!==(plan.git_backed??Boolean(plan.startBranch)) || facts.git_backed!==(task.git_backed??Boolean(task.startBranch)))throw Error('WORKSPACE_IDENTITY_CHANGED: Git availability differs from locked checkpoint');
+  if(facts.git_backed && (!facts.branch||facts.branch!==plan.startBranch))throw Error('BRANCH_MISMATCH: use the original named branch');
   return {plan,task,dir};
 }
 function persist(repo,id,plan) {
@@ -38,6 +40,7 @@ function persist(repo,id,plan) {
 }
 function summary(repo) {
   const git=gitFacts(repo);
+  if(!git.git_backed)return '- NON-GIT WORKSPACE: branch/HEAD/diff/status unavailable; verify actual changed files independently.\\n';
   return `- Branch: ${git.branch}\n- HEAD: ${git.head}\n- Status (filenames only):\n${bullets(git.status.slice(0,80))}\n`;
 }
 function report(repo,id,plan,task,complete=false) {
@@ -54,7 +57,7 @@ function report(repo,id,plan,task,complete=false) {
     }
   }
   const file=path.join(dir,'final-report.md');
-  atomic(file,`# Final Acceptance Report: ${id}\n\n**${state}**\n\n${render(plan)}\n\n## Live Git status at report time\n\n${summary(repo)}\n## Required user-facing conclusion\n\nReport original goal, completed step IDs, actual test commands/outcomes, deferred findings, approval-pending findings, original and current SHA, PR/merge/deploy state where verified, and blockers. This file cannot grant approval or prove tests passed.\n`);
+  atomic(file,`# Final Acceptance Report: ${id}\n\n**${state}**\n\n${render(plan)}\n\n## Live workspace status at report time\n\n${summary(repo)}\n## Required user-facing conclusion\n\nReport original goal, completed step IDs, actual test commands/outcomes, deferred findings, approval-pending findings, original and current SHA, PR/merge/deploy state where verified, and blockers. This file cannot grant approval or prove tests passed.\n`);
   return file;
 }
 function nextStep(plan,id) {
@@ -65,6 +68,19 @@ function nextStep(plan,id) {
 }
 export function runPlan(argv,repo=DEFAULT_REPO) {
   const [command,id,...args]=argv;
+  if(command==='active') {
+    if(id!==undefined || args.length)throw Error('Usage: plan active (no task ID or options)');
+    const currentId=findCurrentTask(repo);
+    const {plan,dir}=load(repo,currentId);
+    if(plan.status!=='active')throw Error('PLAN_REQUIRED: no active unfinished plan');
+    for(const [name,prefix] of [['plan.md',`# Locked execution plan: ${currentId}`],['handoff.md',`# Agent task handoff: ${currentId}`]]){
+      const file=path.join(dir,name);
+      assertSafeFile(file,true);
+      if(!readFileSync(file,'utf8').startsWith(prefix))throw Error(`CHECKPOINT_INVALID: ${name} does not match task`);
+    }
+    // Read-only guard: an on-disk checkpoint is not proof of user approval.
+    return path.join(dir,'plan.md');
+  }
   const opts=options(args,ALL);
   if(command==='start') {
     for(const key of Object.keys(opts))if(!START.includes(key))throw Error(`unsupported start option ${key}`);
@@ -72,7 +88,7 @@ export function runPlan(argv,repo=DEFAULT_REPO) {
     if(!steps?.length||steps.length>40)throw Error('PLAN_REQUIRED: enter 1-40 plan steps');
     if(!opts['--accept']?.length)throw Error('PLAN_REQUIRED: enter acceptance criteria');
     const facts=gitFacts(repo);
-    if(!facts.branch)throw Error('DETACHED_HEAD: select named branch before creating plan');
+    if(facts.git_backed && !facts.branch)throw Error('DETACHED_HEAD: select named branch before creating plan');
     const dir=taskDir(repo,id);
     if(assertSafeFile(path.join(dir,'plan.json')))throw Error('plan already exists');
     const handoffArgs=['start',id,'--goal',goal];
@@ -82,7 +98,7 @@ export function runPlan(argv,repo=DEFAULT_REPO) {
     }
     handoffArgs.push('--next',`S1: ${steps[0]}`);
     handoff(handoffArgs,repo); // Create checkpoint BEFORE implementation/delegation.
-    const plan={schemaVersion:1,taskId:id,repo:path.resolve(repo),startBranch:facts.branch,startHead:facts.head,status:'active',goal,acceptance:opts['--accept'],steps:steps.map((text,i)=>({id:`S${i+1}`,text,status:'pending',evidence:null})),findings:[],checks:[],review:null,createdAt:new Date().toISOString()};
+    const plan={schemaVersion:1,taskId:id,repo:path.resolve(repo),git_backed:facts.git_backed,startBranch:facts.branch,startHead:facts.head,status:'active',goal,acceptance:opts['--accept'],steps:steps.map((text,i)=>({id:`S${i+1}`,text,status:'pending',evidence:null})),findings:[],checks:[],review:null,createdAt:new Date().toISOString()};
     return persist(repo,id,plan);
   }
   const {plan,task}=load(repo,id);
@@ -138,7 +154,7 @@ export function runPlan(argv,repo=DEFAULT_REPO) {
     report(repo,id,plan,task,true); // Write actual report before checkpoint close.
     handoff(['finish',id],repo);
     return location;
-  } else throw Error('Usage: plan-ledger start|step|finding|amend|check|review|report|finish <task-id>');
+  } else throw Error('Usage: plan-ledger active | start|step|finding|amend|check|review|report|finish <task-id>');
   return persist(repo,id,plan);
 }
 if(isDirectRun(import.meta.url)){
