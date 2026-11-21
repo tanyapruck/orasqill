@@ -6,7 +6,7 @@
 
 **Owner decisions:** Before changing product behavior, UI, layout or copy, read the applicable Accepted decisions indexed in `docs/decisions/README.md`. A conflict needs an owner-approved Finding; record lasting owner decisions in the same PR as implementation. Never infer decisions from private agent memory.
 
-**Plan before editing or delegating.** Use the canonical Plan Ledger, follow locked steps, record each out-of-plan discovery as a Finding, defer nonessential work and request explicit user approval before essential changes. Close with actual validation and Final Acceptance evidence.
+**Plan before editing or delegating.** Built-in agent Plan Mode does not count as an Orasqill checkpoint. Present Goal, scope/exclusions, risk, ordered steps and acceptance to the user for approval. Before editing source code, run `orasqill plan start <task-id> --goal "..." --step "..." --accept "..."`, persist `.agent-workflow/state/<task-id>/plan.md` and `handoff.md`, and check `orasqill plan active`. Update steps after every completed stage; a new agent must use the shared checkpoint to resume. Follow locked steps, record out-of-plan discoveries as Findings and require explicit approval for essential scope additions. HIGH_RISK requires eligible independent review. Close with actual validation and structured Final Acceptance.
 
 **Coding gate:** the actual executing agent loads `karpathy-guidelines` before coding, SURGICAL edits, bug fixes or refactors; if unavailable report `SETUP_REQUIRED: dependency_unavailable` and pause that code-writing stage. Original source/versions and readiness: `references/DEPENDENCIES.md` under the canonical Skill, plus `.agent-workflow/external-skills.lock.json`.
 

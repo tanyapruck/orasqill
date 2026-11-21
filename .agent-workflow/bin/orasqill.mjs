@@ -24,6 +24,7 @@ const usage=`Orasqill commands:
   orasqill install-commands [--dry-run] [--refresh]
   orasqill models preview|resolve|validate ...
   orasqill deps list|check-updates|verify-file|verify-reference ...
+  orasqill plan active                    Check for one valid unfinished shared plan (read only)
   orasqill plan|handoff|delegate|schedule <helper-arguments>
   orasqill help
 
