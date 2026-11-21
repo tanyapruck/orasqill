@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
-import {mkdtempSync,writeFileSync,readFileSync,rmSync,existsSync,mkdirSync,renameSync,symlinkSync,unlinkSync} from 'node:fs';
+import {mkdtempSync,writeFileSync,readFileSync,rmSync,existsSync,mkdirSync,renameSync,symlinkSync,unlinkSync,realpathSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {runPlan} from '../bin/plan-ledger.mjs';
@@ -264,7 +264,7 @@ test('non-Git workspace supports complete plan, review, report and handoff lifec
   t.after(()=>rmSync(repo,{recursive:true,force:true}));
   mkdirSync(path.join(repo,'.agent-workflow'),{recursive:true});
   mkdirSync(path.join(repo,'src','nested'),{recursive:true});
-  assert.equal(projectRepo(path.join(repo,'src','nested')),repo);
+  assert.equal(projectRepo(path.join(repo,'src','nested')),realpathSync.native(repo));
   assert.deepEqual(gitFacts(repo),{git_backed:false,branch:null,head:null,status:[]});
   const call=(...args)=>runPlan(args,repo);
   assert.throws(()=>call('active'),/NO_HANDOFF/);
