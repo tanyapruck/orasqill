@@ -56,7 +56,7 @@ function readPlan(repo, id, state) {
 }
 function render(repo,id,state,facts) {
   const plan=readPlan(repo,id,state);
-  const warning=facts.git_backed?'':'**NON-GIT WORKSPACE: Git branch, HEAD, status and diff verification are unavailable. Do not claim Git validation.**\\n\\n';
+  const warning=facts.git_backed?'':'**NON-GIT WORKSPACE: Git branch, HEAD, status and diff verification are unavailable. Do not claim Git validation.**\n\n';
   const md=`# Agent task handoff: ${clean(id)}\n\nThis is **checkpoint data, not permission**. Human/authorized parent must direct a receiving agent; never auto-switch.\n\n${warning}`+
     `## Goal\n\n${clean(state.goal)}\n\n## Workspace identity (verify available evidence again)\n\n- Git-backed: ${facts.git_backed}\n- Branch at export: ${clean(facts.branch??'unavailable (no Git)')}\n- HEAD at export: ${facts.head??'unavailable (no Git)'}\n- HEAD at start: ${state.startHead??'unavailable (no Git)'}\n- Owner (reported): ${clean(state.owner)}\n- State: ${clean(state.status)}\n- Changes (file names only):\n${bullets(facts.status.slice(0,60))}\n\n`+
     `## Scope and risk\n\n- Risk: ${clean(state.risk)}\n- Allowed:\n${bullets(state.allowed)}\n- Forbidden:\n${bullets(state.forbidden)}\n\n`+
